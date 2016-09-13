@@ -1,73 +1,25 @@
 package engine
 
 import (
-	"phys/vect"
-	"time"
-
 	"phys"
+	"phys/vect"
 
 	"github.com/go-gl/mathgl/mgl32"
 )
 
 var (
 	space *phys.Space
-
-	Movement func(float32)
-	Control  func()
-
-	physT0 time.Time
-	physT1 time.Time
-	physDT float32
 )
 
 func InitPhys(airResist float32) {
 	space = phys.NewSpace()
 	space.LinearDamping = airResist
 	space.AngularDamping = airResist
-
-	physT0 = time.Now()
 }
 
-func physFrame() {
-	physT1 = time.Now()
-	physDT = float32(physT1.Sub(physT0).Seconds())
-	physT0 = physT1
+func physRender(dt float32) {
+	space.Step(dt)
 
-	// log.Println(physDT)
-
-	if Control != nil {
-		Control()
-	}
-	if Movement != nil {
-		Movement(physDT)
-	}
-
-	for o := range Objects {
-		if o.Callback != nil {
-			o.Callback(o, physDT)
-		}
-	}
-
-	space.Step(physDT)
-}
-
-// //milk emulates the air resistance
-// func milk(o *Object, dt float32) {
-// 	// vel := o.Shape.Body.Velocity()
-// 	// vel2 := o.Shape.Body.Velocity()
-
-// 	// vel2.Mult(dt * AirResist / o.Shape.Body.Mass())
-
-// 	// log.Println(space.LinearDamping)
-
-// 	// vel.Sub(vel2)
-// 	// o.Shape.Body.SetVelocity(vel.X, vel.Y)
-
-// 	// avel := o.Shape.Body.AngularVelocity()
-// 	// o.Shape.Body.SetAngularVelocity(avel - avel*dt)
-// }
-
-func physRender() {
 	for o, b := range Objects {
 		if o.Shape == nil || o.Node == nil || !b {
 			continue
@@ -79,8 +31,8 @@ func physRender() {
 
 		// update rotation
 		ang := o.Shape.Body.Angle()
-		if o.Player != nil {
-			q := mgl32.AnglesToQuat(0, 0, ang, 1).Mul(mgl32.AnglesToQuat(o.Player.SubAngle, 0, 0, 1))
+		if o.RollAngle != 0 {
+			q := mgl32.AnglesToQuat(0, 0, ang, 1).Mul(mgl32.AnglesToQuat(o.RollAngle, 0, 0, 1))
 			o.Node.LocalRotation = q
 		} else {
 			o.Node.LocalRotation = mgl32.AnglesToQuat(0, 0, ang, 1)
@@ -100,6 +52,7 @@ func Hit(x, y float32) (object *Object) {
 	return
 }
 
+//Raycast
 func Raycast(x0, y0, x1, y1 float32, group int, ignoreBody *phys.Body) *phys.RayCastHit {
 	// r := []phys.RayCastHit{phys.RayCastHit{}}
 	hits := space.RayCastAll(vect.Vect{x0, y0}, vect.Vect{x1, y1}, group, ignoreBody)

@@ -2,9 +2,8 @@ package engine
 
 import (
 	"assets"
-	"fmt"
+	"engine/frames"
 	"log"
-	"time"
 
 	"github.com/go-gl/glfw/v3.1/glfw"
 	"github.com/go-gl/mathgl/mgl32"
@@ -29,7 +28,15 @@ var (
 	Camera *fizzle.YawPitchCamera
 
 	render *forward.ForwardRenderer
+
+	callbacks []func(float32)
 )
+
+func AddCallback(funcs ...func(float32)) {
+	for _, f := range funcs {
+		callbacks = append(callbacks, f)
+	}
+}
 
 func NewWindow() {
 	initGraphics("go", width, height)
@@ -51,20 +58,12 @@ func NewWindow() {
 	render.SetupShadowMapRendering()
 
 	// set some OpenGL flags
-	// gfx.Enable(graphicsprovider.CULL_FACE)
-	// gfx.Enable(graphicsprovider.DEPTH_TEST)
-	// gfx.Enable(graphicsprovider.TEXTURE_2D)
-	// gfx.Enable(graphicsprovider.BLEND)
-
 	gfx.Enable(graphicsprovider.CULL_FACE)
 	gfx.Enable(graphicsprovider.DEPTH_TEST)
 	gfx.Enable(graphicsprovider.PROGRAM_POINT_SIZE)
 	gfx.Enable(graphicsprovider.TEXTURE_2D)
 	gfx.Enable(graphicsprovider.BLEND)
 	gfx.BlendFunc(graphicsprovider.SRC_ALPHA, graphicsprovider.ONE_MINUS_SRC_ALPHA)
-	// gfx.BlendFunc(graphicsprovider.ONE_MINUS_DST_ALPHA, graphicsprovider.DST_ALPHA)
-	// gfx.BlendFunc(graphicsprovider.ONE, graphicsprovider.ONE)
-	// gfx.Enable(graphicsprovider.EQUAL)
 
 	//hide cursor
 	// Window.SetCursor(glfw.CreateCursor(assets.GetImage("assets/textures/hide.png"), 0, 0))
@@ -111,24 +110,25 @@ func setShouldClose() {
 	Window.SetShouldClose(true)
 }
 
-var fps int
-var t0 = time.Now().Add(time.Second)
-
-func FPS() {
-	fps++
-	if t := time.Now(); t.After(t0) {
-		fmt.Println("FPS:", fps)
-		fps = 0
-		t0 = t.Add(time.Second)
-	}
-}
-
+//MainLoop - is main loop ^^
 func MainLoop() {
 	// loop until something told the Window that it should close
-	for !Window.ShouldClose() {
-		physFrame()
-		physRender()
-		FPS()
+	for frame := frames.NewFrame(); !Window.ShouldClose(); frame.Next() {
+		frame.FPS()
+
+		dt := frame.DT()
+
+		physRender(dt)
+
+		for _, f := range callbacks {
+			f(dt)
+		}
+
+		for o := range Objects {
+			if o.Callback != nil {
+				o.Callback(o, dt)
+			}
+		}
 
 		render.StartShadowMapping()
 		lightCount := render.GetActiveLightCount()
@@ -181,7 +181,12 @@ func MainLoop() {
 
 				for _, child := range o.ArtRotate {
 					// log.Println(child.Name, child.Line)
-					child.Art.Location = o.PositionVec3().Add(mgl32.Vec3{0, 0, child.LocalPosition.Z()})
+					// child.Art.Location = o.PositionVec3()
+					// child.Art.Location = o.PositionVec3().Add(mgl32.Vec3{0, 0, child.LocalPosition.Z()})
+
+					xF, yF := o.VectorForward(child.LocalPosition.X())
+					xS, yS := o.VectorSide(child.LocalPosition.Y())
+					child.Art.Location = o.PositionVec3().Add(mgl32.Vec3{xF, yF, child.LocalPosition.Z()}).Add(mgl32.Vec3{xS, yS})
 					child.Art.LocalRotation = mgl32.AnglesToQuat(0, 0, o.Rotation(), 1)
 
 					if child.Line {

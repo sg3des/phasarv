@@ -5,21 +5,25 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/go-gl/mathgl/mgl32"
+
 	"engine"
 	"param"
 	"phys"
 )
 
-//check if time is nil
-func timeNil(t time.Time) bool {
-	if t.Equal(time.Time{}) {
-		return true
-	}
-	return false
+type Bullet struct {
+	Param  param.Bullet
+	Object *engine.Object
+
+	Weapon *param.Weapon
+	Player *Player
+
+	Shoot bool
 }
 
 //Fire is main function for make shoot
-func Fire(w *param.Weapon, p *engine.Object) {
+func (p *Player) Fire(w *param.Weapon) {
 	if !w.Shoot {
 		w.DelayTime = time.Time{}
 		return
@@ -29,276 +33,255 @@ func Fire(w *param.Weapon, p *engine.Object) {
 		return
 	}
 
-	var shoot bool
-	switch w.BulletParam.Type {
-	case "gun":
-		shoot = gun(w, p)
-	case "rocket":
-		shoot = rocket(w, p)
-	case "laser":
-		shoot = laser(w, p)
-	}
-
-	if shoot {
-		w.NextShot = time.Now().Add(w.AttackRate)
-	}
-}
-
-// INITIALIZE SHOOT from other types of weapons
-
-//create simple bullet from gun
-func gun(w *param.Weapon, p *engine.Object) bool {
-	ob := createBullet(w, p)
-	// w.NextShot = time.Now().Add(w.AttackRate)
-	ob.Callback = gunCallback
-	ob.SetVelocity(p.VectorForward(w.BulletParam.MovSpeed))
-	return true
-}
-
-//create rocket
-func rocket(w *param.Weapon, p *engine.Object) bool {
-	var ob *engine.Object
-
-	if w.BulletParam.SubType == "homing" {
-		target := engine.Hit(cursor.Position())
-		if target == nil {
-			w.DelayTime = time.Time{}
-			return false
-		} else {
-			w.BulletParam.TargetObject = target
-		}
-	}
-
 	if w.Delay > 0 {
 		if timeNil(w.DelayTime) {
 			w.DelayTime = time.Now().Add(w.Delay)
+			return
 		}
 
 		if w.DelayTime.After(time.Now()) {
 			//wait - no shot was
-			return false
+			return
 		}
-		w.DelayTime = time.Time{}
 	}
 
-	ob = createBullet(w, p)
-	ob.Callback = rocketCallback
-	ob.SetVelocity(p.VectorSide(w.BulletObject.PH.Mass * 5 * w.X))
-	ob.Bullet.Param.Target = cursor.PositionVec2()
-
-	return true
+	b := p.Shoot(w)
+	if b.Shoot {
+		w.NextShot = time.Now().Add(w.AttackRate)
+	}
 }
 
-//create bullet for gun and rocket
-func createBullet(w *param.Weapon, p *engine.Object) (ob *engine.Object) {
-	vx, vy := p.VectorSide(1)
-	x, y := p.Position()
-
-	ob = engine.NewObject(w.BulletObject)
-	ob.SetPosition(x+w.X*vx, y+w.X*vy)
-	ob.SetRotation(p.Rotation())
-
-	ob.Shape.Body.CallBackCollision = BulletCollision
-
-	ob.Bullet = &engine.Bullet{
-		Parent: p,
-		Param:  &param.Bullet{},
+//Shoot create new bullet
+func (p *Player) Shoot(w *param.Weapon) *Bullet {
+	b := &Bullet{
+		Player: p,
+		Weapon: w,
+		Param:  w.BulletParam,
 	}
-	*ob.Bullet.Param = w.BulletParam //copy bullet parameters
-	ob.Bullet.Param.TimePoint = time.Now().Add(w.BulletParam.Lifetime)
+	// *b.Param = w.BulletParam
+	switch b.Param.Type {
+	case "gun":
+		b.Gun()
+	case "rocket":
+		b.Rocket()
+	case "laser":
+		b.Laser()
+	}
+	return b
+}
 
+//CreateObject create bullet for gun and rocket
+func (b *Bullet) CreateObject() {
+	vx, vy := b.Player.Object.VectorSide(1)
+	x, y := b.Player.Object.Position()
+
+	b.Object = engine.NewObject(b.Weapon.BulletObject)
+	b.Object.SetPosition(x+b.Weapon.X*vx, y+b.Weapon.X*vy)
+	b.Object.SetRotation(b.Player.Object.Rotation())
+
+	b.Object.Shape.Body.CallBackCollision = b.Collision
+
+	b.Param.TimePoint = time.Now().Add(b.Param.Lifetime)
+}
+
+// INITIALIZE SHOOT from other types of weapons
+
+//Gun create simple bullet
+func (b *Bullet) Gun() {
+	b.CreateObject()
+	b.Object.Callback = b.GunCallback
+	b.Object.SetVelocity(b.Player.Object.VectorForward(b.Param.MovSpeed))
+	b.Shoot = true
+}
+
+//Rocket create rocket bullet
+func (b *Bullet) Rocket() {
+	if b.Param.SubType == "homing" {
+		target := engine.Hit(cursor.Position())
+		if target == nil {
+			b.Weapon.DelayTime = time.Time{}
+			return
+		}
+
+		b.Param.TargetObject = target
+	}
+
+	b.CreateObject()
+	b.Object.Callback = b.RocketCallback
+	b.Object.SetVelocity(b.Player.Object.VectorSide(b.Weapon.BulletObject.PH.Mass * 5 * b.Weapon.X))
+	b.Param.Target = cursor.PositionVec2()
+
+	b.Shoot = true
 	return
 }
 
-var tbox *engine.Object
-
-//create laser
-func laser(w *param.Weapon, p *engine.Object) bool {
-	if w.Delay > 0 {
-		if timeNil(w.DelayTime) {
-			w.DelayTime = time.Now().Add(w.Delay)
-		}
-
-		if w.DelayTime.After(time.Now()) {
-			return false
-		}
-		w.DelayTime = time.Time{}
-	}
-
+//Laser create laser line
+func (b *Bullet) Laser() {
 	//start position
-	x, y := p.Position()
-	wX, wY := p.VectorSide(w.X)
+	x, y := b.Player.Object.Position()
+	wX, wY := b.Player.Object.VectorSide(b.Weapon.X)
 	x += wX
 	y += wY
 
 	//length from lifetime
-	h := float32(w.BulletParam.Lifetime.Seconds() * 10)
-	tx, ty := p.VectorForward(h)
+	h := float32(b.Param.Lifetime.Seconds() * 10)
+	tx, ty := b.Player.Object.VectorForward(h)
 	tx += x
 	ty += y
 
-	if hit := engine.Raycast(x, y, tx, ty, 1, p.Shape.Body); hit != nil {
+	if hit := engine.Raycast(x, y, tx, ty, 1, b.Player.Object.Shape.Body); hit != nil {
 		h = hit.Distance
-		tx, ty = p.VectorForward(h)
-		tx += x
-		ty += y
 
 		if hit.Body.UserData != nil {
-			ApplyDamage(hit.Body.UserData.(*engine.Object), w.BulletParam.Damage)
-			hit.Body.AddVelocity(p.VectorForward(w.BulletObject.PH.Mass * 10 / hit.Body.Mass()))
+			ApplyDamage(hit.Body.UserData.(*engine.Object), b.Param.Damage)
+			hit.Body.AddVelocity(b.Player.Object.VectorForward(b.Weapon.BulletObject.PH.Mass * 10 / hit.Body.Mass()))
 			hit.Body.AddAngularVelocity((rand.Float32() - 0.5) * 10 / hit.Body.Mass())
 		}
 	}
 
 	//draw laser
-	laser := engine.NewPlane(w.BulletObject, w.BulletObject.PH.W, h)
-	laser.SetPosition(x, y)
-	laser.SetRotation(p.Rotation())
+	b.Object = engine.NewPlane(b.Weapon.BulletObject, b.Weapon.BulletObject.PH.W, h)
+	b.Object.SetPosition(x, y)
+	b.Object.SetRotation(b.Player.Object.Rotation())
 
-	laser.Bullet = &engine.Bullet{
-		Parent: p,
-		Param:  &param.Bullet{},
-	}
-	*laser.Bullet.Param = w.BulletParam //copy bullet parameters
-	laser.Bullet.Param.TimePoint = time.Now().Add(w.BulletParam.Lifetime)
+	b.Param.TimePoint = time.Now().Add(b.Param.Lifetime)
+	b.Object.Callback = b.LaserCallback
 
-	laser.Callback = laserCallback
-
-	// w.NextShot = time.Now().Add(w.AttackRate)
-
-	return true
+	b.Shoot = true
+	return
 }
 
 //
 //
 //CALLBACKS
 
-func gunCallback(ob *engine.Object, dt float32) {
-	if ob.Bullet.Param.TimePoint.Before(time.Now()) {
-		ob.Destroy()
+//GunCallback callback each frame
+func (b *Bullet) GunCallback(ob *engine.Object, dt float32) {
+	if b.Param.TimePoint.Before(time.Now()) {
+		b.Destroy()
+		// b.Object.Destroy()
+		// b = nil
+		return
 	}
 
-	ob.SetVelocity(ob.VectorForward(ob.Bullet.Param.MovSpeed))
+	b.Object.SetVelocity(b.Object.VectorForward(b.Param.MovSpeed))
 }
 
-func rocketCallback(ob *engine.Object, dt float32) {
-	if ob.Bullet.Param.TimePoint.Before(time.Now()) {
-		BulletDestroy(ob)
+//RocketCallback callback each frame
+func (b *Bullet) RocketCallback(ob *engine.Object, dt float32) {
+	if b.Param.TimePoint.Before(time.Now()) {
+		b.Destroy()
+		return
 	}
 
 	dur, _ := time.ParseDuration("500ms")
-	if ob.Bullet.Param.Lifetime-ob.Bullet.Param.TimePoint.Sub(time.Now()) < dur {
+	if b.Param.Lifetime-b.Param.TimePoint.Sub(time.Now()) < dur {
 		return
 	}
-	// if   {
 
-	// }
-
-	switch ob.Bullet.Param.SubType {
+	var angle float32
+	switch b.Param.SubType {
 	case "direct":
 	case "aimed":
-		tp := ob.Bullet.Param.Target
-		LookAtTarget(ob, tp.X(), tp.Y(), dt)
+		tp := b.Param.Target
+		angle = AngleObjectPoint(ob, mgl32.Vec2{tp.X(), tp.Y()})
 	case "guided":
-		cpx, cpy := cursor.Position()
-		LookAtTarget(ob, cpx, cpy, dt)
+		angle = AngleObjectPoint(ob, cursor.PositionVec2())
 	case "homing":
-		tp := ob.Bullet.Param.Target
-		if ob.Bullet.Param.TargetObject == nil {
+		tp := b.Param.Target
+		if b.Param.TargetObject == nil {
 			if target := engine.Hit(cursor.Position()); target != nil {
-				ob.Bullet.Param.TargetObject = target
+				b.Param.TargetObject = target
 				tp = target.PositionVec2()
 			}
 		} else {
-			tp = ob.Bullet.Param.TargetObject.(*engine.Object).PositionVec2()
+			tp = b.Param.TargetObject.(*engine.Object).PositionVec2()
 		}
-		LookAtTarget(ob, tp.X(), tp.Y(), dt)
+		angle = AngleObjectPoint(ob, mgl32.Vec2{tp.X(), tp.Y()})
 	}
 
-	if ob.Velocity().Length() < ob.Bullet.Param.MovSpeed {
-		ob.AddVelocity(ob.VectorForward(dt * ob.Bullet.Param.MovSpeed))
+	if angle != 0 {
+		ob.Shape.Body.SetAngularVelocity(angle * b.Param.RotSpeed * 0.1)
+	}
+
+	if ob.Velocity().Length() < b.Param.MovSpeed {
+		ob.AddVelocity(ob.VectorForward(dt * b.Param.MovSpeed))
 	}
 }
 
-func laserCallback(ob *engine.Object, dt float32) {
-	// if ob.Bullet.Param.TimePoint.Before(time.Now()) {
-
-	// }
-
-	color := ob.Node.Core.DiffuseColor
+//LaserCallback each frame
+func (b *Bullet) LaserCallback(ob *engine.Object, dt float32) {
+	color := b.Object.Node.Core.DiffuseColor
 	// color[4] =
 	color[3] = color[3] - dt
-	ob.Node.Core.DiffuseColor = color
+	b.Object.Node.Core.DiffuseColor = color
 	if color[3] <= 0.1 {
-		ob.Destroy()
+		b.Object.Destroy()
 	}
 }
 
-// handler for bullet destroy
-func BulletDestroy(ob *engine.Object) {
-	switch ob.Bullet.Param.Type {
+//Destroy handler for bullet destroy
+func (b *Bullet) Destroy() {
+	switch b.Param.Type {
 	case "gun":
-		ob.Destroy()
+		b.Object.Destroy()
 	case "rocket":
-		ob.Destroy()
+		b.Object.Destroy()
 	case "laser":
-		ob.Shape.Body.Enabled = false
-		laserCallback(ob, 0.1)
+		b.Object.Shape.Body.Enabled = false
+		b.LaserCallback(b.Object, 0.1)
 	}
 }
 
-// event bullet collision
-func BulletCollision(arb *phys.Arbiter) bool {
-	// log.Println("bullet Collision")
+//Collision event bullet collision
+func (b *Bullet) Collision(arb *phys.Arbiter) bool {
 	if arb.BodyA.UserData == nil || arb.BodyB.UserData == nil {
 		log.Println("unset bodies")
 		return true
 	}
 
-	var bullet *engine.Object
 	var target *engine.Object
 
-	if arb.BodyA.UserData.(*engine.Object).Name == "bullet" {
-		bullet = arb.BodyA.UserData.(*engine.Object)
+	if arb.BodyA.UserData.(*engine.Object) == b.Object {
 		target = arb.BodyB.UserData.(*engine.Object)
-	} else {
-		bullet = arb.BodyB.UserData.(*engine.Object)
+	} else if arb.BodyB.UserData.(*engine.Object) == b.Object {
 		target = arb.BodyA.UserData.(*engine.Object)
+	} else {
+		log.Println("WTF?!")
+		return false
 	}
 
-	if bullet.Bullet != nil && bullet.Bullet.Parent != nil && bullet.Bullet.Parent == target {
+	if b.Player.Object == target {
 		return false
 	}
 
 	if _, ok := target.ArtStatic["health"]; ok {
-		if bullet.Bullet != nil {
-			ApplyDamage(target, bullet.Bullet.Param.Damage)
-		} else {
-			log.Println("damage unknown")
-			ApplyDamage(target, 10)
-		}
-
+		ApplyDamage(target, b.Param.Damage)
 	}
 
-	BulletDestroy(bullet)
+	b.Destroy()
 
 	return true
 }
 
+//ApplyDamage to object
 func ApplyDamage(target *engine.Object, damage float32) {
-	healthbar, ok := target.ArtStatic["health"]
+	hp, ok := target.GetArt("health")
 	if !ok {
+		log.Printf("WARINING: art by name: %s not found", "health")
 		return
 	}
 
-	healthbar.Value -= damage
-	if healthbar.Value <= 0 {
+	hp.Value -= damage
+	if hp.Value <= 0 {
 		ObjectDestroy(target)
+		return
 	}
+	hp.Resize()
 
-	healthbar.Resize()
 }
 
+//ObjectDestroy need add explosion
 func ObjectDestroy(o *engine.Object) {
 	log.Println("not yet ready")
 	o.Destroy()

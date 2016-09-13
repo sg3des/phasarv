@@ -30,6 +30,9 @@ type Art struct {
 	LocalPos mgl32.Vec3
 	Type     int //ArtStatic, ArtRotate
 	Line     bool
+
+	Shader  string
+	Texture string
 }
 
 type Bullet struct {

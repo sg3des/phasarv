@@ -3,66 +3,141 @@ package main
 import (
 	"engine"
 	"math"
+	"time"
 
 	"phys/vect"
 
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-func AngleBetweenPoints(px, py, cx, cy float32) float32 {
-	return float32(math.Atan2(float64(cy-py), float64(cx-px)))
-}
+// func AngleBetweenPoints(px, py, cx, cy float32) float32 {
+// 	return float32(math.Atan2(float64(cy-py), float64(cx-px)))
+// }
 
-func AngleBetweenAngles(pa, ca float32) float32 {
-	cv := vect.FromAngle(ca)
-	pv := vect.FromAngle(pa)
+// func AngleBetweenAngles(pa, ca float32) float32 {
+// 	cv := vect.FromAngle(ca)
+// 	pv := vect.FromAngle(pa)
 
-	sin := pv.X*cv.Y - cv.X*pv.Y
-	cos := pv.X*cv.X + pv.Y*cv.Y
+// 	sin := pv.X*cv.Y - cv.X*pv.Y
+// 	cos := pv.X*cv.X + pv.Y*cv.Y
 
-	return float32(math.Atan2(float64(sin), float64(cos)))
-}
+// 	return float32(math.Atan2(float64(sin), float64(cos)))
+// }
+
 func getCursorPos(x, y float32, w, h int, campos mgl32.Vec3) (float32, float32) {
-	x = (x-float32(w)/2)/820*campos.Z() + campos.X()
-	y = (float32(h)/2-y)/820*campos.Z() + campos.Y()
+	//that`s black magic constant!
+	x = (x-float32(w)/2)/840*campos.Z() + campos.X()
+	y = (float32(h)/2-y)/840*campos.Z() + campos.Y()
 	// y = (y-float32(h)/2)/820*campos.Z() + campos.Y()
 
 	return x, y
 }
 
-func LookAtTarget(o *engine.Object, cpx, cpy, dt float32) {
-	pp := o.Shape.Body.Position()
+// //LookAtTarget slowly turns object to target 2d-point(cpx,cpy)
+// func LookAtTarget(o *engine.Object, cpx, cpy, dt float32) (angle float32) {
+// 	pp := o.Shape.Body.Position()
+// 	ca := AngleBetweenPoints(pp.X, pp.Y, cpx, cpy)
+// 	pa := o.Shape.Body.Angle()
+// 	// log.Println(pp.X, pp.Y, cpx, cpy, " | ", ca, pa)
 
-	ca := AngleBetweenPoints(pp.X, pp.Y, cpx, cpy)
-	pa := o.Shape.Body.Angle()
-	// log.Println(pp.X, pp.Y, cpx, cpy, " | ", ca, pa)
+// 	// //get rotspeed
+// 	// var rotspeed float32
+// 	// if o.Player != nil {
+// 	// 	rotspeed = o.Player.RotSpeed * 0.1
+// 	// }
+// 	// if o.Bullet != nil {
+// 	// 	rotspeed = o.Bullet.Param.RotSpeed * 0.1
+// 	// }
 
-	cv := vect.FromAngle(ca)
-	pv := vect.FromAngle(pa)
+// 	//get angle
+// 	return AngleBetweenAngles(pa, ca)
 
-	var rotspeed float32
-	if o.Player != nil {
-		rotspeed = o.Player.RotSpeed
+// 	// if ang > rotspeed {
+// 	// 	ang = rotspeed
+// 	// } else if ang < -rotspeed {
+// 	// 	ang = -rotspeed
+// 	// }
+
+// 	// // add angluar velocity
+// 	// avel := o.Shape.Body.AngularVelocity()
+// 	// if avel < rotspeed && avel > -rotspeed {
+// 	// 	o.Shape.Body.AddAngularVelocity(ang * 0.001)
+// 	// }
+
+// 	// //roll angle
+// 	// if o.Player != nil {
+// 	// 	// subAngle := AngleBetweenAngles(pa, ca)
+
+// 	// 	if ang > -o.Player.SubAngle && o.Player.SubAngle > -1.5 {
+// 	// 		o.Player.SubAngle -= dt * o.Player.RotSpeed * 0.05
+// 	// 	}
+
+// 	// 	if ang < -o.Player.SubAngle && o.Player.SubAngle < 1.5 {
+// 	// 		o.Player.SubAngle += dt * o.Player.RotSpeed * 0.05
+// 	// 	}
+// 	// }
+
+// 	// return
+// }
+
+//AngleObjectPoint calculate angle(rad) between object(o) angle and 2d point(b)
+func AngleObjectPoint(o *engine.Object, b mgl32.Vec2) (angle float32) {
+	a := o.PositionVec2()
+	oAngleVec := vect.FromAngle(o.Shape.Body.Angle())
+
+	//angle between points
+	abAngle := float32(math.Atan2(float64(b.Y()-a.Y()), float64(b.X()-a.X())))
+	abAngleVec := vect.FromAngle(abAngle)
+
+	sin := oAngleVec.X*abAngleVec.Y - abAngleVec.X*oAngleVec.Y
+	cos := oAngleVec.X*abAngleVec.X + oAngleVec.Y*abAngleVec.Y
+
+	return float32(math.Atan2(float64(sin), float64(cos)))
+
+	// //get rotspeed
+	// var rotspeed float32
+	// if o.Player != nil {
+	// 	rotspeed = o.Player.RotSpeed * 0.1
+	// }
+	// if o.Bullet != nil {
+	// 	rotspeed = o.Bullet.Param.RotSpeed * 0.1
+	// }
+
+	//get angle
+	// return AngleBetweenAngles(pa, ca)
+
+	// if ang > rotspeed {
+	// 	ang = rotspeed
+	// } else if ang < -rotspeed {
+	// 	ang = -rotspeed
+	// }
+
+	// // add angluar velocity
+	// avel := o.Shape.Body.AngularVelocity()
+	// if avel < rotspeed && avel > -rotspeed {
+	// 	o.Shape.Body.AddAngularVelocity(ang * 0.001)
+	// }
+
+	// //roll angle
+	// if o.Player != nil {
+	// 	// subAngle := AngleBetweenAngles(pa, ca)
+
+	// 	if ang > -o.Player.SubAngle && o.Player.SubAngle > -1.5 {
+	// 		o.Player.SubAngle -= dt * o.Player.RotSpeed * 0.05
+	// 	}
+
+	// 	if ang < -o.Player.SubAngle && o.Player.SubAngle < 1.5 {
+	// 		o.Player.SubAngle += dt * o.Player.RotSpeed * 0.05
+	// 	}
+	// }
+
+	// return
+}
+
+//check if time is nil
+func timeNil(t time.Time) bool {
+	if t.Equal(time.Time{}) {
+		return true
 	}
-	if o.Bullet != nil {
-		rotspeed = o.Bullet.Param.RotSpeed
-	}
-
-	vx := pv.X + (pv.X+cv.X)*(dt*rotspeed*0.1)
-	vy := pv.Y + (pv.Y+cv.Y)*(dt*rotspeed*0.1)
-
-	if o.Player != nil {
-		subAngle := AngleBetweenAngles(pa, ca)
-
-		if subAngle > -o.Player.SubAngle && o.Player.SubAngle > -1.5 {
-			o.Player.SubAngle -= dt * o.Player.RotSpeed * 0.05
-		}
-
-		if subAngle < -o.Player.SubAngle && o.Player.SubAngle < 1.5 {
-			o.Player.SubAngle += dt * o.Player.RotSpeed * 0.05
-		}
-	}
-
-	//rotate
-	o.Shape.Body.SetAngle(float32(math.Atan2(float64(vy), float64(vx))))
+	return false
 }

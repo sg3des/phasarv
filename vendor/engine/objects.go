@@ -34,8 +34,10 @@ type Object struct {
 	ArtStatic map[string]*Art
 	ArtRotate map[string]*Art
 
-	Player *param.Player
-	Bullet *Bullet
+	RollAngle float32
+
+	// Player *param.Player
+	// Bullet *Bullet
 
 	Callback func(*Object, float32)
 }
@@ -52,8 +54,32 @@ type Art struct {
 //NewPlane create renderable plane
 func NewPlane(p param.Object, w, h float32) *Object {
 	e := &Object{
+		Name: p.Name,
+		// Node: fizzle.CreatePlaneXY(0, w/2, h, -w/2),
+		Node:        fizzle.CreatePlaneV(mgl32.Vec3{0, -w / 2, 0}, mgl32.Vec3{h, w / 2, 0}),
+		Transparent: p.Transparent,
+	}
+
+	e.Node.Core.Shader = assets.Shaders[p.Mesh.Shader]
+	e.Node.Core.DiffuseColor = mgl32.Vec4{1, 1, 1, 1}
+	e.Node.Core.SpecularColor = mgl32.Vec4{0.3, 0.3, 0.3, 1.0}
+
+	e.Node.Core.Shininess = 6.0
+	e.Node.Core.Tex[0] = assets.Textures[p.Mesh.Texture].Diffuse
+	e.Node.Core.Tex[1] = assets.Textures[p.Mesh.Texture].Normals
+
+	// e.Node.Location = mgl32.Vec3{p.Pos.X, p.Pos.Y, p.Pos.Z}
+
+	Objects[e] = true
+
+	return e
+}
+
+//NewPlanePoint create renderable plane from two points
+func NewPlanePoint(p param.Object, p0, p1 mgl32.Vec3) *Object {
+	e := &Object{
 		Name:        p.Name,
-		Node:        fizzle.CreatePlaneXY(0, w/2, h, -w/2),
+		Node:        fizzle.CreatePlaneV(p0, p1),
 		Transparent: p.Transparent,
 	}
 
@@ -117,7 +143,7 @@ func NewHideBox(p param.Object) *Object {
 func NewBox(name string) *Object {
 	e := &Object{
 		Name: name,
-		Node: fizzle.CreateCube(0, 0, 0, 1, 1, 1),
+		Node: fizzle.CreateCube(-0.5, -0.5, -0.5, 0.5, 0.5, 0.5),
 	}
 
 	e.Node.Core.Shader = assets.Shaders["diffuse_texbumped_shadows"]
@@ -171,37 +197,50 @@ func NewObject(p param.Object, arts ...param.Art) *Object {
 	return e
 }
 
-func CreateCurve(axis int) *fizzle.Renderable {
-	// e := &Object{Name: "wireframe"}
-	line := fizzle.CreateWireframeCircle(0, 0, 0, 3, 32, axis)
+// func CreateCurve(axis int) *fizzle.Renderable {
+// 	// e := &Object{Name: "wireframe"}
+// 	line := fizzle.CreateWireframeCircle(0, 0, 0, 3, 32, axis)
 
-	line.Core.Shader = assets.Shaders["color"]
-	line.Core.DiffuseColor = mgl32.Vec4{1.0, 1.0, 1.0, 1.0}
-	line.Core.SpecularColor = mgl32.Vec4{0.3, 0.3, 0.3, 1.0}
+// 	line.Core.Shader = assets.Shaders["color"]
+// 	line.Core.DiffuseColor = mgl32.Vec4{1.0, 1.0, 1.0, 1.0}
+// 	line.Core.SpecularColor = mgl32.Vec4{0.3, 0.3, 0.3, 1.0}
 
-	// e.Node.Core.Shininess = 6.0
-	// e.Node.Core.Tex0 = assets.Textures["TestCube"].Diffuse
-	// e.Node.Core.Tex1 = assets.Textures["TestCube"].Normals
+// 	// e.Node.Core.Shininess = 6.0
+// 	// e.Node.Core.Tex0 = assets.Textures["TestCube"].Diffuse
+// 	// e.Node.Core.Tex1 = assets.Textures["TestCube"].Normals
 
-	// line.Location = mgl32.Vec3{3, 13, 1}
+// 	// line.Location = mgl32.Vec3{3, 13, 1}
 
-	Lines[line] = true
-	return line
-}
+// 	Lines[line] = true
+// 	return line
+// }
 
 //NewArt to object
 func (e *Object) NewArt(p param.Art) *Art {
+	// p0 := p.LocalPos.Add()
+	// p1 := p.LocalPos.Add(mgl32.Vec3{p.W / 2, p.H / 2, 0})
+
 	art := &Art{
 		Name:     p.Name,
 		Value:    p.Value,
 		MaxValue: p.MaxValue,
-		Art:      fizzle.CreatePlaneXY(p.LocalPos.X(), p.LocalPos.Y(), p.W+p.LocalPos.X(), p.H+p.LocalPos.Y()),
+		Art:      fizzle.CreatePlaneV(mgl32.Vec3{}, mgl32.Vec3{p.W, p.H}),
+		// Art:      fizzle.CreatePlaneXY(p.LocalPos.X(), p.LocalPos.Y(), p.W+p.LocalPos.X(), p.H+p.LocalPos.Y()),
 		// Art:           fizzle.CreatePlaneXY(p.Name, 5, 1, 4, -10),
 		LocalPosition: p.LocalPos,
 	}
 
-	art.Art.Core.Tex[0] = assets.Textures["gray"].Diffuse
-	art.Art.Core.Tex[1] = assets.Textures["gray"].Normals
+	if p.Texture == "" {
+		art.Art.Core.Tex[0] = assets.Textures["gray"].Diffuse
+		art.Art.Core.Tex[1] = assets.Textures["gray"].Normals
+	} else {
+		art.Art.Core.Tex[0] = assets.Textures[p.Texture].Diffuse
+		art.Art.Core.Tex[1] = assets.Textures[p.Texture].Normals
+	}
+
+	if p.Shader != "" {
+		art.Art.Core.Shader = assets.Shaders[p.Shader]
+	}
 
 	return e.applyArt(art, p)
 }
@@ -214,6 +253,19 @@ func (e *Object) NewLine(p param.Art) *Art {
 		MaxValue: p.MaxValue,
 		Art:      fizzle.CreateLine(p.LocalPos.X(), p.LocalPos.Y(), 1, p.W+p.LocalPos.X(), p.H+p.LocalPos.Y(), 1),
 		// Art:           fizzle.CreatePlaneXY(p.Name, 5, 1, 4, -10),
+		LocalPosition: p.LocalPos,
+	}
+
+	return e.applyArt(art, p)
+}
+
+func (e *Object) NewCircle(p param.Art) *Art {
+	art := &Art{
+		Name:     p.Name,
+		Value:    p.Value,
+		MaxValue: p.MaxValue,
+		Art: fizzle.CreateWireframeCircle(p.LocalPos.X(), p.LocalPos.Y(), p.LocalPos.Z(), 0.5, 64, fizzle.X|
+			fizzle.Y),
 		LocalPosition: p.LocalPos,
 	}
 
@@ -274,7 +326,9 @@ func (e *Object) NewCurve(p param.Art) *Art {
 func (e *Object) applyArt(art *Art, p param.Art) *Art {
 	art.Line = p.Line
 
-	art.Art.Core.Shader = assets.Shaders["color"]
+	if art.Art.Core.Shader == nil {
+		art.Art.Core.Shader = assets.Shaders["color"]
+	}
 	art.Art.Core.DiffuseColor = p.Color
 
 	if e.ArtStatic == nil {
@@ -300,7 +354,7 @@ func NewHealthBar(value float32) param.Art {
 		W:        2,
 		H:        0.2,
 		Color:    mgl32.Vec4{0, 0.6, 0, 0.7},
-		LocalPos: mgl32.Vec3{-0.5, 1, 2},
+		LocalPos: mgl32.Vec3{0, 1, 1.1},
 		Type:     param.ArtStatic,
 	}
 }
@@ -316,8 +370,16 @@ func (b *Art) Resize() {
 	}
 }
 
-func (b *Art) Rotate(ang float32) {
-	b.Art.LocalRotation = mgl32.AnglesToQuat(0, 0, ang, 1)
+func (e *Object) GetArt(name string) (*Art, bool) {
+	if art, ok := e.ArtStatic[name]; ok {
+		return art, true
+	}
+
+	if art, ok := e.ArtRotate[name]; ok {
+		return art, true
+	}
+
+	return nil, false
 }
 
 //NewCamera create camera set it how main camera and return it
