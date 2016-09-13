@@ -1,2 +1,1 @@
-special-vendored-path/* linguist-vendored
-*.go linguist-vendored=true
+vendor/* linguist-vendored=false
