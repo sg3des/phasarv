@@ -10,7 +10,7 @@ Project code is in the vendor directory
 
 ##Engines
 
-Opengl engine - [fizzle](https://github.com/tbogdala/fizzle)
+Opengl engine - [tbogdala/fizzle](https://github.com/tbogdala/fizzle)
 
 2dPhys engine - chipmunk [TheZeroSlave/chipmunk](https://github.com/TheZeroSlave/chipmunk) forked from vova616/chipmunk
 
