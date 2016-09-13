@@ -117,7 +117,7 @@ var t0 = time.Now().Add(time.Second)
 func FPS() {
 	fps++
 	if t := time.Now(); t.After(t0) {
-		fmt.Println(fps)
+		fmt.Println("FPS:", fps)
 		fps = 0
 		t0 = t.Add(time.Second)
 	}

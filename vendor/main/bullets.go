@@ -94,7 +94,7 @@ func createBullet(w *param.Weapon, p *engine.Object) (ob *engine.Object) {
 	vx, vy := p.VectorSide(1)
 	x, y := p.Position()
 
-	ob = engine.NewObject(w.BulletObject, nil)
+	ob = engine.NewObject(w.BulletObject)
 	ob.SetPosition(x+w.X*vx, y+w.X*vy)
 	ob.SetRotation(p.Rotation())
 

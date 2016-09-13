@@ -5,8 +5,8 @@ import (
 	"math"
 
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/sg3des/fizzle/graphicsprovider"
 	"github.com/tbogdala/fizzle"
+	"github.com/tbogdala/fizzle/graphicsprovider"
 
 	"param"
 	"phys"
@@ -136,7 +136,7 @@ func NewBox(name string) *Object {
 }
 
 //NewObject create object
-func NewObject(p param.Object, arts []param.Art) *Object {
+func NewObject(p param.Object, arts ...param.Art) *Object {
 	e := &Object{
 		Name:        p.Name,
 		Node:        assets.GetModel(p.Mesh.Model),
@@ -290,6 +290,19 @@ func (e *Object) applyArt(art *Art, p param.Art) *Art {
 	}
 
 	return art
+}
+
+func NewHealthBar(value float32) param.Art {
+	return param.Art{
+		Name:     "health",
+		Value:    value,
+		MaxValue: value,
+		W:        2,
+		H:        0.2,
+		Color:    mgl32.Vec4{0, 0.6, 0, 0.7},
+		LocalPos: mgl32.Vec3{-0.5, 1, 2},
+		Type:     param.ArtStatic,
+	}
 }
 
 //Resize bar

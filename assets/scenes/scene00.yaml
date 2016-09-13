@@ -1,0 +1,42 @@
+name: "scene00"
+
+_box: &box
+  object: 
+    name: "box"
+    mesh:
+      model: "t"
+      texture: "TestCube"
+      shader: "diffuse_texbumped_shadows"
+      shadow: true
+    ph:
+      h: 2
+      w: 2
+      mass: 10
+      group: 1
+  hp: 100
+
+objects: 
+  - object:
+      name: "ground"
+      mesh: 
+        model: "plane"
+        texture: "grass"
+        shader: "diffuse_texbumped_shadows"
+      pos: {z: -10}
+  - <<: *box 
+    object:
+      pos: {x: 10, y: -8}
+  - <<: *box
+    object:
+      pos: {x: 10, y: -3}
+  - <<: *box
+    object:
+      pos: {x: -10, y: 5}
+  - <<: *box
+    object:
+      pos: {x: 1, y: -10}
+  - <<: *box
+    object:
+      pos: {x: 1, y: 10}
+
+

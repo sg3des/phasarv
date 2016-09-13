@@ -78,7 +78,7 @@ func newPlayer() {
 		},
 	}
 
-	localPlayer = engine.NewObject(p.Object, []param.Art{newHealthBar(p.Health)})
+	localPlayer = engine.NewObject(p.Object, engine.NewHealthBar(p.Health))
 	localPlayer.Player = p
 	localPlayer.SetPosition(0, 0)
 
@@ -120,19 +120,6 @@ func newPlayer() {
 	engine.Movement = playerMovement
 	engine.Window.SetMouseButtonCallback(mouseControl)
 	// engine.Window.SetKeyCallback(keyboardControl)
-}
-
-func newHealthBar(value float32) param.Art {
-	return param.Art{
-		Name:     "health",
-		Value:    value,
-		MaxValue: value,
-		W:        2,
-		H:        0.2,
-		Color:    mgl32.Vec4{0, 0.6, 0, 0.7},
-		LocalPos: mgl32.Vec3{-0.5, 1, 2},
-		Type:     param.ArtStatic,
-	}
 }
 
 func playerMovement(dt float32) {
