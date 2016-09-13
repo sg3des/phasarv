@@ -1,2 +1,2 @@
 special-vendored-path/* linguist-vendored
-linguist-vendored=false
+Godeps/_workspace/ linguist-vendored=true
