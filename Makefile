@@ -18,3 +18,10 @@ get:
 
 test:
 	go test -v vendor/main
+
+build:
+	# mkdir -p build
+	go build -o build/$(name) ./vendor/main
+	#GOOS=windows go build -o build/$(name).exe ./vendor/main
+
+.PHONY: build
