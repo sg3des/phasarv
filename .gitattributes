@@ -1,2 +1,2 @@
 special-vendored-path/* linguist-vendored
-Godeps/_workspace/ linguist-vendored=true
+*.go linguist-vendored=true
