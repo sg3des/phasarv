@@ -1,7 +1,7 @@
 #version 330
 precision highp float;
 
-uniform sampler2D MATERIAL_TEX_0;
+uniform sampler2D MATERIAL_TEX_DIFFUSE;
 uniform vec4 MATERIAL_DIFFUSE;
 
 in vec2 vs_tex0_uv;
@@ -11,7 +11,7 @@ void main (void) {
 	// Modify the color's alpha based on the alpha map used in
 	// in sample2D channel 0
 
-	vec4 tex0 = texture(MATERIAL_TEX_0, vs_tex0_uv);// * diff;
+	vec4 tex0 = texture(MATERIAL_TEX_DIFFUSE, vs_tex0_uv);// * diff;
 	if (tex0.a > MATERIAL_DIFFUSE.a) {
 		tex0.a = MATERIAL_DIFFUSE.a;
 	}

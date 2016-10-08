@@ -1,42 +1,46 @@
 name: "scene00"
 
-_box: &box
+_box: &tree
   object: 
-    name: "box"
+    name: "tree"
     mesh:
-      model: "t"
-      texture: "TestCube"
-      shader: "diffuse_texbumped_shadows"
+      model: "tree"
       shadow: true
-    ph:
+    material:
+      name: "tree"
+      texture: "tree1"
+      shader: "diffuse_texbumped_shadows"
+    phys:
       h: 2
       w: 2
-      mass: 10
       group: 1
-  hp: 100
+    transparent: true
+  # hp: 100
 
 objects: 
   - object:
       name: "ground"
       mesh: 
         model: "plane"
+      material:
+        name: "ground"
         texture: "grass"
         shader: "diffuse_texbumped_shadows"
       pos: {z: -10}
-  - <<: *box 
+  - <<: *tree 
     object:
-      pos: {x: 10, y: -8}
-  - <<: *box
+      pos: {x: 10, y: -8, z: 0}
+  - <<: *tree
     object:
-      pos: {x: 10, y: -3}
-  - <<: *box
+      pos: {x: 10, y: -3, z: 0}
+  - <<: *tree
     object:
-      pos: {x: -10, y: 5}
-  - <<: *box
+      pos: {x: -10, y: 5, z: 0}
+  - <<: *tree
     object:
-      pos: {x: 1, y: -10}
-  - <<: *box
+      pos: {x: 1, y: -10, z: 0}
+  - <<: *tree
     object:
-      pos: {x: 1, y: 10}
+      pos: {x: 1, y: 10, z: 0}
 
 

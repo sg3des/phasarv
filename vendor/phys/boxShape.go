@@ -5,7 +5,7 @@ import (
 	"phys/vect"
 )
 
-// Convenience wrapper around PolygonShape.
+//BoxShape convenience wrapper around PolygonShape.
 type BoxShape struct {
 	Shape *Shape
 	// The polygon that represents this box. Do not touch!
@@ -19,7 +19,7 @@ type BoxShape struct {
 	Position vect.Vect
 }
 
-// Creates a new BoxShape with given position, width and height.
+//NewBox creates a new BoxShape with given position, width and height.
 func NewBox(pos vect.Vect, w, h float32) *Shape {
 	shape := newShape()
 
@@ -34,19 +34,37 @@ func NewBox(pos vect.Vect, w, h float32) *Shape {
 	hw := w / 2.0
 	hh := h / 2.0
 
-	if hw < 0 {
-		hw = -hw
-	}
-	if hh < 0 {
-		hh = -hh
-	}
+	hw = vect.FAbs(hw)
+	hh = vect.FAbs(hh)
+
+	// if hw < 0 {
+	// 	hw = -hw
+	// }
+	// if hh < 0 {
+	// 	hh = -hh
+	// }
+
+	// box.verts = [4]vect.Vect{
+	// 	{-hw, -hh},
+	// 	{-hw, hh},
+	// 	{hw, hh},
+	// 	{hw, -hh},
+	// }
 
 	box.verts = [4]vect.Vect{
-		{-hw, -hh},
-		{-hw, hh},
-		{hw, hh},
-		{hw, -hh},
+		{-hh, -hw},
+		{-hh, hw},
+		{hh, hw},
+		{hh, -hw},
 	}
+
+	// log.Println(box.verts)
+	// box.verts = [4]vect.Vect{
+	// 	{},
+	// 	{},
+	// 	{},
+	// 	{},
+	// }
 
 	poly := box.Polygon
 	poly.SetVerts(box.verts[:], box.Position)
@@ -64,19 +82,28 @@ func (box *BoxShape) UpdatePoly() {
 	hw := box.Width / 2.0
 	hh := box.Height / 2.0
 
-	if hw < 0 {
-		hw = -hw
-	}
-	if hh < 0 {
-		hh = -hh
-	}
+	hw = vect.FAbs(hw)
+	hh = vect.FAbs(hh)
+	// if hw < 0 {
+	// 	hw = -hw
+	// }
+	// if hh < 0 {
+	// 	hh = -hh
+	// }
 
 	box.verts = [4]vect.Vect{
-		{-hw, -hh},
-		{-hw, hh},
-		{hw, hh},
-		{hw, -hh},
+		{-hh, -hw},
+		{-hh, hw},
+		{hh, hw},
+		{hh, -hw},
 	}
+
+	// box.verts = [4]vect.Vect{
+	// 	{-hw, -hh},
+	// 	{-hw, hh},
+	// 	{hw, hh},
+	// 	{hw, -hh},
+	// }
 
 	poly := box.Polygon
 	poly.SetVerts(box.verts[:], box.Position)

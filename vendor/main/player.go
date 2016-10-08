@@ -4,6 +4,7 @@ import (
 	"engine"
 	"log"
 	"param"
+	"phys"
 	"time"
 
 	"github.com/go-gl/glfw/v3.1/glfw"
@@ -18,13 +19,19 @@ type Player struct {
 func (p *Player) CreateLocalPlayer() {
 	p.Object = engine.NewObject(p.Param.Object, engine.NewHealthBar(p.Param.Health))
 
-	p.Object.NewArt(param.Art{Name: "aim", Texture: "cursor", Shader: "colortext2", Color: mgl32.Vec4{1, 1, 1, 0.5}, Type: param.ArtRotate, W: 1, H: 1, LocalPos: mgl32.Vec3{15, 0, 1}})
+	aim := param.Art{Name: "aim", Type: param.ArtRotate, W: 1, H: 1, LocalPos: mgl32.Vec3{15, 0, 1}, Material: param.Material{Name: "aim", Texture: "cursor", Shader: "colortext2", DiffColor: mgl32.Vec4{1, 1, 1, 0.5}}}
+	p.Object.NewArt(aim)
 
+	weapondelay := param.Art{MaxValue: 100, Type: param.ArtRotate, W: 0.1, H: 1.5, LocalPos: mgl32.Vec3{0, -2, 1}, Material: param.Material{Name: "weapondelay", Shader: "colortext2", DiffColor: mgl32.Vec4{1, 1, 1, 0.5}}}
 	if p.Param.LeftWeapon.Delay > 0 {
-		p.Object.NewArt(param.Art{Name: "leftDelay", Shader: "colortext2", Color: mgl32.Vec4{1, 1, 1, 0.5}, MaxValue: 100, Type: param.ArtRotate, W: 0.1, H: 1.5, LocalPos: mgl32.Vec3{0, -2, 1}})
+		weapondelay.Name = "leftDelay"
+		p.Object.NewArt(weapondelay)
 	}
 	if p.Param.RightWeapon.Delay > 0 {
-		p.Object.NewArt(param.Art{Name: "rightDelay", Shader: "colortext2", Color: mgl32.Vec4{1, 1, 1, 0.5}, MaxValue: 100, Type: param.ArtRotate, W: 0.1, H: -1.5, LocalPos: mgl32.Vec3{0, 2, 1}})
+		weapondelay.Name = "rightDelay"
+		weapondelay.H = -1.5
+		weapondelay.LocalPos = mgl32.Vec3{0, 2, 1}
+		p.Object.NewArt(weapondelay)
 	}
 
 }
@@ -34,14 +41,14 @@ func initLocalPlayer() {
 	p.Param = &param.Player{
 		Name: "player0",
 		Object: param.Object{
-			Name: "player",
-			Mesh: param.Mesh{Model: "trapeze", Texture: "TestCube", Shader: "diffuse_texbumped_shadows", Shadow: true},
-			PH:   param.Phys{W: 2, H: 2, Mass: 12, Group: 1},
+			Name:     "player",
+			Mesh:     param.Mesh{Model: "trapeze", Shadow: true},
+			Material: param.Material{Name: "player", Texture: "TestCube", Shader: "diffuse_texbumped_shadows", SpecLevel: 1},
+			Phys:     &param.Phys{W: 3, H: 2, Mass: 12, Group: 1, Type: phys.ShapeType_Box},
 		},
-
 		Health:   100,
-		MovSpeed: 15,
-		RotSpeed: 20,
+		MovSpeed: 10,
+		RotSpeed: 15,
 
 		// LeftWeapon: &param.Weapon{
 		// 	BulletParam: param.Bullet{
@@ -53,7 +60,7 @@ func initLocalPlayer() {
 		// 	BulletObject: param.Object{
 		// 		Name: "bullet",
 		// 		Mesh: param.Mesh{Model: "bullet", Texture: "TestCube", Shader: "diffuse"},
-		// 		PH:   param.Phys{W: 0.1, H: 0.1, Mass: 1},
+		// 		Phys:   param.Phys{W: 0.1, H: 0.1, Mass: 1},
 		// 	},
 		// 	X:          -1,
 		// 	AttackRate: 200 * time.Millisecond,
@@ -66,14 +73,15 @@ func initLocalPlayer() {
 			},
 			BulletObject: param.Object{
 				Name:        "bullet",
-				Mesh:        param.Mesh{Model: "bullet", Texture: "laser", Shader: "blend"},
-				PH:          param.Phys{W: 0.5, Mass: 0.5},
+				Mesh:        param.Mesh{Model: "bullet"},
+				Material:    param.Material{Name: "laser", Texture: "laser", Shader: "blend"},
+				Phys:        &param.Phys{W: 0.5, Mass: 0.5},
 				Transparent: true,
 			},
 
-			X:          -1,
-			Delay:      500 * time.Millisecond,
-			AttackRate: 1000 * time.Millisecond,
+			X: -1,
+			// Delay:      500 * time.Millisecond,
+			AttackRate: 50 * time.Millisecond,
 		},
 		RightWeapon: &param.Weapon{
 			BulletParam: param.Bullet{
@@ -85,9 +93,10 @@ func initLocalPlayer() {
 				Damage:   30,
 			},
 			BulletObject: param.Object{
-				Name: "bullet",
-				Mesh: param.Mesh{Model: "bullet", Texture: "TestCube", Shader: "diffuse"},
-				PH:   param.Phys{W: 0.1, H: 0.1, Mass: 0.5},
+				Name:     "bullet",
+				Mesh:     param.Mesh{Model: "bullet"},
+				Material: param.Material{Name: "bullet", Texture: "gray", Shader: "color"},
+				Phys:     &param.Phys{W: 0.1, H: 0.1, Mass: 0.5},
 			},
 			X:          1,
 			Delay:      500 * time.Millisecond,
@@ -98,7 +107,7 @@ func initLocalPlayer() {
 	p.CreateLocalPlayer()
 
 	engine.AddCallback(p.Movement, p.Rotation, p.CameraMovement, p.Attack)
-	engine.Window.SetMouseButtonCallback(p.MouseControl)
+	engine.SetMouseCallback(p.MouseControl)
 	// engine.Window.SetKeyCallback(keyboardControl)
 }
 
@@ -157,23 +166,14 @@ func (p *Player) Rotation(dt float32) {
 		p.Object.Shape.Body.AddAngularVelocity(angle * p.Param.RotSpeed * 0.0001)
 	}
 
-	if p.Object.RollAngle >= 0 {
-		if angle < 0 && p.Object.RollAngle < 1.5 {
-			p.Object.RollAngle -= p.Param.RotSpeed * dt * 0.05 * angle
-		}
-
-		if angle > 0 {
-			p.Object.RollAngle -= p.Param.RotSpeed * dt * 0.05
-		}
-	} else {
-		if angle > 0 && p.Object.RollAngle > -1.5 {
-			p.Object.RollAngle -= p.Param.RotSpeed * dt * 0.05 * angle
-		}
-
-		if angle < 0 {
-			p.Object.RollAngle += p.Param.RotSpeed * dt * 0.05
-		}
+	angVel := p.Object.Shape.Body.AngularVelocity()
+	if angVel > engine.MaxRollAngle {
+		angVel = engine.MaxRollAngle
 	}
+	if angVel < -engine.MaxRollAngle {
+		angVel = -engine.MaxRollAngle
+	}
+	p.Object.RollAngle = -angVel
 }
 
 func (p *Player) MouseControl(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw.ModifierKey) {
@@ -200,12 +200,12 @@ func (p *Player) CameraMovement(dt float32) {
 	cp := camera.GetPosition()
 	camera.SetPosition(pp.X(), pp.Y(), cp.Z())
 
-	light0.Position = mgl32.Vec3{pp.X() - 5, pp.Y() + 5, 30}
+	// light0.Position = mgl32.Vec3{pp.X() - 5, pp.Y() + 5, 30}
 
-	xfloat, yfloat := engine.Window.GetCursorPos()
-	width, height := engine.Window.GetSize()
+	x, y := engine.CursorPosition()
+	w, h := engine.WindowSize()
 
-	x, y := getCursorPos(float32(xfloat), float32(yfloat), width, height, cp)
+	x, y = getCursorPos(x, y, w, h, cp)
 
 	cursor.Node.Location = mgl32.Vec3{x, y, 0}
 	// log.Println(x, y, xfloat, yfloat)

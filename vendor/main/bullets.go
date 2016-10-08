@@ -3,13 +3,13 @@ package main
 import (
 	"log"
 	"math/rand"
+	"phys"
 	"time"
 
 	"github.com/go-gl/mathgl/mgl32"
 
 	"engine"
 	"param"
-	"phys"
 )
 
 type Bullet struct {
@@ -108,7 +108,7 @@ func (b *Bullet) Rocket() {
 
 	b.CreateObject()
 	b.Object.Callback = b.RocketCallback
-	b.Object.SetVelocity(b.Player.Object.VectorSide(b.Weapon.BulletObject.PH.Mass * 5 * b.Weapon.X))
+	b.Object.SetVelocity(b.Player.Object.VectorSide(b.Weapon.BulletObject.Phys.Mass * 5 * b.Weapon.X))
 	b.Param.Target = cursor.PositionVec2()
 
 	b.Shoot = true
@@ -134,13 +134,13 @@ func (b *Bullet) Laser() {
 
 		if hit.Body.UserData != nil {
 			ApplyDamage(hit.Body.UserData.(*engine.Object), b.Param.Damage)
-			hit.Body.AddVelocity(b.Player.Object.VectorForward(b.Weapon.BulletObject.PH.Mass * 10 / hit.Body.Mass()))
+			hit.Body.AddVelocity(b.Player.Object.VectorForward(b.Weapon.BulletObject.Phys.Mass * 10 / hit.Body.Mass()))
 			hit.Body.AddAngularVelocity((rand.Float32() - 0.5) * 10 / hit.Body.Mass())
 		}
 	}
 
 	//draw laser
-	b.Object = engine.NewPlane(b.Weapon.BulletObject, b.Weapon.BulletObject.PH.W, h)
+	b.Object = engine.NewPlane(b.Weapon.BulletObject, b.Weapon.BulletObject.Phys.W, h)
 	b.Object.SetPosition(x, y)
 	b.Object.SetRotation(b.Player.Object.Rotation())
 
@@ -211,10 +211,10 @@ func (b *Bullet) RocketCallback(ob *engine.Object, dt float32) {
 
 //LaserCallback each frame
 func (b *Bullet) LaserCallback(ob *engine.Object, dt float32) {
-	color := b.Object.Node.Core.DiffuseColor
+	color := b.Object.Node.Material.DiffuseColor
 	// color[4] =
 	color[3] = color[3] - dt
-	b.Object.Node.Core.DiffuseColor = color
+	b.Object.Node.Material.DiffuseColor = color
 	if color[3] <= 0.1 {
 		b.Object.Destroy()
 	}
@@ -268,7 +268,7 @@ func (b *Bullet) Collision(arb *phys.Arbiter) bool {
 func ApplyDamage(target *engine.Object, damage float32) {
 	hp, ok := target.GetArt("health")
 	if !ok {
-		log.Printf("WARINING: art by name: %s not found", "health")
+		// log.Printf("WARINING: art by name: %s not found", "health")
 		return
 	}
 

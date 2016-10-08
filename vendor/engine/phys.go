@@ -8,11 +8,12 @@ import (
 )
 
 var (
-	space *phys.Space
+	space                = phys.NewSpace()
+	MaxRollAngle float32 = 1.5
 )
 
 func InitPhys(airResist float32) {
-	space = phys.NewSpace()
+	// space = phys.NewSpace()
 	space.LinearDamping = airResist
 	space.AngularDamping = airResist
 }
@@ -27,13 +28,17 @@ func physRender(dt float32) {
 
 		// update position
 		pos := o.Shape.Body.Position()
-		o.Node.Location = mgl32.Vec3{pos.X, pos.Y, 0}
+		o.Node.Location = mgl32.Vec3{pos.X, pos.Y, o.Node.Location.Z()}
 
 		// update rotation
 		ang := o.Shape.Body.Angle()
 		if o.RollAngle != 0 {
 			q := mgl32.AnglesToQuat(0, 0, ang, 1).Mul(mgl32.AnglesToQuat(o.RollAngle, 0, 0, 1))
 			o.Node.LocalRotation = q
+
+			shape := o.Shape.GetAsBox()
+			shape.Width = o.Param.Phys.W - o.Param.Phys.W*o.ShapeWidthPercent()
+			shape.UpdatePoly()
 		} else {
 			o.Node.LocalRotation = mgl32.AnglesToQuat(0, 0, ang, 1)
 		}

@@ -66,13 +66,6 @@ func (e *Object) VectorSide(scale float32) (float32, float32) {
 	return v.X, v.Y
 }
 
-// func (e *Object) VectorRight(scale float32) (float32, float32) {
-// 	ang := e.Shape.Body.Angle() + 1.5708 // ~90 deg
-// 	v := vect.FromAngle(ang)
-// 	v.Mult(scale)
-// 	return v.X, v.Y
-// }
-
 func (e *Object) Rotation() float32 {
 	if e.Shape != nil {
 		return e.Shape.Body.Angle()
@@ -166,6 +159,10 @@ func (e *Object) Velocity() vect.Vect {
 		return vect.Vect{}
 	}
 	return e.Shape.Body.Velocity()
+}
+
+func (e *Object) ShapeWidthPercent() float32 {
+	return vect.FAbs(e.RollAngle) / (MaxRollAngle * 1.1)
 }
 
 func (e *Object) Destroy() {

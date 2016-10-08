@@ -1,14 +1,14 @@
 #version 330
 precision highp float;
 
-uniform sampler2D MATERIAL_TEX_0;
+uniform sampler2D MATERIAL_TEX_DIFFUSE;
 uniform vec4 MATERIAL_DIFFUSE;
 
 in vec2 vs_tex0_uv;
 out vec4 frag_color;
 
 void main (void) {
-	frag_color = texture(MATERIAL_TEX_0, vs_tex0_uv);
+	frag_color = texture(MATERIAL_TEX_DIFFUSE, vs_tex0_uv);
 	if (frag_color.a < 0.1) {
 		discard;
 	}

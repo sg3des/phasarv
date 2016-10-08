@@ -7,7 +7,7 @@ uniform mat4 V_MATRIX;
 uniform vec4 MATERIAL_DIFFUSE;
 uniform vec4 MATERIAL_SPECULAR;
 uniform float MATERIAL_SHININESS;
-uniform sampler2D MATERIAL_TEX_0;
+uniform sampler2D MATERIAL_TEX_DIFFUSE;
 uniform sampler2D MATERIAL_TEX_1;
 uniform sampler2DShadow SHADOW_MAPS[4];
 
@@ -134,7 +134,7 @@ void main()
   mat3 TBN = mat3(T, BT, vs_normal);
 	vec3 final_bumped_normal = normalize(TBN * bump_normal);
 
-  vec4 texture_color = texture(MATERIAL_TEX_0, vs_tex0_uv).rgba;
+  vec4 texture_color = texture(MATERIAL_TEX_DIFFUSE, vs_tex0_uv).rgba;
 
   // frag_color =  MATERIAL_DIFFUSE * texture_color * shadowFactor *CalcADSLights(vs_position, final_bumped_normal);
   frag_color =  MATERIAL_DIFFUSE * texture_color * shadowFactor * CalcADSLights(vs_position, final_bumped_normal);

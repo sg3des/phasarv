@@ -1,6 +1,7 @@
 package param
 
 import (
+	"phys"
 	"time"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -26,13 +27,11 @@ type Art struct {
 	MaxValue float32
 	W, H     float32
 	Seg      int
-	Color    mgl32.Vec4
 	LocalPos mgl32.Vec3
 	Type     int //ArtStatic, ArtRotate
 	Line     bool
 
-	Shader  string
-	Texture string
+	Material
 }
 
 type Bullet struct {
@@ -66,9 +65,10 @@ type Weapon struct {
 
 type Object struct {
 	Name string
-	Mesh Mesh
-	Pos  Pos
-	PH   Phys
+	Mesh
+	Material
+	Pos
+	*Phys
 
 	Transparent bool
 }
@@ -78,12 +78,19 @@ type Mesh struct {
 	Shadow                 bool
 }
 
+type Material struct {
+	Name, Shader, Texture string
+	DiffColor             mgl32.Vec4
+	SpecLevel             float32
+}
+
 type Pos struct {
 	X, Y, Z float32
 }
 
 type Phys struct {
 	W, H, Mass float32
+	Type       phys.ShapeType
 	Group      int
 }
 

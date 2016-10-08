@@ -167,7 +167,7 @@ func (space *Space) Step(dt float32) {
 
 	stepStart := time.Now()
 
-	bodies := space.Bodies
+	// bodies := space.Bodies
 
 	for _, arb := range space.Arbiters {
 		arb.state = arbiterStateNormal
@@ -180,17 +180,24 @@ func (space *Space) Step(dt float32) {
 
 	space.stamp++
 
-	for _, body := range bodies {
+	for _, body := range space.Bodies {
 		if body.Enabled {
 			body.UpdatePosition(dt)
-		}
-	}
-
-	for _, body := range bodies {
-		if body.Enabled {
 			body.UpdateShapes()
 		}
 	}
+
+	// for _, body := range bodies {
+	// 	if body.Enabled {
+	// 		body.UpdatePosition(dt)
+	// 	}
+	// }
+
+	// for _, body := range bodies {
+	// 	if body.Enabled {
+	// 		body.UpdateShapes()
+	// 	}
+	// }
 
 	start := time.Now()
 	space.activeShapes.ReindexQuery(func(a, b Indexable) {
@@ -240,7 +247,7 @@ func (space *Space) Step(dt float32) {
 	ldamping := float32(math.Pow(float64(space.LinearDamping), float64(dt)))
 	adamping := float32(math.Pow(float64(space.AngularDamping), float64(dt)))
 
-	for _, body := range bodies {
+	for _, body := range space.Bodies {
 		if body.Enabled {
 			if body.IgnoreGravity {
 				body.UpdateVelocity(vect.Vector_Zero, ldamping, adamping, dt)
@@ -487,8 +494,8 @@ func (space *Space) ActiveBody(body *Body) error {
 func (space *Space) ProcessComponents(dt float32) {
 
 	sleep := math.IsInf(float64(space.sleepTimeThreshold), 0)
-	bodies := space.Bodies
-	_ = bodies
+	// bodies := space.Bodies
+	// _ = space.Bodies
 	if sleep {
 		dv := space.idleSpeedThreshold
 		dvsq := float32(0)
@@ -510,13 +517,13 @@ func (space *Space) ProcessComponents(dt float32) {
 		}
 	}
 
-	for _, arb := range space.Arbiters {
-		a, b := arb.BodyA, arb.BodyB
-		_, _ = a, b
-		if sleep {
-
-		}
-	}
+	// for _, arb := range space.Arbiters {
+	// 	a, b := arb.BodyA, arb.BodyB
+	// 	_, _ = a, b
+	// 	if sleep {
+	// 		log.Println("sleep")
+	// 	}
+	// }
 	/*
 		// Awaken any sleeping bodies found and then push arbiters to the bodies' lists.
 		cpArray *arbiters = space->arbiters;
@@ -836,26 +843,61 @@ func RayAgainstPolygon(c RayCast, poly *PolygonShape) bool {
 	return false
 }
 
-// func RayAgainstCircle(cast *RayCast, circle *CircleShape) bool {
-// 	fromRayToCircle := vect.Sub(cast.begin, circle.Tc)
-// 	a := cast.dir.LengthSqr()
-// 	b := 2.0 * vect.Dot(fromRayToCircle, cast.dir)
-// 	c := vect.Dot(fromRayToCircle, fromRayToCircle) - circle.Radius*circle.Radius
+func pow(x, y float32) float32 {
+	return float32(math.Pow(float64(x), float64(y)))
+}
 
-// 	D := b*b - 4.0*a*c
+func sqr(x float32) float32 {
+	return x * x
+}
 
-// 	if D < 0.0 {
-// 		return false
-// 	}
-// 	D = float32(math.Sqrt(float64(D)))
-// 	t1 := (-b - D) / (2.0 * a)
-// 	t2 := (-b + D) / (2.0 * a)
+//RayAgainstCircle... mathematic black magic!
+func RayAgainstCircle(ray RayCast, circle *CircleShape) bool {
 
-// 	if (t1 >= 0.0 && t1 <= 1.0) || (t2 >= 0.0 && t2 <= 1.0) {
-// 		return true
-// 	}
-// 	return false
-// }
+	x0 := circle.Tc.X
+	y0 := circle.Tc.Y
+	r := circle.Radius
+
+	x1 := ray.begin.X
+	y1 := ray.begin.Y
+	x2 := ray.dir.X
+	y2 := ray.dir.Y
+
+	var dx01 = x1 - x0
+	var dy01 = y1 - y0
+	var dx12 = x2 - x1
+	var dy12 = y2 - y1
+
+	var a = sqr(dx12) + sqr(dy12)
+	var k = dx01*dx12 + dy01*dy12
+	var c = sqr(dx01) + sqr(dy01) - sqr(r)
+
+	var d1 = sqr(k) - a*c
+	if d1 >= 0 && k < 0 {
+		return true
+	}
+
+	return false
+
+	// fromRayToCircle := vect.Sub(cast.begin, circle.Tc)
+	// a := cast.dir.LengthSqr()
+	// b := 2.0 * vect.Dot(fromRayToCircle, cast.dir)
+	// c := vect.Dot(fromRayToCircle, fromRayToCircle) - circle.Radius*circle.Radius
+
+	// D := b*b - 4.0*a*c
+
+	// if D < 0.0 {
+	// 	return false
+	// }
+	// D = float32(math.Sqrt(float64(D)))
+	// t1 := (-b - D) / (2.0 * a)
+	// t2 := (-b + D) / (2.0 * a)
+
+	// if (t1 >= 0.0 && t1 <= 1.0) || (t2 >= 0.0 && t2 <= 1.0) {
+	// 	return true
+	// }
+	// return false
+}
 
 func Distance(x0, y0, x1, y1 float32) float32 {
 	return float32(math.Sqrt(math.Pow(float64(x0)-float64(x1), 2) + math.Pow(float64(y0)-float64(y1), 2)))
@@ -870,14 +912,26 @@ func (space *Space) RayCastAll(begin vect.Vect, direction vect.Vect, group int, 
 		dir:   direction,
 	}
 
-	maxLength := Distance(begin.X, begin.Y, direction.X, direction.Y) * 1.2 //crutch
+	length := Distance(begin.X, begin.Y, direction.X, direction.Y)
+	maxLength := length * 1.2 //crutch
+
+	// space.staticShapes.Contains(obj)
+
+	// dot := NewBox(begin, 0.1, length)
+	// dot.Group = group
+	// space.
+	// dot.BB = dot.update(transform.NewTransform(point, 0))
+	// dot.Layer = layers
+	// dot.Group = group
+	// space.staticShapes.Query(dot, dot.AABB(), pointFunc)
+	// space.activeShapes.Query(dot, dot.AABB(), pointFunc)
 
 	for _, body := range space.Bodies {
 		if body == ignoreBody {
 			continue
 		}
-		for _, shape := range body.Shapes {
 
+		for _, shape := range body.Shapes {
 			if shape.Group != group {
 				continue
 			}
@@ -895,10 +949,13 @@ func (space *Space) RayCastAll(begin vect.Vect, direction vect.Vect, group int, 
 			case ShapeType_Polygon:
 				hit = RayAgainstPolygon(rayCast, shape.GetAsPolygon())
 			case ShapeType_Circle:
-				log.Println("WARNING: CIRCLE INTERSECTION NOT YET READY")
+				hit = RayAgainstCircle(rayCast, shape.GetAsCircle())
+				// log.Println("WARNING: CIRCLE INTERSECTION NOT YET READY")
 				// hit = RayAgainstCircle(rayCast, shape.GetAsCircle())
 			case ShapeType_Box:
 				hit = RayAgainstPolygon(rayCast, shape.GetAsBox().Polygon)
+			default:
+				log.Printf("WARNING: shape type `%s` not work", shape.ShapeType())
 			}
 
 			if hit {
@@ -924,9 +981,9 @@ func (space *Space) AddBody(body *Body) *Body {
 	}
 
 	body.space = space
-	if !body.IsStatic() {
-		space.Bodies = append(space.Bodies, body)
-	}
+	// if !body.IsStatic() {
+	space.Bodies = append(space.Bodies, body)
+	// }
 
 	for _, shape := range body.Shapes {
 		if shape.space == nil {

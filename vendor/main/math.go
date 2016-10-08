@@ -24,10 +24,10 @@ import (
 // 	return float32(math.Atan2(float64(sin), float64(cos)))
 // }
 
-func getCursorPos(x, y float32, w, h int, campos mgl32.Vec3) (float32, float32) {
+func getCursorPos(x, y, w, h float32, campos mgl32.Vec3) (float32, float32) {
 	//that`s black magic constant!
-	x = (x-float32(w)/2)/840*campos.Z() + campos.X()
-	y = (float32(h)/2-y)/840*campos.Z() + campos.Y()
+	x = (x-w/2)/840*campos.Z() + campos.X()
+	y = (h/2-y)/840*campos.Z() + campos.Y()
 	// y = (y-float32(h)/2)/820*campos.Z() + campos.Y()
 
 	return x, y
