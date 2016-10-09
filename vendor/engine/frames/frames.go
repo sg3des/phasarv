@@ -26,22 +26,22 @@ func NewFrame() *Frame {
 }
 
 //Next calculate next frame
-func (f *Frame) Next() {
+func (f *Frame) Next() float32 {
 
+	f.timePrev = f.timeNow
 	f.timeNow = time.Now()
 	f.dt = float32(f.timeNow.Sub(f.timePrev).Seconds())
-	f.timePrev = f.timeNow
 
 	// log.Println(f.timeNow.After(f.timeFPS))
 	f.fps++
 
-	// return f.dt
+	return f.dt
 }
 
 //FPS return fps value
 func (f *Frame) FPS() {
 	if f.timeFPS.Before(f.timeNow) {
-		fmt.Println("FPS:", f.fps)
+		fmt.Println("FPS:", f.fps, " DT:", f.dt)
 		f.fps = 0
 		f.timeFPS = f.timeFPS.Add(time.Second)
 	}

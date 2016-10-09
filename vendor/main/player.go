@@ -5,6 +5,7 @@ import (
 	"log"
 	"param"
 	"phys"
+	"phys/vect"
 	"time"
 
 	"github.com/go-gl/glfw/v3.1/glfw"
@@ -37,6 +38,7 @@ func (p *Player) CreateLocalPlayer() {
 }
 
 func initLocalPlayer() {
+
 	var p = &Player{}
 	p.Param = &param.Player{
 		Name: "player0",
@@ -44,11 +46,11 @@ func initLocalPlayer() {
 			Name:     "player",
 			Mesh:     param.Mesh{Model: "trapeze", Shadow: true},
 			Material: param.Material{Name: "player", Texture: "TestCube", Shader: "diffuse_texbumped_shadows", SpecLevel: 1},
-			Phys:     &param.Phys{W: 3, H: 2, Mass: 12, Group: 1, Type: phys.ShapeType_Box},
+			Phys:     &param.Phys{W: 2, H: 2, Mass: 12, Group: 1, Type: phys.ShapeType_Box},
 		},
 		Health:   100,
-		MovSpeed: 10,
-		RotSpeed: 15,
+		MovSpeed: 20,
+		RotSpeed: 50,
 
 		// LeftWeapon: &param.Weapon{
 		// 	BulletParam: param.Bullet{
@@ -105,21 +107,62 @@ func initLocalPlayer() {
 	}
 
 	p.CreateLocalPlayer()
+	// p.Object.Shape.Body.CallBackCollision = p.Collision
 
 	engine.AddCallback(p.Movement, p.Rotation, p.CameraMovement, p.Attack)
 	engine.SetMouseCallback(p.MouseControl)
 	// engine.Window.SetKeyCallback(keyboardControl)
 }
 
+func (p *Player) Collision(arb *phys.Arbiter) bool {
+	// var player *engine.Object
+
+	// if arb.BodyA.UserData.(*engine.Object) == p.Object {
+	// 	player = arb.BodyA.UserData.(*engine.Object)
+	// } else if arb.BodyB.UserData.(*engine.Object) == p.Object {
+	// 	player = arb.BodyB.UserData.(*engine.Object)
+	// } else {
+	// 	log.Println("WTF?!")
+	// 	return true
+	// }
+
+	return true
+}
+
 func (p *Player) Movement(dt float32) {
+	// log.Println(p.Object.Velocity().Length())
 	if p.Object.Velocity().Length() < p.Param.MovSpeed {
 		dist := p.Object.Distance(cursor)
-		if dist > p.Param.MovSpeed {
-			dist = p.Param.MovSpeed
-		}
+		// log.Println(dist)
+		// if dist > p.Param.MovSpeed {
+		// 	dist = p.Param.MovSpeed
+		// }
 
-		p.Object.AddVelocity(p.Object.VectorForward(p.Param.MovSpeed * 0.0001 * dist))
+		p.Object.AddVelocity(p.Object.VectorForward(p.Param.MovSpeed * 0.05 * dist * dt))
 	}
+}
+
+func (p *Player) Rotation(dt float32) {
+	angle := AngleObjectPoint(p.Object, cursor.PositionVec2())
+
+	// p.Object.Shape.Body.AddAngularVelocity(angle * p.Param.RotSpeed * 0.0005)
+
+	if vect.FAbs(p.Object.Shape.Body.AngularVelocity()) < vect.FAbs(p.Param.RotSpeed/10) {
+		p.Object.Shape.Body.AddAngularVelocity(p.Param.RotSpeed * 0.05 * angle * dt)
+	}
+
+	// if angle > -p.Param.RotSpeed && angle < p.Param.RotSpeed {
+	// 	p.Object.Shape.Body.AddAngularVelocity(angle * p.Param.RotSpeed * 0.0005)
+	// }
+
+	angVel := p.Object.Shape.Body.AngularVelocity() / 2
+	if angVel > engine.MaxRollAngle {
+		angVel = engine.MaxRollAngle
+	}
+	if angVel < -engine.MaxRollAngle {
+		angVel = -engine.MaxRollAngle
+	}
+	p.Object.RollAngle = -angVel
 }
 
 func (p *Player) Attack(dt float32) {
@@ -157,23 +200,6 @@ func (p *Player) WeaponDelay(w *param.Weapon, name string) {
 	}
 
 	delayBar.Art.Scale = mgl32.Vec3{1, value, 1}
-}
-
-func (p *Player) Rotation(dt float32) {
-	angle := AngleObjectPoint(p.Object, cursor.PositionVec2())
-
-	if angle > -p.Param.RotSpeed && angle < p.Param.RotSpeed {
-		p.Object.Shape.Body.AddAngularVelocity(angle * p.Param.RotSpeed * 0.0001)
-	}
-
-	angVel := p.Object.Shape.Body.AngularVelocity()
-	if angVel > engine.MaxRollAngle {
-		angVel = engine.MaxRollAngle
-	}
-	if angVel < -engine.MaxRollAngle {
-		angVel = -engine.MaxRollAngle
-	}
-	p.Object.RollAngle = -angVel
 }
 
 func (p *Player) MouseControl(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw.ModifierKey) {

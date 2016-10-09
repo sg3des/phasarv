@@ -19,6 +19,7 @@ func InitPhys(airResist float32) {
 }
 
 func physRender(dt float32) {
+	// log.Println(dt)
 	space.Step(dt)
 
 	for o, b := range Objects {

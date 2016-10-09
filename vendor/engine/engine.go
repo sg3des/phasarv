@@ -15,6 +15,10 @@ import (
 	"github.com/tbogdala/fizzle/renderer/forward"
 )
 
+var (
+	limitFPS bool
+)
+
 var engine struct {
 	Window *glfw.Window
 	gfx    graphicsprovider.GraphicsProvider
@@ -102,6 +106,18 @@ func initKeyboard(w *glfw.Window) *glfwinput.KeyboardModel {
 	kbModel.BindTrigger(glfw.KeyEscape, func() {
 		w.SetShouldClose(true)
 	})
+
+	// enable/disable
+	kbModel.BindTrigger(glfw.KeyS, func() {
+		if limitFPS {
+			glfw.SwapInterval(0)
+			limitFPS = false
+		} else {
+			glfw.SwapInterval(1)
+			limitFPS = true
+		}
+
+	})
 	kbModel.SetupCallbacks()
 
 	return kbModel
@@ -121,7 +137,15 @@ func initRender(gfx graphicsprovider.GraphicsProvider) *forward.ForwardRenderer 
 	gfx.Enable(graphicsprovider.PROGRAM_POINT_SIZE)
 	gfx.Enable(graphicsprovider.TEXTURE_2D)
 	gfx.Enable(graphicsprovider.BLEND)
-	gfx.BlendFunc(graphicsprovider.SRC_ALPHA, graphicsprovider.ONE_MINUS_SRC_ALPHA)
+	gfx.BlendFunc(graphicsprovider.SRC_ALPHA, graphicsprovider.
+		ONE_MINUS_SRC_ALPHA)
+	gfx.Enable(graphicsprovider.SAMPLE_ALPHA_TO_COVERAGE)
+
+	gfx.Enable(graphicsprovider.EQUAL)
+	// gfx.BlendFunc(graphicsprovider.ONE_MINUS_DST_ALPHA, graphicsprovider.DST_ALPHA)
+	// gfx.BlendFunc(graphicsprovider.ONE, graphicsprovider.ONE)
+
+	// glBlendFunc(GL_ONE_MINUS_DST_ALPHA, GL_DST_ALPHA)
 
 	return render
 }
@@ -174,9 +198,9 @@ func Loop() {
 
 	// loop until something told the Window that it should close
 	for !engine.Window.ShouldClose() {
-		frame.Next()
+		dt := frame.Next()
 		frame.FPS()
-		dt := frame.DT()
+
 		physRender(dt)
 
 		for _, f := range engine.callbacks {

@@ -1,3 +1,9 @@
 phasarv.sublime-workspace
 phasarv.sublime-project
 models
+*.blend*
+*.obj
+*.mtl
+backup
+*-$
+*copy*

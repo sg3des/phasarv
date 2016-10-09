@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/tbogdala/fizzle"
+	"github.com/tbogdala/fizzle/graphicsprovider"
 
 	"param"
 	"phys"
@@ -136,6 +137,13 @@ func (e *Object) SetPhys(p *param.Phys) {
 
 func (e *Object) NewShape(p *param.Phys) (shape *phys.Shape) {
 	switch p.Type {
+	case phys.ShapeType_Polygon:
+		verts := phys.Vertices{
+			vect.Vect{0, p.H / 2},
+			vect.Vect{p.W / 2, -p.H / 2},
+			vect.Vect{-p.W / 2, -p.H / 2},
+		}
+		shape = phys.NewPolygon(verts, vect.Vector_Zero)
 	case phys.ShapeType_Box:
 		shape = phys.NewBox(vect.Vector_Zero, p.W, p.H)
 	case phys.ShapeType_Circle:
@@ -207,13 +215,47 @@ func (e *Object) AddRenderShape() {
 	case phys.ShapeType_Circle:
 		shape := e.Shape.GetAsCircle()
 		renderShape = fizzle.CreateWireframeCircle(0, 0, 0, shape.Radius, 32, fizzle.X|fizzle.Y)
+	case phys.ShapeType_Polygon:
+		renderShape = CreateTriangle(e.Param.Phys.W, e.Param.Phys.H, 1)
 	default:
+
 		log.Fatalf("WARNING: shape type `%s` not yet!", e.Shape.ShapeType())
 	}
 
 	renderShape.Material = Material(param.Material{Name: "shape", Shader: "color", DiffColor: mgl32.Vec4{1, 0.1, 0.1, 0.75}})
 
 	e.ArtRotate["renderShape"] = &Art{Art: renderShape, Line: true}
+}
+
+// CreateTriangle wireframe triangle,[not correct]
+func CreateTriangle(w, h, z float32) *fizzle.Renderable {
+	const floatSize = 4
+	const uintSize = 4
+
+	r := fizzle.NewRenderable()
+	r.Core = fizzle.NewRenderableCore()
+	r.FaceCount = 12
+
+	verts := [...]float32{
+		0, h / 2, z,
+		w / 2, -h / 2, z,
+		-w / 2, -h / 2, z,
+		0, h / 2, z,
+	}
+	indexes := [...]uint32{
+		0, 1, 2, 3, 0,
+	}
+
+	r.Core.VertVBO = engine.gfx.GenBuffer()
+	engine.gfx.BindBuffer(graphicsprovider.ARRAY_BUFFER, r.Core.VertVBO)
+	engine.gfx.BufferData(graphicsprovider.ARRAY_BUFFER, floatSize*len(verts), engine.gfx.Ptr(&verts[0]), graphicsprovider.STATIC_DRAW)
+
+	// create a VBO to hold the face indexes
+	r.Core.ElementsVBO = engine.gfx.GenBuffer()
+	engine.gfx.BindBuffer(graphicsprovider.ELEMENT_ARRAY_BUFFER, r.Core.ElementsVBO)
+	engine.gfx.BufferData(graphicsprovider.ELEMENT_ARRAY_BUFFER, uintSize*len(indexes), engine.gfx.Ptr(&indexes[0]), graphicsprovider.STATIC_DRAW)
+
+	return r
 }
 
 //NewArt to object

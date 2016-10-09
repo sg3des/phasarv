@@ -162,10 +162,11 @@ func (space *Space) Step(dt float32) {
 
 	// don't step if the timestep is 0!
 	if dt == 0 {
+		log.Println("WARNING: dt is 0")
 		return
 	}
 
-	stepStart := time.Now()
+	// stepStart := time.Now()
 
 	// bodies := space.Bodies
 
@@ -175,8 +176,8 @@ func (space *Space) Step(dt float32) {
 
 	space.Arbiters = space.Arbiters[0:0]
 
-	prev_dt := space.curr_dt
-	space.curr_dt = dt
+	// prev_dt := space.curr_dt
+	// space.curr_dt = dt
 
 	space.stamp++
 
@@ -257,17 +258,17 @@ func (space *Space) Step(dt float32) {
 		}
 	}
 
-	dt_coef := float32(0)
-	if prev_dt != 0 {
-		dt_coef = dt / prev_dt
-	}
+	// dt_coef := float32(0)
+	// if prev_dt != 0 {
+	// 	dt_coef = dt / prev_dt
+	// }
 
 	for _, arb := range space.Arbiters {
-		arb.applyCachedImpulse(dt_coef)
+		arb.applyCachedImpulse(dt)
 	}
 
 	for _, con := range space.Constraints {
-		con.ApplyCachedImpulse(dt_coef)
+		con.ApplyCachedImpulse(dt)
 	}
 
 	//fmt.Println("STEP")
@@ -317,8 +318,8 @@ func (space *Space) Step(dt float32) {
 		space.deleteBodies = space.deleteBodies[0:0]
 	}
 
-	stepEnd := time.Now()
-	space.StepTime = stepEnd.Sub(stepStart)
+	// stepEnd := time.Now()
+	// space.StepTime = stepEnd.Sub(stepStart)
 }
 
 // var done = make(chan bool, 8)

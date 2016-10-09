@@ -1,21 +1,20 @@
 name: "scene00"
 
-_box: &tree
+_box: &trees_2
   object: 
-    name: "tree"
+    name: "trees_2"
     mesh:
-      model: "tree"
+      model: "trees_2"
       shadow: true
     material:
       name: "tree"
-      texture: "tree1"
+      texture: "tree2"
       shader: "diffuse_texbumped_shadows"
     phys:
-      h: 2
-      w: 2
+      h: 3
+      w: 3
       group: 1
     transparent: true
-  # hp: 100
 
 objects: 
   - object:
@@ -26,21 +25,18 @@ objects:
         name: "ground"
         texture: "grass"
         shader: "diffuse_texbumped_shadows"
-      pos: {z: -10}
-  - <<: *tree 
+      pos: {z: -5}
+  - <<: *trees_2 
     object:
-      pos: {x: 10, y: -8, z: 0}
-  - <<: *tree
+      pos: {x: 10, y: 5, z: -5}
+  - <<: *trees_2
     object:
-      pos: {x: 10, y: -3, z: 0}
-  - <<: *tree
+      pos: {x: 10, y: -4, z: -5}
+  - <<: *trees_2
     object:
-      pos: {x: -10, y: 5, z: 0}
-  - <<: *tree
-    object:
-      pos: {x: 1, y: -10, z: 0}
-  - <<: *tree
-    object:
-      pos: {x: 1, y: 10, z: 0}
+      pos: {x: -10, y: 0, z: -5}
 
+  - <<: *trees_2
+    object:
+      pos: {x: -100, y: 0, z: -5}
 

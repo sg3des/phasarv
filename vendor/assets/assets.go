@@ -32,6 +32,7 @@ func LoadAssets(texpath, shaderspath, modelspath string) error {
 	if err != nil {
 		return err
 	}
+	log.Println("finded", len(textures), "textures")
 	for _, texture := range textures {
 		if err := LoadTexture(texture); err != nil {
 			return errors.New("failed to load texture `" + texture + "` reason: " + err.Error())
@@ -42,6 +43,7 @@ func LoadAssets(texpath, shaderspath, modelspath string) error {
 	if err != nil {
 		return err
 	}
+	log.Println("finded", len(shaders), "shaders")
 	for _, shader := range shaders {
 		if err := LoadShader(shader); err != nil {
 			return errors.New("failed to load shader `" + shader + "` reason: " + err.Error())
@@ -52,7 +54,7 @@ func LoadAssets(texpath, shaderspath, modelspath string) error {
 	if err != nil {
 		return err
 	}
-	log.Println("finded", len(models), " models")
+	log.Println("finded", len(models), "models")
 
 	for _, model := range models {
 		modelname, mesh, err := LoadModel(model)
@@ -61,7 +63,7 @@ func LoadAssets(texpath, shaderspath, modelspath string) error {
 		}
 		Models[modelname] = mesh
 	}
-	log.Println(Models)
+	// log.Println(Models)
 
 	return nil
 }
@@ -110,6 +112,7 @@ func LoadShader(filename string) error {
 }
 
 func LoadModel(filename string) (string, *fizzle.Renderable, error) {
+	// log.Println(filename)
 	gombzmesh, err := gombz.DecodeFile(filename)
 	if err != nil {
 		return "", nil, err
