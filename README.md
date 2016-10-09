@@ -25,16 +25,14 @@ Opengl engine - [tbogdala/fizzle](https://github.com/tbogdala/fizzle)
 - Lightining:
 	- Directional shadows
 	- Blur shadows
-	? Ambient Occlusion
+	- [?] Ambient Occlusion
 
 - Effects:
 	- Explosions
 	- Tracing
-	- Fog
-	? Water
+	- Fog & clouds
+	- [?] Water
 
 - UI
 
 - Network
-
-- 
