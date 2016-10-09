@@ -35,4 +35,6 @@ Opengl engine - [tbogdala/fizzle](https://github.com/tbogdala/fizzle)
 
 - UI
 
+- Map Editor
+
 - Network

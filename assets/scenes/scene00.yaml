@@ -35,8 +35,7 @@ objects:
   - <<: *trees_2
     object:
       pos: {x: -10, y: 0, z: -5}
-
   - <<: *trees_2
     object:
-      pos: {x: -100, y: 0, z: -5}
+      pos: {x: -5, y: 5, z: -5}
 
