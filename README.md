@@ -4,6 +4,8 @@ This game project developed on the GO language.
 
 The game is a topdown dynamic battle.
 
+![Screenshot](screenshot.png)
+
 ## Code
 
 Project code is in the vendor directory
@@ -29,7 +31,6 @@ Opengl engine - [tbogdala/fizzle](https://github.com/tbogdala/fizzle)
 
 - Effects:
 	- Explosions
-	- Tracing
 	- Fog & clouds
 	- [?] Water
 
