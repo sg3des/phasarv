@@ -44,11 +44,7 @@ func Load(name string) error {
 	}
 
 	for _, o := range s.Objects {
-		if o.HP > 0 {
-			engine.NewObject(o.Object, engine.NewHealthBar(o.HP))
-		} else {
-			engine.NewObject(o.Object)
-		}
+		engine.NewStaticObject(o.Object)
 	}
 
 	return nil

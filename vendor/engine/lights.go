@@ -9,11 +9,9 @@ var (
 	lights = make(map[*forward.Light]bool)
 )
 
-const shadowTexSize = 4096
-
 //NewLight Create new list
 func NewLight(diffuse, attenuation float32, shadowSize int32) *forward.Light {
-	light := engine.render.NewPointLight(mgl32.Vec3{0, 0, 10})
+	light := e.render.NewPointLight(mgl32.Vec3{0, 0, 10})
 	light.DiffuseColor = mgl32.Vec4{0.9, 0.9, 0.9, 1.0}
 	light.DiffuseIntensity = diffuse
 	light.AmbientIntensity = 0.5
@@ -22,7 +20,7 @@ func NewLight(diffuse, attenuation float32, shadowSize int32) *forward.Light {
 
 	light.LinearAttenuation = attenuation
 
-	engine.render.ActiveLights[len(lights)] = light
+	e.render.ActiveLights[len(lights)] = light
 
 	// if shadow {
 	light.CreateShadowMap(shadowSize, 0.1, 100.0, mgl32.Vec3{-1, -1, -10})
@@ -35,7 +33,7 @@ func NewLight(diffuse, attenuation float32, shadowSize int32) *forward.Light {
 
 func NewSun() *forward.Light {
 	pos := mgl32.Vec3{0, 0, 10}
-	light := engine.render.NewDirectionalLight(pos)
+	light := e.render.NewDirectionalLight(pos)
 	light.DiffuseColor = mgl32.Vec4{1, 1, 1, 1}
 	light.Direction = mgl32.Vec3{0, 0, -10}
 	light.Strength = 0.5
@@ -48,7 +46,7 @@ func NewSun() *forward.Light {
 
 	light.CreateShadowMap(4096, 0.1, 100.0, mgl32.Vec3{0, 0, -10})
 
-	engine.render.ActiveLights[len(lights)] = light
+	e.render.ActiveLights[len(lights)] = light
 
 	lights[light] = true
 

@@ -16,6 +16,7 @@ import (
 var (
 	Objects   = make(map[*Object]bool)
 	Materials = make(map[string]*fizzle.Material)
+	Scene     []*Object
 )
 
 type Bullet struct {
@@ -37,7 +38,8 @@ type Object struct {
 	ArtStatic map[string]*Art
 	ArtRotate map[string]*Art
 
-	Callback func(*Object, float32)
+	Callback    func(*Object, float32)
+	DestroyFunc func()
 
 	Param param.Object
 }
@@ -65,10 +67,10 @@ func Material(p param.Material) *fizzle.Material {
 	}
 
 	m := fizzle.NewMaterial()
-	m.Shader = assets.Shaders[p.Shader]
+	m.Shader = assets.GetShader(p.Shader)
 
-	m.DiffuseTex = assets.Textures[p.Texture].Diffuse
-	m.NormalsTex = assets.Textures[p.Texture].Normals
+	m.DiffuseTex = assets.GetTexture(p.Texture).Diffuse
+	m.NormalsTex = assets.GetTexture(p.Texture).Normals
 
 	if p.DiffColor.Len() != 0 {
 		m.DiffuseColor = p.DiffColor
@@ -84,58 +86,58 @@ func Material(p param.Material) *fizzle.Material {
 
 //NewPlane create renderable plane
 func NewPlane(p param.Object, w, h float32) *Object {
-	e := &Object{
+	o := &Object{
 		Name: p.Name,
 		// Node: fizzle.CreatePlaneXY(0, w/2, h, -w/2),
 		Node:        fizzle.CreatePlaneV(mgl32.Vec3{0, -w / 2, 0}, mgl32.Vec3{h, w / 2, 0}),
 		Transparent: p.Transparent,
 	}
-	e.Node.Material = Material(p.Material)
+	o.Node.Material = Material(p.Material)
 
-	Objects[e] = true
+	Objects[o] = true
 
-	return e
+	return o
 }
 
 //NewPlanePoint create renderable plane from two points
 func NewPlanePoint(p param.Object, p0, p1 mgl32.Vec3) *Object {
-	e := &Object{
+	o := &Object{
 		Name:        p.Name,
 		Node:        fizzle.CreatePlaneV(p0, p1),
 		Transparent: p.Transparent,
 	}
-	e.Node.Material = Material(p.Material)
+	o.Node.Material = Material(p.Material)
 
-	Objects[e] = true
+	Objects[o] = true
 
-	return e
+	return o
 }
 
 //SetPhys - set physics to object
-func (e *Object) SetPhys(p *param.Phys) {
+func (o *Object) SetPhys(p *param.Phys) {
 	if p == nil {
 		return
 	}
 	// log.Printf("%++v\n", p)
-	e.Shape = e.NewShape(p)
+	o.Shape = o.NewShape(p)
 
 	var body *phys.Body
 	if p.Mass > 0 {
-		e.Shape.SetElasticity(2)
-		body = phys.NewBody(p.Mass, e.Shape.Moment(p.Mass))
+		o.Shape.SetElasticity(1.1)
+		body = phys.NewBody(p.Mass, o.Shape.Moment(p.Mass))
 		body.SetMass(p.Mass)
 	} else {
 		body = phys.NewBodyStatic()
 	}
 
-	body.SetPosition(vect.Vect{e.Node.Location.X(), e.Node.Location.Y()})
-	body.AddShape(e.Shape)
+	body.SetPosition(vect.Vect{o.Node.Location.X(), o.Node.Location.Y()})
+	body.AddShape(o.Shape)
 	space.AddBody(body)
 
-	e.Shape.Body.UserData = e
+	o.Shape.Body.UserData = o
 }
 
-func (e *Object) NewShape(p *param.Phys) (shape *phys.Shape) {
+func (o *Object) NewShape(p *param.Phys) (shape *phys.Shape) {
 	switch p.Type {
 	case phys.ShapeType_Polygon:
 		verts := phys.Vertices{
@@ -157,19 +159,19 @@ func (e *Object) NewShape(p *param.Phys) (shape *phys.Shape) {
 
 //NewBox generated mesh box with shader diffuse_texbumped and TestCube texture
 func NewBox(name string) *Object {
-	e := &Object{
+	o := &Object{
 		Name: name,
 		Node: fizzle.CreateCube(-0.5, -0.5, -0.5, 0.5, 0.5, 0.5),
 	}
-	e.Node.Material = Material(param.Material{Name: "box", Shader: "diffuse_texbumped_shadows", Texture: "TestCube"})
+	o.Node.Material = Material(param.Material{Name: "box", Shader: "diffuse_texbumped_shadows", Texture: "TestCube"})
 
-	Objects[e] = true
-	return e
+	Objects[o] = true
+	return o
 }
 
 //NewObject create object
 func NewObject(p param.Object, arts ...param.Art) *Object {
-	e := &Object{
+	o := &Object{
 		Name:        p.Name,
 		Node:        assets.GetModel(p.Mesh.Model),
 		Shadow:      p.Mesh.Shadow,
@@ -177,54 +179,78 @@ func NewObject(p param.Object, arts ...param.Art) *Object {
 		Param:       p,
 	}
 
-	e.ArtRotate = make(map[string]*Art)
-	e.ArtStatic = make(map[string]*Art)
+	o.ArtRotate = make(map[string]*Art)
+	o.ArtStatic = make(map[string]*Art)
 
-	e.Node.Material = Material(p.Material)
+	o.Node.Material = Material(p.Material)
 
-	e.Node.Location = mgl32.Vec3{p.Pos.X, p.Pos.Y, p.Pos.Z}
+	o.Node.Location = mgl32.Vec3{p.Pos.X, p.Pos.Y, p.Pos.Z}
 
 	if p.Phys != nil {
-		e.SetPhys(p.Phys)
-		e.AddRenderShape()
+		o.SetPhys(p.Phys)
+		o.AddRenderShape()
 	}
 
-	// e.Childs = make(map[string]*Bar)
+	// o.Childs = make(map[string]*Bar)
 	for _, art := range arts {
-		e.NewArt(art)
+		o.NewArt(art)
 	}
 
-	Objects[e] = true
+	Objects[o] = true
 
-	return e
+	return o
 }
 
-func (e *Object) AddRenderShape() {
-	if e.Shape == nil {
+func NewStaticObject(p param.Object) *Object {
+	o := &Object{
+		Name:        p.Name,
+		Node:        assets.GetModel(p.Mesh.Model),
+		Shadow:      p.Mesh.Shadow,
+		Transparent: p.Transparent,
+		Param:       p,
+		ArtRotate:   make(map[string]*Art),
+		ArtStatic:   make(map[string]*Art),
+	}
+
+	o.Node.Material = Material(p.Material)
+	o.Node.Location = mgl32.Vec3{p.Pos.X, p.Pos.Y, p.Pos.Z}
+
+	if p.Phys != nil {
+		o.SetPhys(p.Phys)
+		o.AddRenderShape()
+	}
+
+	Scene = append(Scene, o)
+
+	return o
+}
+
+func (o *Object) AddRenderShape() {
+	if o.Shape == nil {
 		return
 	}
 
 	var renderShape *fizzle.Renderable
 
-	switch e.Shape.ShapeType() {
+	switch o.Shape.ShapeType() {
 	case phys.ShapeType_Box:
-		shape := e.Shape.GetAsBox()
+		shape := o.Shape.GetAsBox()
 		w := shape.Width
 		h := shape.Height
 		renderShape = fizzle.CreateWireframeCube(-h/2, -w/2, -0.1, h/2, w/2, 0.1)
 	case phys.ShapeType_Circle:
-		shape := e.Shape.GetAsCircle()
+		shape := o.Shape.GetAsCircle()
 		renderShape = fizzle.CreateWireframeCircle(0, 0, 0, shape.Radius, 32, fizzle.X|fizzle.Y)
 	case phys.ShapeType_Polygon:
-		renderShape = CreateTriangle(e.Param.Phys.W, e.Param.Phys.H, 1)
+		renderShape = CreateTriangle(o.Param.Phys.W, o.Param.Phys.H, 1)
 	default:
 
-		log.Fatalf("WARNING: shape type `%s` not yet!", e.Shape.ShapeType())
+		log.Fatalf("WARNING: shape type `%s` not yet!", o.Shape.ShapeType())
 	}
 
 	renderShape.Material = Material(param.Material{Name: "shape", Shader: "color", DiffColor: mgl32.Vec4{1, 0.1, 0.1, 0.75}})
 
-	e.ArtRotate["renderShape"] = &Art{Art: renderShape, Line: true}
+	o.ArtRotate["renderShape"] = &Art{Art: renderShape, Line: true}
 }
 
 // CreateTriangle wireframe triangle,[not correct]
@@ -246,20 +272,20 @@ func CreateTriangle(w, h, z float32) *fizzle.Renderable {
 		0, 1, 2, 3, 0,
 	}
 
-	r.Core.VertVBO = engine.gfx.GenBuffer()
-	engine.gfx.BindBuffer(graphicsprovider.ARRAY_BUFFER, r.Core.VertVBO)
-	engine.gfx.BufferData(graphicsprovider.ARRAY_BUFFER, floatSize*len(verts), engine.gfx.Ptr(&verts[0]), graphicsprovider.STATIC_DRAW)
+	r.Core.VertVBO = e.gfx.GenBuffer()
+	e.gfx.BindBuffer(graphicsprovider.ARRAY_BUFFER, r.Core.VertVBO)
+	e.gfx.BufferData(graphicsprovider.ARRAY_BUFFER, floatSize*len(verts), e.gfx.Ptr(&verts[0]), graphicsprovider.STATIC_DRAW)
 
 	// create a VBO to hold the face indexes
-	r.Core.ElementsVBO = engine.gfx.GenBuffer()
-	engine.gfx.BindBuffer(graphicsprovider.ELEMENT_ARRAY_BUFFER, r.Core.ElementsVBO)
-	engine.gfx.BufferData(graphicsprovider.ELEMENT_ARRAY_BUFFER, uintSize*len(indexes), engine.gfx.Ptr(&indexes[0]), graphicsprovider.STATIC_DRAW)
+	r.Core.ElementsVBO = e.gfx.GenBuffer()
+	e.gfx.BindBuffer(graphicsprovider.ELEMENT_ARRAY_BUFFER, r.Core.ElementsVBO)
+	e.gfx.BufferData(graphicsprovider.ELEMENT_ARRAY_BUFFER, uintSize*len(indexes), e.gfx.Ptr(&indexes[0]), graphicsprovider.STATIC_DRAW)
 
 	return r
 }
 
 //NewArt to object
-func (e *Object) NewArt(p param.Art) *Art {
+func (o *Object) NewArt(p param.Art) *Art {
 	art := &Art{
 		Name:     p.Name,
 		Value:    p.Value,
@@ -272,11 +298,11 @@ func (e *Object) NewArt(p param.Art) *Art {
 
 	art.Art.Material = Material(p.Material)
 
-	return e.applyArt(art, p)
+	return o.applyArt(art, p)
 }
 
 //NewLine to object
-func (e *Object) NewLine(p param.Art) *Art {
+func (o *Object) NewLine(p param.Art) *Art {
 	art := &Art{
 		Name:     p.Name,
 		Value:    p.Value,
@@ -286,7 +312,7 @@ func (e *Object) NewLine(p param.Art) *Art {
 		LocalPosition: p.LocalPos,
 	}
 
-	return e.applyArt(art, p)
+	return o.applyArt(art, p)
 }
 
 func (e *Object) NewCircle(p param.Art) *Art {
@@ -302,20 +328,20 @@ func (e *Object) NewCircle(p param.Art) *Art {
 	return e.applyArt(art, p)
 }
 
-func (e *Object) applyArt(art *Art, p param.Art) *Art {
+func (o *Object) applyArt(art *Art, p param.Art) *Art {
 	art.Line = p.Line
 	art.Art.Material = Material(p.Material)
 
-	if e.ArtStatic == nil {
-		e.ArtStatic = make(map[string]*Art)
-		e.ArtRotate = make(map[string]*Art)
+	if o.ArtStatic == nil {
+		o.ArtStatic = make(map[string]*Art)
+		o.ArtRotate = make(map[string]*Art)
 	}
 
 	switch p.Type {
 	case param.ArtStatic:
-		e.ArtStatic[p.Name] = art
+		o.ArtStatic[p.Name] = art
 	case param.ArtRotate:
-		e.ArtRotate[p.Name] = art
+		o.ArtRotate[p.Name] = art
 	}
 
 	return art
@@ -345,12 +371,12 @@ func (b *Art) Resize() {
 	}
 }
 
-func (e *Object) GetArt(name string) (*Art, bool) {
-	if art, ok := e.ArtStatic[name]; ok {
+func (o *Object) GetArt(name string) (*Art, bool) {
+	if art, ok := o.ArtStatic[name]; ok {
 		return art, true
 	}
 
-	if art, ok := e.ArtRotate[name]; ok {
+	if art, ok := o.ArtRotate[name]; ok {
 		return art, true
 	}
 
@@ -359,6 +385,6 @@ func (e *Object) GetArt(name string) (*Art, bool) {
 
 //NewCamera create camera set it how main camera and return it
 func NewCamera(eyePos mgl32.Vec3) *fizzle.YawPitchCamera {
-	engine.Camera = fizzle.NewYawPitchCamera(eyePos)
-	return engine.Camera
+	e.camera = fizzle.NewYawPitchCamera(eyePos)
+	return e.camera
 }

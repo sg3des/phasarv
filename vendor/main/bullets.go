@@ -29,6 +29,8 @@ func (p *Player) Fire(w *param.Weapon) {
 		return
 	}
 
+	// log.Println("fire")
+
 	if w.NextShot.After(time.Now()) {
 		return
 	}
@@ -72,7 +74,7 @@ func (p *Player) Shoot(w *param.Weapon) *Bullet {
 
 //CreateObject create bullet for gun and rocket
 func (b *Bullet) CreateObject() {
-	vx, vy := b.Player.Object.VectorSide(1)
+	vx, vy := b.Player.Object.VectorSide(1, -1.5704)
 	x, y := b.Player.Object.Position()
 
 	b.Object = engine.NewObject(b.Weapon.BulletObject)
@@ -91,6 +93,7 @@ func (b *Bullet) Gun() {
 	b.CreateObject()
 	b.Object.Callback = b.GunCallback
 	b.Object.SetVelocity(b.Player.Object.VectorForward(b.Param.MovSpeed))
+
 	b.Shoot = true
 }
 
@@ -98,7 +101,7 @@ func (b *Bullet) Gun() {
 func (b *Bullet) Rocket() {
 	if b.Param.SubType == "homing" {
 		target := engine.Hit(cursor.Position())
-		if target == nil {
+		if target == nil || target.Name == "bullet" {
 			b.Weapon.DelayTime = time.Time{}
 			return
 		}
@@ -108,8 +111,10 @@ func (b *Bullet) Rocket() {
 
 	b.CreateObject()
 	b.Object.Callback = b.RocketCallback
-	b.Object.SetVelocity(b.Player.Object.VectorSide(b.Weapon.BulletObject.Phys.Mass * 5 * b.Weapon.X))
+	b.Object.SetVelocity(b.Player.Object.VectorSide(b.Weapon.BulletObject.Phys.Mass*5*b.Weapon.X, -1.5704))
 	b.Param.Target = cursor.PositionVec2()
+
+	createTrail(b.Object, 0.7, 5, mgl32.Vec2{-0.5})
 
 	b.Shoot = true
 	return
@@ -119,7 +124,7 @@ func (b *Bullet) Rocket() {
 func (b *Bullet) Laser() {
 	//start position
 	x, y := b.Player.Object.Position()
-	wX, wY := b.Player.Object.VectorSide(b.Weapon.X)
+	wX, wY := b.Player.Object.VectorSide(b.Weapon.X, -1.5704)
 	x += wX
 	y += wY
 
@@ -184,9 +189,9 @@ func (b *Bullet) RocketCallback(ob *engine.Object, dt float32) {
 	case "direct":
 	case "aimed":
 		tp := b.Param.Target
-		angle = AngleObjectPoint(ob, mgl32.Vec2{tp.X(), tp.Y()})
+		angle = SubAngleObjectPoint(ob, mgl32.Vec2{tp.X(), tp.Y()})
 	case "guided":
-		angle = AngleObjectPoint(ob, cursor.PositionVec2())
+		angle = SubAngleObjectPoint(ob, cursor.PositionVec2())
 	case "homing":
 		tp := b.Param.Target
 		if b.Param.TargetObject == nil {
@@ -197,7 +202,7 @@ func (b *Bullet) RocketCallback(ob *engine.Object, dt float32) {
 		} else {
 			tp = b.Param.TargetObject.(*engine.Object).PositionVec2()
 		}
-		angle = AngleObjectPoint(ob, mgl32.Vec2{tp.X(), tp.Y()})
+		angle = SubAngleObjectPoint(ob, mgl32.Vec2{tp.X(), tp.Y()})
 	}
 
 	if angle != 0 {
@@ -255,6 +260,10 @@ func (b *Bullet) Collision(arb *phys.Arbiter) bool {
 		return false
 	}
 
+	if target.Name == "bullet" {
+		return false
+	}
+
 	if _, ok := target.ArtStatic["health"]; ok {
 		ApplyDamage(target, b.Param.Damage)
 	}
@@ -274,15 +283,9 @@ func ApplyDamage(target *engine.Object, damage float32) {
 
 	hp.Value -= damage
 	if hp.Value <= 0 {
-		ObjectDestroy(target)
+		target.Destroy()
 		return
 	}
 	hp.Resize()
 
-}
-
-//ObjectDestroy need add explosion
-func ObjectDestroy(o *engine.Object) {
-	log.Println("not yet ready")
-	o.Destroy()
 }

@@ -15,26 +15,42 @@ import (
 type Player struct {
 	Param  *param.Player
 	Object *engine.Object
+
+	Target *Player
+
+	targetAngle  float32
+	respawnPoint mgl32.Vec2
 }
 
-func (p *Player) CreateLocalPlayer() {
+func (p *Player) CreatePlayer() {
 	p.Object = engine.NewObject(p.Param.Object, engine.NewHealthBar(p.Param.Health))
 
 	aim := param.Art{Name: "aim", Type: param.ArtRotate, W: 1, H: 1, LocalPos: mgl32.Vec3{15, 0, 1}, Material: param.Material{Name: "aim", Texture: "cursor", Shader: "colortext2", DiffColor: mgl32.Vec4{1, 1, 1, 0.5}}}
 	p.Object.NewArt(aim)
 
-	weapondelay := param.Art{MaxValue: 100, Type: param.ArtRotate, W: 0.1, H: 1.5, LocalPos: mgl32.Vec3{0, -2, 1}, Material: param.Material{Name: "weapondelay", Shader: "colortext2", DiffColor: mgl32.Vec4{1, 1, 1, 0.5}}}
-	if p.Param.LeftWeapon.Delay > 0 {
+	weapondelay := param.Art{MaxValue: 100, Type: param.ArtRotate, W: 0.1, Material: param.Material{Name: "weapondelay", Shader: "colortext2", DiffColor: mgl32.Vec4{1, 1, 1, 0.5}}}
+
+	if p.Param.RightWeapon != nil && p.Param.LeftWeapon.Delay > 0 {
 		weapondelay.Name = "leftDelay"
+		weapondelay.H = 1.5
+		weapondelay.LocalPos = mgl32.Vec3{0, -2, 1}
 		p.Object.NewArt(weapondelay)
 	}
-	if p.Param.RightWeapon.Delay > 0 {
+
+	if p.Param.RightWeapon != nil && p.Param.RightWeapon.Delay > 0 {
 		weapondelay.Name = "rightDelay"
 		weapondelay.H = -1.5
 		weapondelay.LocalPos = mgl32.Vec3{0, 2, 1}
 		p.Object.NewArt(weapondelay)
 	}
 
+	if p.Param.MovSpeed > 5 {
+		createTrail(p.Object, 0.5, int(p.Param.MovSpeed), mgl32.Vec2{-1.5, 0.2})
+		createTrail(p.Object, 0.5, int(p.Param.MovSpeed), mgl32.Vec2{-1.5, -0.2})
+	}
+
+	p.Object.DestroyFunc = p.Destroy
+	// engine.NewParticles()
 }
 
 func initLocalPlayer() {
@@ -44,7 +60,7 @@ func initLocalPlayer() {
 		Name: "player0",
 		Object: param.Object{
 			Name:     "player",
-			Mesh:     param.Mesh{Model: "trapeze", Shadow: true},
+			Mesh:     param.Mesh{Model: "ship", Shadow: true},
 			Material: param.Material{Name: "player", Texture: "TestCube", Shader: "diffuse_texbumped_shadows", SpecLevel: 1},
 			Phys:     &param.Phys{W: 2, H: 2, Mass: 12, Group: 1, Type: phys.ShapeType_Box},
 		},
@@ -75,41 +91,41 @@ func initLocalPlayer() {
 			},
 			BulletObject: param.Object{
 				Name:        "bullet",
-				Mesh:        param.Mesh{Model: "bullet"},
 				Material:    param.Material{Name: "laser", Texture: "laser", Shader: "blend"},
 				Phys:        &param.Phys{W: 0.5, Mass: 0.5},
 				Transparent: true,
 			},
 
-			X: -1,
-			// Delay:      500 * time.Millisecond,
-			AttackRate: 50 * time.Millisecond,
+			X:          -1,
+			Delay:      500 * time.Millisecond,
+			AttackRate: 500 * time.Millisecond,
 		},
 		RightWeapon: &param.Weapon{
 			BulletParam: param.Bullet{
 				Type:     "rocket",
-				SubType:  "guided",
+				SubType:  "aimed",
 				MovSpeed: 20,
-				RotSpeed: 15,
+				RotSpeed: 60,
 				Lifetime: 5000 * time.Millisecond,
 				Damage:   30,
 			},
 			BulletObject: param.Object{
 				Name:     "bullet",
-				Mesh:     param.Mesh{Model: "bullet"},
+				Mesh:     param.Mesh{Model: "rocket"},
 				Material: param.Material{Name: "bullet", Texture: "gray", Shader: "color"},
 				Phys:     &param.Phys{W: 0.1, H: 0.1, Mass: 0.5},
 			},
-			X:          1,
-			Delay:      500 * time.Millisecond,
+			X: 1,
+			// Delay:      500 * time.Millisecond,
 			AttackRate: 1000 * time.Millisecond,
 		},
 	}
 
-	p.CreateLocalPlayer()
+	p.CreatePlayer()
+	players = append(players, p)
 	// p.Object.Shape.Body.CallBackCollision = p.Collision
 
-	engine.AddCallback(p.Movement, p.Rotation, p.CameraMovement, p.Attack)
+	engine.AddCallback(p.Movement, p.PlayerRotation, p.CameraMovement, p.Attack)
 	engine.SetMouseCallback(p.MouseControl)
 	// engine.Window.SetKeyCallback(keyboardControl)
 }
@@ -129,7 +145,21 @@ func (p *Player) Collision(arb *phys.Arbiter) bool {
 	return true
 }
 
-func (p *Player) Movement(dt float32) {
+func (p *Player) Destroy() {
+	p.Object.SetPosition(p.respawnPoint.Elem())
+	p.Object.SetVelocity(0, 0)
+	p.Object.SetRotation(0)
+
+	hp, ok := p.Object.GetArt("health")
+	if !ok {
+		log.Fatalln("helth bar not found", p.Object.Name)
+	}
+
+	hp.Value = hp.MaxValue
+	hp.Resize()
+}
+
+func (p *Player) Movement(dt float32) bool {
 	// log.Println(p.Object.Velocity().Length())
 	if p.Object.Velocity().Length() < p.Param.MovSpeed {
 		dist := p.Object.Distance(cursor)
@@ -140,20 +170,12 @@ func (p *Player) Movement(dt float32) {
 
 		p.Object.AddVelocity(p.Object.VectorForward(p.Param.MovSpeed * 0.05 * dist * dt))
 	}
+
+	return true
 }
 
-func (p *Player) Rotation(dt float32) {
-	angle := AngleObjectPoint(p.Object, cursor.PositionVec2())
-
-	// p.Object.Shape.Body.AddAngularVelocity(angle * p.Param.RotSpeed * 0.0005)
-
-	if vect.FAbs(p.Object.Shape.Body.AngularVelocity()) < vect.FAbs(p.Param.RotSpeed/10) {
-		p.Object.Shape.Body.AddAngularVelocity(p.Param.RotSpeed * 0.05 * angle * dt)
-	}
-
-	// if angle > -p.Param.RotSpeed && angle < p.Param.RotSpeed {
-	// 	p.Object.Shape.Body.AddAngularVelocity(angle * p.Param.RotSpeed * 0.0005)
-	// }
+func (p *Player) PlayerRotation(dt float32) bool {
+	p.rotation(dt, cursor.PositionVec2())
 
 	angVel := p.Object.Shape.Body.AngularVelocity() / 2
 	if angVel > engine.MaxRollAngle {
@@ -163,9 +185,21 @@ func (p *Player) Rotation(dt float32) {
 		angVel = -engine.MaxRollAngle
 	}
 	p.Object.RollAngle = -angVel
+
+	return true
 }
 
-func (p *Player) Attack(dt float32) {
+func (p *Player) rotation(dt float32, target mgl32.Vec2) float32 {
+	angle := SubAngleObjectPoint(p.Object, target)
+
+	if vect.FAbs(p.Object.Shape.Body.AngularVelocity()) < vect.FAbs(p.Param.RotSpeed/10) {
+		p.Object.Shape.Body.AddAngularVelocity(p.Param.RotSpeed * 0.05 * angle * dt)
+	}
+
+	return angle
+}
+
+func (p *Player) Attack(dt float32) bool {
 	if p.Param.LeftWeapon != nil {
 		p.Fire(p.Param.LeftWeapon)
 		p.WeaponDelay(p.Param.LeftWeapon, "leftDelay")
@@ -175,6 +209,8 @@ func (p *Player) Attack(dt float32) {
 		p.Fire(p.Param.RightWeapon)
 		p.WeaponDelay(p.Param.RightWeapon, "rightDelay")
 	}
+
+	return true
 }
 
 func (p *Player) WeaponDelay(w *param.Weapon, name string) {
@@ -220,7 +256,7 @@ func (p *Player) MouseControl(w *glfw.Window, button glfw.MouseButton, action gl
 	}
 }
 
-func (p *Player) CameraMovement(dt float32) {
+func (p *Player) CameraMovement(dt float32) bool {
 	pp := p.Object.Node.Location
 
 	cp := camera.GetPosition()
@@ -235,6 +271,7 @@ func (p *Player) CameraMovement(dt float32) {
 
 	cursor.Node.Location = mgl32.Vec3{x, y, 0}
 	// log.Println(x, y, xfloat, yfloat)
+	return true
 }
 
 // func keyboardControl(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {

@@ -18,7 +18,7 @@ func InitPhys(airResist float32) {
 	space.AngularDamping = airResist
 }
 
-func physRender(dt float32) {
+func loopRenderPhys(dt float32) {
 	// log.Println(dt)
 	space.Step(dt)
 

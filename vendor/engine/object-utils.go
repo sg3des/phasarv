@@ -10,6 +10,19 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
+func (o *Object) Angle() float32 {
+	if o.Shape != nil {
+		return o.Shape.Body.Angle()
+	}
+	x, y := o.Position()
+	return (&vect.Vect{x, y}).Angle()
+}
+
+// func (o *Object) Length(x, y float32) float32 {
+// 	ox, oy := o.Position()
+// 	return vect.Dist(vect.Vect{ox, oy}, vect.Vect{x, y})
+// }
+
 func (o *Object) Position() (x, y float32) {
 	// if o.Shape != nil && o.Node != nil {
 	// 	log.Println(o.Shape.Body.Position(), o.Node.Location)
@@ -50,36 +63,47 @@ func (e *Object) SetPosition(x, y float32) {
 }
 
 func (e *Object) VectorForward(scale float32) (float32, float32) {
-	pvx, pvy := e.Shape.Body.Rot()
-	return pvx * scale, pvy * scale
+	var v vect.Vect
+	if e.Shape != nil && e.Shape.Body != nil {
+		v = vect.FromAngle(e.Shape.Body.Angle())
+	} else {
+		// v = vect.Vect{e.Node.LocalRotation.X(), e.Node.LocalRotation.Y()}
+
+		v = vect.FromAngle(float32(2 * math.Acos(float64(e.Node.Rotation.W))))
+	}
+
+	v.Mult(scale)
+
+	// pvx, pvy := e.Shape.Body.Rot()
+	return v.X, v.Y
 }
 
-func (e *Object) VectorSide(scale float32) (float32, float32) {
+func (o *Object) VectorSide(scale, angle float32) (float32, float32) {
 	// ang := e.Shape.Body.Angle() - 1.5708 // ~90 deg
 	// if scale < 0 {
 	// 	ang = e.Shape.Body.Angle() + 1.5708 // ~90 deg
 	// }
 
-	v := vect.FromAngle(e.Shape.Body.Angle() - 1.5708)
+	v := vect.FromAngle(o.Shape.Body.Angle() + angle)
 	v.Mult(scale)
 
 	return v.X, v.Y
 }
 
-func (e *Object) Rotation() float32 {
-	if e.Shape != nil {
-		return e.Shape.Body.Angle()
+func (o *Object) Rotation() float32 {
+	if o.Shape != nil {
+		return o.Shape.Body.Angle()
 	}
-	log.Println("need check get rotation fron fizzle node, it`s may be not correct!")
-	return e.Node.Rotation.V.Z()
+	// log.Println("need check get rotation fron fizzle node, it`s may be not correct!")
+	return float32(2 * math.Acos(float64(o.Node.Rotation.W)))
 }
 
-func (e *Object) SetRotation(ang float32) {
-	if e.Shape != nil {
-		e.Shape.Body.SetAngle(ang)
+func (o *Object) SetRotation(ang float32) {
+	if o.Shape != nil {
+		o.Shape.Body.SetAngle(ang)
 	} else {
 		// e.Node.LocalRotation = mgl32.AnglesToQuat(0, 0, vect.Vect{x, y}.Angle(), 1)
-		e.Node.LocalRotation = mgl32.AnglesToQuat(0, 0, ang, 1)
+		o.Node.LocalRotation = mgl32.AnglesToQuat(0, 0, ang, 1)
 	}
 }
 
@@ -128,52 +152,76 @@ func Distance(x0, y0, x1, y1 float32) float32 {
 	return float32(dist)
 }
 
-func (o1 *Object) Distance(o2 *Object) float32 {
-	cpx, cpy := o1.Position()
+func (o *Object) Distance(o2 *Object) float32 {
+	if o2 == nil {
+		log.Fatalln("target object is nil")
+	}
+	cpx, cpy := o.Position()
 	ppx, ppy := o2.Position()
 
 	dist := math.Sqrt(math.Pow(float64(cpx)-float64(ppx), 2) + math.Pow(float64(cpy)-float64(ppy), 2))
 	return float32(dist)
 }
 
-func (e *Object) SetVelocity(x, y float32) {
-	if e.Shape == nil {
-		log.Println("velocity can not be set - shape is nil, name of object:", e.Name)
+func (o *Object) DistancePoint(bx, by float32) float32 {
+	cpx, cpy := o.Position()
+
+	dist := math.Sqrt(math.Pow(float64(cpx)-float64(bx), 2) + math.Pow(float64(cpy)-float64(by), 2))
+	return float32(dist)
+}
+
+func (o *Object) SetVelocity(x, y float32) {
+	if o.Shape != nil {
+		o.Shape.Body.SetVelocity(x, y)
 		return
 	}
-	e.Shape.Body.SetVelocity(x, y)
-
+	log.Println("velocity can not be set - shape is nil, name of object:", o.Name)
+	return
 }
 
-func (e *Object) AddVelocity(x, y float32) {
-	if e.Shape == nil {
-		log.Println("velocity can not be set - shape is nil, name of object:", e.Name)
+func (o *Object) AddVelocity(x, y float32) {
+	if o.Shape != nil {
+		o.Shape.Body.AddVelocity(x, y)
 		return
 	}
-	e.Shape.Body.AddVelocity(x, y)
+	log.Println("velocity can not be set - shape is nil, name of object:", o.Name)
+	return
 }
 
-func (e *Object) Velocity() vect.Vect {
-	if e.Shape == nil {
-		log.Println("velocity can not be set - shape is nil, name of object:", e.Name)
-		return vect.Vect{}
-	}
-	return e.Shape.Body.Velocity()
-}
-
-func (e *Object) ShapeWidthPercent() float32 {
-	return vect.FAbs(e.RollAngle) / (MaxRollAngle * 1.1)
-}
-
-func (e *Object) Destroy() {
-	// log.Println("destroy:", e.Name)
-	if e.Shape != nil {
-		e.Shape.Body.Enabled = false
-		space.RemoveBody(e.Shape.Body)
+func (o *Object) Velocity() vect.Vect {
+	if o.Shape != nil {
+		return o.Shape.Body.Velocity()
 	}
 
-	Objects[e] = false
-
-	delete(Objects, e)
-	e = nil
+	log.Println("velocity can not be set - shape is nil, name of object:", o.Name)
+	return vect.Vect{}
 }
+
+func (o *Object) ShapeWidthPercent() float32 {
+	return vect.FAbs(o.RollAngle) / (MaxRollAngle * 1.1)
+}
+
+func (o *Object) Destroy() {
+	if o.DestroyFunc != nil {
+		o.DestroyFunc()
+		return
+	}
+
+	if o.Shape != nil {
+		o.Shape.Body.Enabled = false
+		space.RemoveBody(o.Shape.Body)
+	}
+
+	Objects[o] = false
+
+	delete(Objects, o)
+	o = nil
+}
+
+// func (o *Object) Copy() *Object {
+// 	newObject := &Object{}
+// 	*newObject = *o
+// 	Objects[newObject] = true
+
+// 	return newObject
+// }
