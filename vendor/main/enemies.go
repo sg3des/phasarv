@@ -13,7 +13,7 @@ import (
 func initEnemies() {
 
 	var p = &Player{}
-	p.Param = &param.Player{
+	p.Param = param.Player{
 		Name: "enemy0",
 		Object: param.Object{
 			Name:     "enemy",

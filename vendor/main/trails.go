@@ -2,6 +2,7 @@ package main
 
 import (
 	"engine"
+	"math/rand"
 	"param"
 	"phys/vect"
 
@@ -19,12 +20,14 @@ func createTrail(p *engine.Object, piecelength float32, count int, offset mgl32.
 	}
 
 	for i := 0; i < count; i++ {
-		t.objects = append(t.objects, engine.NewPlane(param.Object{
+		plane := engine.NewPlane(param.Object{
 			Name:        "trail",
 			Material:    param.Material{Name: "laser", Texture: "laser", Shader: "colorblend", DiffColor: mgl32.Vec4{1, 1, 1, 1}},
 			Transparent: true,
-		}, 0.2, piecelength))
+		}, 0.2, piecelength)
+		t.objects = append(t.objects, plane)
 		t.points = append(t.points, trialPoints{})
+		plane.Node.Location[2] = -0.1
 	}
 
 	engine.AddCallback(t.trailCallback)
@@ -94,10 +97,12 @@ func (t *Trail) trailCallback(dt float32) bool {
 
 	//calculate offset
 	px, py := t.parent.Position()
-	off := t.offset.Mul(vect.FAbs(t.parent.RollAngle / 2)).Sub(t.offset)
-	vx, vy := t.parent.VectorSide(-off.X(), t.offset.Y())
+	// off := vect{}
+	// off := t.offset.Mul(vect.FAbs(t.parent.RollAngle / 2)).Add(t.offset)
+	vx, vy := t.parent.VectorSide(t.offset.X()+rand.Float32()*0.2, t.offset.Y())
 	px += vx
 	py += vy
+	t.objects[0].SetPosition(px, py)
 
 	//if distance more then trail length, renew\shift trails
 	dist := vect.Dist(vect.Vect{px, py}, t.points[0].Vect())

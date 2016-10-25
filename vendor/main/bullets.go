@@ -36,7 +36,8 @@ func (p *Player) Fire(w *param.Weapon) {
 	}
 
 	if w.Delay > 0 {
-		if timeNil(w.DelayTime) {
+
+		if w.DelayTime.IsZero() {
 			w.DelayTime = time.Now().Add(w.Delay)
 			return
 		}
@@ -206,12 +207,13 @@ func (b *Bullet) RocketCallback(ob *engine.Object, dt float32) {
 	}
 
 	if angle != 0 {
-		ob.Shape.Body.SetAngularVelocity(angle * b.Param.RotSpeed * 0.1)
+		ob.Shape.Body.AddAngularVelocity(angle * b.Param.RotSpeed * 0.05 * dt)
 	}
 
 	if ob.Velocity().Length() < b.Param.MovSpeed {
 		ob.AddVelocity(ob.VectorForward(dt * b.Param.MovSpeed))
 	}
+
 }
 
 //LaserCallback each frame

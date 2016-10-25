@@ -3,7 +3,6 @@ package main
 import (
 	"engine"
 	"math"
-	"time"
 
 	"phys/vect"
 
@@ -114,9 +113,9 @@ func AngleObjectPoint(o *engine.Object, b mgl32.Vec2) float32 {
 }
 
 //check if time is nil
-func timeNil(t time.Time) bool {
-	if t.Equal(time.Time{}) {
-		return true
-	}
-	return false
-}
+// func timeNil(t time.Time) bool {
+// 	if t.Equal(time.Time{}) {
+// 		return true
+// 	}
+// 	return false
+// }

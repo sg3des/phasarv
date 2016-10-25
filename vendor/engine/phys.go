@@ -7,18 +7,14 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-var (
-	space                = phys.NewSpace()
-	MaxRollAngle float32 = 1.5
-)
+var space = phys.NewSpace()
 
-func InitPhys(airResist float32) {
-	// space = phys.NewSpace()
-	space.LinearDamping = airResist
-	space.AngularDamping = airResist
+func init() {
+	space.LinearDamping = 0.4
+	space.AngularDamping = 0.2
 }
 
-func loopRenderPhys(dt float32) {
+func loopPhys(dt float32) {
 	// log.Println(dt)
 	space.Step(dt)
 

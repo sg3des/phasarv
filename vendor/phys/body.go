@@ -334,6 +334,10 @@ func (body *Body) Angle() float32 {
 	return body.a
 }
 
+func (body *Body) RotVec() vect.Vect {
+	return body.rot
+}
+
 func (body *Body) Rot() (rx, ry float32) {
 	return float32(body.rot.X), float32(body.rot.Y)
 }

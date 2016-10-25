@@ -5,6 +5,13 @@ name=phasarv
 run:
 	go build -o $(name) ./vendor/main && ./$(name)
 
+client:
+	go build -o $(name) ./vendor/main && ./$(name) network
+	# go build -o phClient ./vendor/client && ./phClient
+
+serv:
+	go build -o phServer ./vendor/server && ./phServer
+
 get:
 	go get -u github.com/go-gl/glfw/v3.1/glfw
 	go get -u github.com/go-gl/mathgl/mgl32

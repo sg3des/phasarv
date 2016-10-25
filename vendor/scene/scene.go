@@ -3,6 +3,7 @@ package scene
 import (
 	"engine"
 	"io/ioutil"
+	"log"
 	"param"
 	"path"
 
@@ -37,15 +38,13 @@ func read(name string) (Scene, error) {
 }
 
 //Load scene from file
-func Load(name string) error {
+func Load(name string) {
 	s, err := read(name)
 	if err != nil {
-		return err
+		log.Fatalln("scene not found", err)
 	}
 
 	for _, o := range s.Objects {
 		engine.NewStaticObject(o.Object)
 	}
-
-	return nil
 }

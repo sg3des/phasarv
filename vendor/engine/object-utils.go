@@ -58,14 +58,15 @@ func (e *Object) SetPosition(x, y float32) {
 	if e.Shape != nil {
 		e.Shape.Body.SetPosition(vect.Vect{x, y})
 	} else {
-		e.Node.Location = mgl32.Vec3{x, y, 0}
+		e.Node.Location = mgl32.Vec3{x, y, e.Node.Location.Z()}
 	}
 }
 
 func (e *Object) VectorForward(scale float32) (float32, float32) {
 	var v vect.Vect
 	if e.Shape != nil && e.Shape.Body != nil {
-		v = vect.FromAngle(e.Shape.Body.Angle())
+		// v = vect.FromAngle(e.Shape.Body.Angle())
+		v = e.Shape.Body.RotVec()
 	} else {
 		// v = vect.Vect{e.Node.LocalRotation.X(), e.Node.LocalRotation.Y()}
 
@@ -84,7 +85,12 @@ func (o *Object) VectorSide(scale, angle float32) (float32, float32) {
 	// 	ang = e.Shape.Body.Angle() + 1.5708 // ~90 deg
 	// }
 
-	v := vect.FromAngle(o.Shape.Body.Angle() + angle)
+	rotvec := o.Shape.Body.RotVec()
+	// rotvec.Mult(scale)
+
+	// log.Println(o.Shape.Body.Angle() == rotvec.Angle())
+
+	v := vect.FromAngle(rotvec.Angle() + angle)
 	v.Mult(scale)
 
 	return v.X, v.Y
@@ -198,7 +204,7 @@ func (o *Object) Velocity() vect.Vect {
 }
 
 func (o *Object) ShapeWidthPercent() float32 {
-	return vect.FAbs(o.RollAngle) / (MaxRollAngle * 1.1)
+	return vect.FAbs(o.RollAngle) / (o.Param.MaxRollAngle * 1.1)
 }
 
 func (o *Object) Destroy() {
@@ -218,10 +224,28 @@ func (o *Object) Destroy() {
 	o = nil
 }
 
-// func (o *Object) Copy() *Object {
-// 	newObject := &Object{}
-// 	*newObject = *o
-// 	Objects[newObject] = true
+func (o *Object) Clone() *Object {
+	newObject := &Object{
+		Name:         o.Name,
+		Node:         o.Node.Clone(),
+		MaxRollAngle: o.MaxRollAngle,
 
-// 	return newObject
-// }
+		Shadow:      o.Shadow,
+		Transparent: o.Transparent,
+
+		ArtStatic: o.ArtStatic,
+		ArtRotate: o.ArtRotate,
+
+		Callback:    o.Callback,
+		DestroyFunc: o.DestroyFunc,
+
+		Param: o.Param,
+	}
+
+	newObject.SetPhys(o.Param.Phys)
+	newObject.Node.Material = Material(o.Param.Material)
+
+	Objects[newObject] = true
+
+	return newObject
+}

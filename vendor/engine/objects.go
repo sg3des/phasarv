@@ -30,7 +30,8 @@ type Object struct {
 	Node  *fizzle.Renderable
 	Shape *phys.Shape
 
-	RollAngle float32
+	RollAngle    float32
+	MaxRollAngle float32
 
 	Shadow      bool
 	Transparent bool
@@ -164,7 +165,7 @@ func NewBox(name string) *Object {
 		Node: fizzle.CreateCube(-0.5, -0.5, -0.5, 0.5, 0.5, 0.5),
 	}
 	o.Node.Material = Material(param.Material{Name: "box", Shader: "diffuse_texbumped_shadows", Texture: "TestCube"})
-
+	o.Param.Material = param.Material{Name: "box", Shader: "diffuse_texbumped_shadows", Texture: "TestCube"}
 	Objects[o] = true
 	return o
 }

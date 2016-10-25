@@ -13,7 +13,7 @@ import (
 )
 
 type Player struct {
-	Param  *param.Player
+	Param  param.Player
 	Object *engine.Object
 
 	Target *Player
@@ -45,89 +45,27 @@ func (p *Player) CreatePlayer() {
 	}
 
 	if p.Param.MovSpeed > 5 {
-		createTrail(p.Object, 0.5, int(p.Param.MovSpeed), mgl32.Vec2{-1.5, 0.2})
-		createTrail(p.Object, 0.5, int(p.Param.MovSpeed), mgl32.Vec2{-1.5, -0.2})
+		createTrail(p.Object, 0.5, int(p.Param.MovSpeed), mgl32.Vec2{1.4, 2.95})
+		createTrail(p.Object, 0.5, int(p.Param.MovSpeed), mgl32.Vec2{1.4, -2.95})
 	}
 
 	p.Object.DestroyFunc = p.Destroy
 	// engine.NewParticles()
 }
 
-func initLocalPlayer() {
+func CreateLocalPlayer(data interface{}) interface{} {
+	log.Println("CreateLocalPlayer")
 
-	var p = &Player{}
-	p.Param = &param.Player{
-		Name: "player0",
-		Object: param.Object{
-			Name:     "player",
-			Mesh:     param.Mesh{Model: "ship", Shadow: true},
-			Material: param.Material{Name: "player", Texture: "TestCube", Shader: "diffuse_texbumped_shadows", SpecLevel: 1},
-			Phys:     &param.Phys{W: 2, H: 2, Mass: 12, Group: 1, Type: phys.ShapeType_Box},
-		},
-		Health:   100,
-		MovSpeed: 20,
-		RotSpeed: 50,
-
-		// LeftWeapon: &param.Weapon{
-		// 	BulletParam: param.Bullet{
-		// 		Type:     "gun",
-		// 		MovSpeed: 20,
-		// 		Lifetime: 10000 * time.Millisecond,
-		// 		Damage:   20,
-		// 	},
-		// 	BulletObject: param.Object{
-		// 		Name: "bullet",
-		// 		Mesh: param.Mesh{Model: "bullet", Texture: "TestCube", Shader: "diffuse"},
-		// 		Phys:   param.Phys{W: 0.1, H: 0.1, Mass: 1},
-		// 	},
-		// 	X:          -1,
-		// 	AttackRate: 200 * time.Millisecond,
-		// },
-		LeftWeapon: &param.Weapon{
-			BulletParam: param.Bullet{
-				Type:     "laser",
-				Lifetime: 2500 * time.Millisecond,
-				Damage:   50,
-			},
-			BulletObject: param.Object{
-				Name:        "bullet",
-				Material:    param.Material{Name: "laser", Texture: "laser", Shader: "blend"},
-				Phys:        &param.Phys{W: 0.5, Mass: 0.5},
-				Transparent: true,
-			},
-
-			X:          -1,
-			Delay:      500 * time.Millisecond,
-			AttackRate: 500 * time.Millisecond,
-		},
-		RightWeapon: &param.Weapon{
-			BulletParam: param.Bullet{
-				Type:     "rocket",
-				SubType:  "aimed",
-				MovSpeed: 20,
-				RotSpeed: 60,
-				Lifetime: 5000 * time.Millisecond,
-				Damage:   30,
-			},
-			BulletObject: param.Object{
-				Name:     "bullet",
-				Mesh:     param.Mesh{Model: "rocket"},
-				Material: param.Material{Name: "bullet", Texture: "gray", Shader: "color"},
-				Phys:     &param.Phys{W: 0.1, H: 0.1, Mass: 0.5},
-			},
-			X: 1,
-			// Delay:      500 * time.Millisecond,
-			AttackRate: 1000 * time.Millisecond,
-		},
-	}
-
+	p := &Player{Param: data.(param.Player)}
 	p.CreatePlayer()
+
 	players = append(players, p)
 	// p.Object.Shape.Body.CallBackCollision = p.Collision
 
 	engine.AddCallback(p.Movement, p.PlayerRotation, p.CameraMovement, p.Attack)
 	engine.SetMouseCallback(p.MouseControl)
 	// engine.Window.SetKeyCallback(keyboardControl)
+	return nil
 }
 
 func (p *Player) Collision(arb *phys.Arbiter) bool {
@@ -178,11 +116,11 @@ func (p *Player) PlayerRotation(dt float32) bool {
 	p.rotation(dt, cursor.PositionVec2())
 
 	angVel := p.Object.Shape.Body.AngularVelocity() / 2
-	if angVel > engine.MaxRollAngle {
-		angVel = engine.MaxRollAngle
+	if angVel > p.Param.Object.MaxRollAngle {
+		angVel = p.Param.Object.MaxRollAngle
 	}
-	if angVel < -engine.MaxRollAngle {
-		angVel = -engine.MaxRollAngle
+	if angVel < -p.Param.Object.MaxRollAngle {
+		angVel = -p.Param.Object.MaxRollAngle
 	}
 	p.Object.RollAngle = -angVel
 
@@ -219,7 +157,7 @@ func (p *Player) WeaponDelay(w *param.Weapon, name string) {
 	}
 
 	var value float32
-	if timeNil(w.DelayTime) {
+	if w.DelayTime.IsZero() {
 		value = 1
 	} else {
 		value = float32(w.DelayTime.Sub(time.Now()).Seconds())
@@ -262,15 +200,13 @@ func (p *Player) CameraMovement(dt float32) bool {
 	cp := camera.GetPosition()
 	camera.SetPosition(pp.X(), pp.Y(), cp.Z())
 
-	// light0.Position = mgl32.Vec3{pp.X() - 5, pp.Y() + 5, 30}
+	sun.Position = pp.Add(mgl32.Vec3{-30, 30, 100})
 
 	x, y := engine.CursorPosition()
 	w, h := engine.WindowSize()
 
-	x, y = getCursorPos(x, y, w, h, cp)
+	cursor.SetPosition(getCursorPos(x, y, w, h, cp))
 
-	cursor.Node.Location = mgl32.Vec3{x, y, 0}
-	// log.Println(x, y, xfloat, yfloat)
 	return true
 }
 

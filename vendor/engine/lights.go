@@ -32,10 +32,10 @@ func NewLight(diffuse, attenuation float32, shadowSize int32) *forward.Light {
 }
 
 func NewSun() *forward.Light {
-	pos := mgl32.Vec3{0, 0, 10}
+	pos := mgl32.Vec3{-30, 30, 100}
 	light := e.render.NewDirectionalLight(pos)
 	light.DiffuseColor = mgl32.Vec4{1, 1, 1, 1}
-	light.Direction = mgl32.Vec3{0, 0, -10}
+	light.Direction = mgl32.Vec3{30, -30, -100}
 	light.Strength = 0.5
 	// light.DiffuseIntensity = 0.5
 	light.SpecularIntensity = 0.5
@@ -44,7 +44,7 @@ func NewSun() *forward.Light {
 
 	light.Position = pos
 
-	light.CreateShadowMap(4096, 0.1, 100.0, mgl32.Vec3{0, 0, -10})
+	light.CreateShadowMap(8192, 1, 400.0, mgl32.Vec3{30, -30, -100})
 
 	e.render.ActiveLights[len(lights)] = light
 

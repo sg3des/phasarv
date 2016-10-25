@@ -11,7 +11,7 @@ type Player struct {
 	Name   string
 	Object Object
 
-	Health, MovSpeed, RotSpeed, SubAngle float32
+	Health, MovSpeed, RotSpeed, RollAngle float32
 
 	LeftWeapon, RightWeapon *Weapon
 }
@@ -69,6 +69,8 @@ type Object struct {
 	Material
 	Pos
 	*Phys
+
+	MaxRollAngle float32
 
 	Transparent bool
 }
