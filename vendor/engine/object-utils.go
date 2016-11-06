@@ -84,6 +84,10 @@ func (o *Object) VectorSide(scale, angle float32) (float32, float32) {
 	// if scale < 0 {
 	// 	ang = e.Shape.Body.Angle() + 1.5708 // ~90 deg
 	// }
+	if o.Shape == nil || o.Shape.Body == nil {
+		log.Println(o.Name)
+		return 0, 0
+	}
 
 	rotvec := o.Shape.Body.RotVec()
 	// rotvec.Mult(scale)
@@ -160,6 +164,7 @@ func Distance(x0, y0, x1, y1 float32) float32 {
 
 func (o *Object) Distance(o2 *Object) float32 {
 	if o2 == nil {
+		return 0
 		log.Fatalln("target object is nil")
 	}
 	cpx, cpy := o.Position()
@@ -207,6 +212,24 @@ func (o *Object) ShapeWidthPercent() float32 {
 	return vect.FAbs(o.RollAngle) / (o.Param.MaxRollAngle * 1.1)
 }
 
+func (o *Object) AddCallback(f Callback) {
+	o.Callbacks[len(o.Callbacks)] = f
+}
+
+func (o *Object) AddChild(child *Object) {
+	o.Childs[child] = true
+}
+
+// func (o *Object) RemoveCallback(f Callback) {
+// 	for i, c := range o.Callbacks {
+// 		if c == f {
+// 			delete(o.Callbacks, i)
+// 			return
+// 		}
+// 	}
+// 	log.Printf("failed remove callback in object with name `%s` - callback not found\n", o.Name)
+// }
+
 func (o *Object) Destroy() {
 	if o.DestroyFunc != nil {
 		o.DestroyFunc()
@@ -216,9 +239,14 @@ func (o *Object) Destroy() {
 	if o.Shape != nil {
 		o.Shape.Body.Enabled = false
 		space.RemoveBody(o.Shape.Body)
+		// space.RemoveShape(o.Shape) - crash need TODO
 	}
 
 	Objects[o] = false
+
+	for child := range o.Childs {
+		child.Destroy()
+	}
 
 	delete(Objects, o)
 	o = nil
@@ -236,7 +264,8 @@ func (o *Object) Clone() *Object {
 		ArtStatic: o.ArtStatic,
 		ArtRotate: o.ArtRotate,
 
-		Callback:    o.Callback,
+		// Callback:    o.Callback,
+		Callbacks:   o.Callbacks,
 		DestroyFunc: o.DestroyFunc,
 
 		Param: o.Param,

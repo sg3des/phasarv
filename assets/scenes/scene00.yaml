@@ -2,29 +2,29 @@ name: "scene00"
 
 _box: &trees_2
   object: 
-    name: "trees_2"
+    name: "tree"
     mesh:
-      model: "trees_2"
-      shadow: true
+      model: "tree"
     material:
       name: "tree"
-      texture: "tree2"
-      shader: "diffuse_texbumped_shadows"
+      texture: "tree"
+      shader: "blend"
     phys:
       h: 3
       w: 3
       group: 1
     transparent: true
+    shadow: true
 
 objects: 
   - object:
       name: "ground"
       mesh: 
-        model: "plane"
+        model: "ground"
       material:
         name: "ground"
         texture: "grass"
-        shader: "diffuse_texbumped_shadows"
+        shader: "basic"
       pos: {z: -5}
   - <<: *trees_2 
     object:

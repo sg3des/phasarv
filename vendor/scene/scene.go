@@ -45,6 +45,8 @@ func Load(name string) {
 	}
 
 	for _, o := range s.Objects {
-		engine.NewStaticObject(o.Object)
+		o.Object.Static = true
+		engine.NewObject(o.Object)
+		// _o.SetRotation(rand.Float32() * 3)
 	}
 }

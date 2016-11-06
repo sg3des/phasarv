@@ -1,7 +1,6 @@
 package main
 
 import (
-	"client"
 	"db"
 	"flag"
 	"log"
@@ -35,54 +34,89 @@ var (
 )
 
 func main() {
-	engine.Init()
-	engine.SetKeyCallback(keyCallback)
+	engine.Init(local)
+	// engine.SetKeyCallback(keyCallback)
+	// initEnvironment()
 
-	if mode == "network" {
+	// scene.Load("scene00")
+
+	// // // time.Sleep(300 * time.Millisecond)
+
+	// if mode == "client" {
+	// 	networkPlay()
+	// } else {
+	// 	localPlay()
+	// }
+
+	// initCursor()
+
+	// time.Sleep(10 * time.Second)
+
+	// engine.Loop()
+}
+
+func local() {
+	engine.SetKeyCallback(keyCallback)
+	initEnvironment()
+	initCursor()
+
+	scene.Load("scene00")
+
+	// // time.Sleep(300 * time.Millisecond)
+
+	if mode == "client" {
 		networkPlay()
 	} else {
 		localPlay()
 	}
 
-	scene.Load("scene00")
-
-	initEnvironment()
-	initCursor()
-	initEnemies()
-
-	engine.Loop()
 }
 
 func networkPlay() {
-	client.AddRoutes(map[string]func(interface{}) interface{}{
-		"CreateLocalPlayer": CreateLocalPlayer,
-	})
+	// client.AddRoutes(map[string]func(interface{}) interface{}{
+	// 	"CreateLocalPlayer": CreateLocalPlayer,
+	// })
 
-	client.Connect("127.0.0.1:9696")
-	client.Authorize("player0")
+	Connect("127.0.0.1:9696")
+	Authorize("player0")
 }
 
 func localPlay() {
+	createEnemy(10, 15)
 	CreateLocalPlayer(db.GetPlayer("player0"))
 }
 
 func initEnvironment() {
-	sun = engine.NewSun()
-	engine.NewLight(10, 1, 2)
+	engine.NewLight(engine.ParamLight{
+		Sun:        true,
+		Pos:        mgl32.Vec3{-30, 30, 60},
+		Strength:   0.7,
+		Specular:   0.5,
+		ShadowSize: 8192,
+	})
+	// sun = engine.NewSun()
+
+	engine.NewLight(engine.ParamLight{
+		Pos:        mgl32.Vec3{1, 1, -2},
+		Strength:   0.1,
+		Specular:   0,
+		ShadowSize: 2,
+	})
 
 	camera = engine.NewCamera(mgl32.Vec3{0, 0, 40})
 	camera.LookAtDirect(mgl32.Vec3{0, 0, 0})
 }
 
 func initCursor() {
-	cursor = engine.NewPlanePoint(
+	cursor = engine.NewObject(
 		param.Object{
 			Name:     "cursor",
-			Mesh:     param.Mesh{Shader: "colortext2"},
-			Material: param.Material{Name: "cursor", DiffColor: mgl32.Vec4{0.3, 0.3, 1, 0.9}},
+			Mesh:     param.Mesh{Model: "plane", X: 1, Y: 1},
+			Material: param.Material{Name: "cursor", Shader: "colortext2", DiffColor: mgl32.Vec4{0.3, 0.3, 1, 0.9}},
 		},
-		mgl32.Vec3{-0.5, -0.5, 1},
-		mgl32.Vec3{0.5, 0.5, 1},
+
+		// mgl32.Vec3{-0.5, -0.5, 1},
+		// mgl32.Vec3{0.5, 0.5, 1},
 	)
 }
 
@@ -92,5 +126,10 @@ func keyCallback(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action,
 	}
 	if key == glfw.KeyF1 && action == glfw.Press {
 		glfw.SwapInterval(1)
+	}
+	if key == glfw.KeySpace && action == glfw.Press {
+		for _, p := range players {
+			p.Destroy()
+		}
 	}
 }

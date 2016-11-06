@@ -3,28 +3,29 @@ package network
 import (
 	"bytes"
 	"encoding/gob"
+	"errors"
+	"fmt"
 	"log"
 	"net"
 	"time"
 )
 
-var (
-	Connection = &connection{
-		Routes: make(map[string]func(interface{}) interface{}),
-	}
-
-	err error
+const (
+	Server = iota
+	Client
 )
 
-type connection struct {
-	Conn       *net.UDPConn
-	remoteAddr *net.UDPAddr
+type Connection struct {
+	Type int
 
-	Routes map[string]func(interface{}) interface{}
+	Conn *net.UDPConn
 
-	enc *gob.Encoder
-	dec *gob.Decoder
+	Handlers map[string]Handler
+
+	Clients map[string]*net.UDPAddr
 }
+
+type Handler func(*Request) interface{}
 
 //udpAddr return resolved addr for udp connection
 func udpAddr(addr string) *net.UDPAddr {
@@ -35,135 +36,239 @@ func udpAddr(addr string) *net.UDPAddr {
 	return raddr
 }
 
+func NewHandlers(h map[string]Handler) *Connection {
+	c := &Connection{
+		Handlers: h,
+		Clients:  make(map[string]*net.UDPAddr),
+	}
+	return c
+}
+
+func (c *Connection) SetHandler(name string, h Handler) {
+	c.Handlers[name] = h
+}
+
 //Server - start server listener
-func Server(addr string) error {
-	Connection.Conn, err = net.ListenUDP("udp", udpAddr(addr))
+func (c *Connection) Server(addr string) error {
+	conn, err := net.ListenUDP("udp", udpAddr(addr))
 	if err != nil {
 		return err
 	}
 
-	// Connection.gob()
+	c.Type = Server
+	c.Conn = conn
 
-	go Connection.carrier()
+	go c.carrier()
 
 	return nil
 }
 
 //Client - initialize connection
-func Client(addr string) error {
-	Connection.Conn, err = net.DialUDP("udp", udpAddr(":0"), udpAddr(addr))
+func (c *Connection) Client(addr string) error {
+	conn, err := net.DialUDP("udp", udpAddr(":0"), udpAddr(addr))
 	if err != nil {
 		return err
 	}
 
-	// Connection.remoteAddr = udpAddr(Connection.Conn.LocalAddr().String())
+	c.Type = Client
+	c.Conn = conn
 
-	// log.Println(Connection.Conn.RemoteAddr().String())
-	// log.Println(Connection.Conn.LocalAddr().String())
-
-	// Connection.Conn = conn
-	// Connection.gob()
-	// Connection.Conn.WriteTo([]byte("asd"), Connection.Conn.RemoteAddr())
-
-	go Connection.carrier()
+	go c.carrier()
 
 	return nil
 }
 
-// func (c *connection) gob() {
-// 	c.enc = gob.NewEncoder(c.Conn)
-// 	// c.dec = gob.NewDecoder(c.buf)
-// }
+func (c *Connection) Close() {
+	c.Conn.Close()
+	c.Clients = nil
+	c.Handlers = nil
+}
 
 //carrier manage incoming messages
-func (c *connection) carrier() {
+func (c *Connection) carrier() {
 	for {
 		var b = make([]byte, 2048)
 		i, addr, err := c.Conn.ReadFromUDP(b)
 		if err != nil {
-			log.Println("failed read udp package, error: ", err)
+			log.Println(c.Type, "failed read udp package, error: ", err)
 			continue
 		}
 		b = b[:i]
-		// log.Println(i, addr, err)
-		// log.Printf(string(b))
-
-		buf := bytes.NewBuffer(b)
-		var m Message
-		if err := gob.NewDecoder(buf).Decode(&m); err != nil {
-			log.Println("failed decode message, error:", err)
+		if len(b) == 0 {
 			continue
 		}
-		log.Println("get new message, call function:", m.ResponseFunc)
+
+		c.Clients[addr.String()] = addr
+
+		m, err := c.decodeMessage(b)
+		if err != nil {
+			log.Println(c.Type, "failed decode message", err)
+			continue
+		}
+
+		// log.Println(addr)
+
+		req := &Request{
+			Conn:       c.Conn,
+			RemoteAddr: addr,
+			Message:    m,
+		}
+
+		responseMsg, err := c.callHandler(req)
+		if err != nil {
+			log.Println(c.Type, "failed send response:", err)
+		}
+		if responseMsg != nil {
+			c.Conn.WriteToUDP(responseMsg, addr)
+		}
+
+		// if data != nil {
+		// 	if err := req.SendResponse(data); err != nil {
+		// 		log.Println("failed send response:", err)
+		// 		continue
+		// 	}
+		// }
+
+		// log.Println("get new message, call function:", m.ResponseFunc)
 		// m.remoteAddr = c.Conn.RemoteAddr()
 
-		if f, ok := c.Routes[m.RequestFunc]; ok {
-			data := m.Response(f(m.Data))
-			c.Conn.WriteToUDP(data, addr)
-		} else {
-			log.Printf("called function `%s` is not found\n")
-		}
+		// if len(m.RequestFunc) > 0 {
+		// 	if f, ok := c.Handlers[m.RequestFunc]; ok {
+		// 		data := m.Response(f(m.Data))
+		// 		if data != nil {
+		// 			c.Conn.WriteToUDP(data, addr)
+		// 		}
+		// 	} else {
+		// 		log.Printf("called function `%s` is not found\n")
+		// 	}
+		// }
 		// c.Handler(m)
 	}
 	log.Println("wtf? exit?")
 }
 
-func AddRoute(funcname string, f func(interface{}) interface{}) {
-	Connection.Routes[funcname] = f
+func (c *Connection) decodeMessage(b []byte) (m *Message, err error) {
+	buf := bytes.NewBuffer(b)
+	err = gob.NewDecoder(buf).Decode(&m)
+	return
 }
 
-//Message structure, Time contains timestamp when message was sent
+func (c *Connection) callHandler(req *Request) ([]byte, error) {
+	if handler, ok := c.Handlers[req.RequestFunc]; ok {
+		data := handler(req)
+		if data != nil {
+			return req.NewResponse(data)
+		}
+		return nil, nil
+	}
+
+	log.Println(c.Handlers)
+
+	return nil, fmt.Errorf("handler `%s` not found", req.RequestFunc)
+}
+
+type Request struct {
+	Conn       *net.UDPConn
+	RemoteAddr *net.UDPAddr
+	*Message
+}
+
 type Message struct {
-	Time         time.Time
+	Sendtime     time.Time
 	RequestFunc  string
 	ResponseFunc string
 
 	Data interface{}
 }
 
-//SendMessage to server or client
-func SendMessage(reqfunc, resfunc string, data interface{}) error {
-	m := Message{
-		Time:         time.Now(),
+func NewMessage(reqfunc, resfunc string, data interface{}) *Message {
+	m := &Message{
+		Sendtime:     time.Now(),
 		RequestFunc:  reqfunc,
 		ResponseFunc: resfunc,
 		Data:         data,
 	}
 
+	return m
+}
+
+func (m *Message) encode() ([]byte, error) {
 	buf := bytes.NewBuffer([]byte{})
 	err := gob.NewEncoder(buf).Encode(m)
+	return buf.Bytes(), err
+}
+
+func (c *Connection) Broadcast(reqfunc, resfunc string, data interface{}) error {
+
+	bMsg, err := NewMessage(reqfunc, resfunc, data).encode()
 	if err != nil {
 		return err
 	}
 
-	_, err = Connection.Conn.Write(buf.Bytes())
-	// _, err = Connection.Conn.WriteToUDP(buf.Bytes(), udpAddr(Connection.Conn.RemoteAddr().String()))
-	// _, err = Connection.Conn.WriteTo(buf.Bytes(), Connection.Conn.RemoteAddr())
-	// _, err = Connection.Conn.WriteToUDP(buf.Bytes(), Connection.remoteAddr)
-	return err
+	log.Println("send broadcast to ", c.Clients)
+	for name, client := range c.Clients {
+		log.Println("send to", client.String())
+		_, err := c.Conn.WriteToUDP(bMsg, client)
+		if err != nil {
+			delete(c.Clients, name)
+			log.Printf("failed send broadcast message to `%s:%s`, reason: %s\n", name, client, err)
+		}
+	}
 
-	// log.Println("send message to:", reqfunc, "with answer to:", resfunc)
-	// return gob.New
+	return nil
 }
 
-func (m Message) Response(data interface{}) []byte {
-	if data == nil || m.ResponseFunc == "" {
-		return nil
+//SendMessage to server from clients
+func (c *Connection) SendMessage(reqfunc, resfunc string, data interface{}) error {
+	if c.Conn == nil {
+		return errors.New("no connection")
 	}
 
-	newM := Message{
-		Time:        time.Now(),
-		RequestFunc: m.ResponseFunc,
-		Data:        data,
-	}
-
-	// Connection.Conn.WriteToUDP([]byte{}, m.remoteAddr)
-	log.Println("send response to:", m.ResponseFunc)
-	var buf bytes.Buffer
-	err := gob.NewEncoder(&buf).Encode(newM)
+	bMsg, err := NewMessage(reqfunc, resfunc, data).encode()
 	if err != nil {
-		log.Println("failed send response message, error:", err)
+		return err
 	}
 
-	return buf.Bytes()
+	_, err = c.Conn.Write(bMsg)
+	return err
 }
+
+func (req *Request) NewResponse(data interface{}) ([]byte, error) {
+	if req.ResponseFunc == "" {
+		return nil, errors.New("response function is empty")
+	}
+	return NewMessage(req.ResponseFunc, "", data).encode()
+}
+
+// func (req *Request) SendResponse(data interface{}) error {
+// 	if req.ResponseFunc == "" {
+// 		return errors.New("response function is empty")
+// 	}
+// 	if req.Conn == nil {
+// 		return errors.New("no connection")
+// 	}
+
+// 	bMsg, err := NewMessage(req.ResponseFunc, "", data).encode()
+// 	if err != nil {
+// 		return err
+// 	}
+// 	// newReq := &Request{
+// 	// 	Sendtime:    time.Now(),
+// 	// 	RequestFunc: req.ResponseFunc,
+// 	// 	Data:        data,
+// 	// }
+
+// 	// // Connection.Conn.WriteToUDP([]byte{}, m.remoteAddr)
+// 	// log.Println("send response to:", req.ResponseFunc)
+// 	// var buf bytes.Buffer
+// 	// err := gob.NewEncoder(&buf).Encode(newReq)
+// 	// if err != nil {
+// 	// 	return err
+// 	// 	// log.Println("failed send response message, error:", err)
+// 	// }
+
+// 	_, err = req.Conn.Write(bMsg)
+// 	return err
+// 	// return buf.Bytes()
+// 	// return nil
+// }

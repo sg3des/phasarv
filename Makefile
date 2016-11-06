@@ -3,13 +3,9 @@
 name=phasarv
 
 run:
-	go build -o $(name) ./vendor/main && ./$(name)
+	go build -o $(name) ./vendor/main && ./$(name) ${ARGS}
 
-client:
-	go build -o $(name) ./vendor/main && ./$(name) network
-	# go build -o phClient ./vendor/client && ./phClient
-
-serv:
+server:
 	go build -o phServer ./vendor/server && ./phServer
 
 get:
@@ -25,6 +21,15 @@ get:
 
 test:
 	go test -v vendor/main
+
+network:
+	cd vendor/network && go test -v ${ARGS} ./ 
+
+network-bench:
+	go run ./vendor/network/test-server/server.go &
+	cd vendor/network && go test -run nil -bench . -benchmem
+
+
 
 build:
 	# mkdir -p build

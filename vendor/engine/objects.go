@@ -7,6 +7,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/tbogdala/fizzle"
 	"github.com/tbogdala/fizzle/graphicsprovider"
+	"github.com/tbogdala/fizzle/renderer/forward"
 
 	"param"
 	"phys"
@@ -14,9 +15,11 @@ import (
 )
 
 var (
-	Objects   = make(map[*Object]bool)
-	Materials = make(map[string]*fizzle.Material)
-	Scene     []*Object
+	Objects     = make(map[*Object]bool)
+	cNewObjects = make(chan paramObject)
+	chanObjects = make(chan *Object)
+	Materials   = make(map[string]*fizzle.Material)
+	Scene       []*Object
 )
 
 type Bullet struct {
@@ -39,11 +42,16 @@ type Object struct {
 	ArtStatic map[string]*Art
 	ArtRotate map[string]*Art
 
-	Callback    func(*Object, float32)
+	Childs map[*Object]bool
+
+	// Callback    func(*Object, float32)
+	Callbacks   map[int]Callback
 	DestroyFunc func()
 
 	Param param.Object
 }
+
+type Callback func(float32)
 
 type Art struct {
 	Name          string
@@ -53,6 +61,8 @@ type Art struct {
 	Art           *fizzle.Renderable
 	Line          bool
 }
+
+var basicShader *fizzle.RenderShader
 
 func Material(p param.Material) *fizzle.Material {
 	// m, ok := Materials[p.Name]
@@ -67,8 +77,23 @@ func Material(p param.Material) *fizzle.Material {
 		p.Texture = "gray"
 	}
 
+	if basicShader == nil {
+		var err error
+		basicShader, err = forward.CreateBasicShader()
+		if err != nil {
+			log.Fatalln(err)
+		}
+	}
+
 	m := fizzle.NewMaterial()
-	m.Shader = assets.GetShader(p.Shader)
+
+	if p.Shader == "basic" {
+		m.Shader = basicShader
+	} else {
+		m.Shader = assets.GetShader(p.Shader)
+	}
+
+	// m.Shader = assets.GetShader(p.Shader)
 
 	m.DiffuseTex = assets.GetTexture(p.Texture).Diffuse
 	m.NormalsTex = assets.GetTexture(p.Texture).Normals
@@ -85,34 +110,20 @@ func Material(p param.Material) *fizzle.Material {
 	return m
 }
 
-//NewPlane create renderable plane
-func NewPlane(p param.Object, w, h float32) *Object {
-	o := &Object{
-		Name: p.Name,
-		// Node: fizzle.CreatePlaneXY(0, w/2, h, -w/2),
-		Node:        fizzle.CreatePlaneV(mgl32.Vec3{0, -w / 2, 0}, mgl32.Vec3{h, w / 2, 0}),
-		Transparent: p.Transparent,
-	}
-	o.Node.Material = Material(p.Material)
+// //NewPlane create renderable plane
+// func NewPlane(p param.Object, w, h float32) *Object {
+// 	o := &Object{
+// 		Name: p.Name,
+// 		// Node: fizzle.CreatePlaneXY(0, w/2, h, -w/2),
+// 		Node:        fizzle.CreatePlaneV(mgl32.Vec3{0, -w / 2, 0}, mgl32.Vec3{h, w / 2, 0}),
+// 		Transparent: p.Transparent,
+// 	}
+// 	o.Node.Material = Material(p.Material)
 
-	Objects[o] = true
+// 	Objects[o] = true
 
-	return o
-}
-
-//NewPlanePoint create renderable plane from two points
-func NewPlanePoint(p param.Object, p0, p1 mgl32.Vec3) *Object {
-	o := &Object{
-		Name:        p.Name,
-		Node:        fizzle.CreatePlaneV(p0, p1),
-		Transparent: p.Transparent,
-	}
-	o.Node.Material = Material(p.Material)
-
-	Objects[o] = true
-
-	return o
-}
+// 	return o
+// }
 
 //SetPhys - set physics to object
 func (o *Object) SetPhys(p *param.Phys) {
@@ -158,72 +169,72 @@ func (o *Object) NewShape(p *param.Phys) (shape *phys.Shape) {
 	return
 }
 
-//NewBox generated mesh box with shader diffuse_texbumped and TestCube texture
-func NewBox(name string) *Object {
-	o := &Object{
-		Name: name,
-		Node: fizzle.CreateCube(-0.5, -0.5, -0.5, 0.5, 0.5, 0.5),
-	}
-	o.Node.Material = Material(param.Material{Name: "box", Shader: "diffuse_texbumped_shadows", Texture: "TestCube"})
-	o.Param.Material = param.Material{Name: "box", Shader: "diffuse_texbumped_shadows", Texture: "TestCube"}
-	Objects[o] = true
-	return o
-}
-
 //NewObject create object
 func NewObject(p param.Object, arts ...param.Art) *Object {
+	c := make(chan *Object)
+	cNewObjects <- paramObject{p, arts, c}
+
+	return <-c
+}
+
+type paramObject struct {
+	p    param.Object
+	arts []param.Art
+	c    chan *Object
+}
+
+func (n paramObject) create() {
 	o := &Object{
-		Name:        p.Name,
-		Node:        assets.GetModel(p.Mesh.Model),
-		Shadow:      p.Mesh.Shadow,
-		Transparent: p.Transparent,
-		Param:       p,
+		Name:        n.p.Name,
+		Node:        createNode(n.p.Mesh),
+		Shadow:      n.p.Shadow,
+		Transparent: n.p.Transparent,
+		Param:       n.p,
+		ArtRotate:   make(map[string]*Art),
+		ArtStatic:   make(map[string]*Art),
+		Callbacks:   make(map[int]Callback),
+		Childs:      make(map[*Object]bool),
 	}
 
-	o.ArtRotate = make(map[string]*Art)
-	o.ArtStatic = make(map[string]*Art)
+	o.Node.Material = Material(n.p.Material)
+	o.Node.Location = mgl32.Vec3{n.p.Pos.X, n.p.Pos.Y, n.p.Pos.Z}
 
-	o.Node.Material = Material(p.Material)
-
-	o.Node.Location = mgl32.Vec3{p.Pos.X, p.Pos.Y, p.Pos.Z}
-
-	if p.Phys != nil {
-		o.SetPhys(p.Phys)
+	if n.p.Phys != nil {
+		o.SetPhys(n.p.Phys)
 		o.AddRenderShape()
 	}
 
 	// o.Childs = make(map[string]*Bar)
-	for _, art := range arts {
+	for _, art := range n.arts {
 		o.NewArt(art)
 	}
 
-	Objects[o] = true
+	if n.p.Static {
+		Scene = append(Scene, o)
+	} else {
+		Objects[o] = true
+	}
 
-	return o
+	n.c <- o
 }
 
-func NewStaticObject(p param.Object) *Object {
-	o := &Object{
-		Name:        p.Name,
-		Node:        assets.GetModel(p.Mesh.Model),
-		Shadow:      p.Mesh.Shadow,
-		Transparent: p.Transparent,
-		Param:       p,
-		ArtRotate:   make(map[string]*Art),
-		ArtStatic:   make(map[string]*Art),
+func createNode(mesh param.Mesh) (node *fizzle.Renderable) {
+	switch mesh.Model {
+	case "plane":
+		node = fizzle.CreatePlaneV(mgl32.Vec3{0, -mesh.X / 2, 0}, mgl32.Vec3{mesh.Y, mesh.X / 2, 0})
+
+	// case "ground":
+	// 	log.Println(mesh)
+	// 	node = fizzle.CreatePlaneXY(-mesh.X, -mesh.Y, mesh.X, mesh.Y)
+
+	case "box":
+		node = fizzle.CreateCube(-2, -2, -2, 2, 2, 2)
+
+	default:
+		node = assets.GetModel(mesh.Model)
 	}
 
-	o.Node.Material = Material(p.Material)
-	o.Node.Location = mgl32.Vec3{p.Pos.X, p.Pos.Y, p.Pos.Z}
-
-	if p.Phys != nil {
-		o.SetPhys(p.Phys)
-		o.AddRenderShape()
-	}
-
-	Scene = append(Scene, o)
-
-	return o
+	return
 }
 
 func (o *Object) AddRenderShape() {

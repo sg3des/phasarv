@@ -3,6 +3,7 @@ package main
 import (
 	"engine"
 	"log"
+	"math/rand"
 	"param"
 	"phys"
 	"phys/vect"
@@ -53,10 +54,10 @@ func (p *Player) CreatePlayer() {
 	// engine.NewParticles()
 }
 
-func CreateLocalPlayer(data interface{}) interface{} {
+func CreateLocalPlayer(paramPlayer param.Player) {
 	log.Println("CreateLocalPlayer")
 
-	p := &Player{Param: data.(param.Player)}
+	p := &Player{Param: paramPlayer}
 	p.CreatePlayer()
 
 	players = append(players, p)
@@ -64,8 +65,6 @@ func CreateLocalPlayer(data interface{}) interface{} {
 
 	engine.AddCallback(p.Movement, p.PlayerRotation, p.CameraMovement, p.Attack)
 	engine.SetMouseCallback(p.MouseControl)
-	// engine.Window.SetKeyCallback(keyboardControl)
-	return nil
 }
 
 func (p *Player) Collision(arb *phys.Arbiter) bool {
@@ -84,7 +83,9 @@ func (p *Player) Collision(arb *phys.Arbiter) bool {
 }
 
 func (p *Player) Destroy() {
-	p.Object.SetPosition(p.respawnPoint.Elem())
+	x := 20 - rand.Float32()*40
+	y := 20 - rand.Float32()*40
+	p.Object.SetPosition(x, y)
 	p.Object.SetVelocity(0, 0)
 	p.Object.SetRotation(0)
 
@@ -200,7 +201,7 @@ func (p *Player) CameraMovement(dt float32) bool {
 	cp := camera.GetPosition()
 	camera.SetPosition(pp.X(), pp.Y(), cp.Z())
 
-	sun.Position = pp.Add(mgl32.Vec3{-30, 30, 100})
+	// sun.Position = pp.Add(mgl32.Vec3{-30, 30, 100})
 
 	x, y := engine.CursorPosition()
 	w, h := engine.WindowSize()

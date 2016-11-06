@@ -92,7 +92,8 @@ func (b *Bullet) CreateObject() {
 //Gun create simple bullet
 func (b *Bullet) Gun() {
 	b.CreateObject()
-	b.Object.Callback = b.GunCallback
+	b.Object.AddCallback(b.GunCallback)
+	// b.Object.Callback = b.GunCallback
 	b.Object.SetVelocity(b.Player.Object.VectorForward(b.Param.MovSpeed))
 
 	b.Shoot = true
@@ -101,21 +102,24 @@ func (b *Bullet) Gun() {
 //Rocket create rocket bullet
 func (b *Bullet) Rocket() {
 	if b.Param.SubType == "homing" {
-		target := engine.Hit(cursor.Position())
-		if target == nil || target.Name == "bullet" {
-			b.Weapon.DelayTime = time.Time{}
-			return
+
+		if b.Param.TargetObject == nil {
+			target := engine.Hit(cursor.Position())
+			if target == nil || target.Name == "bullet" {
+				b.Weapon.DelayTime = time.Time{}
+				return
+			}
+			b.Param.TargetObject = target
 		}
 
-		b.Param.TargetObject = target
 	}
 
 	b.CreateObject()
-	b.Object.Callback = b.RocketCallback
+	b.Object.AddCallback(b.RocketCallback)
 	b.Object.SetVelocity(b.Player.Object.VectorSide(b.Weapon.BulletObject.Phys.Mass*5*b.Weapon.X, -1.5704))
 	b.Param.Target = cursor.PositionVec2()
 
-	createTrail(b.Object, 0.7, 5, mgl32.Vec2{-0.5})
+	createTrail(b.Object, 0.75, int(b.Param.MovSpeed), mgl32.Vec2{-0.5})
 
 	b.Shoot = true
 	return
@@ -140,18 +144,20 @@ func (b *Bullet) Laser() {
 
 		if hit.Body.UserData != nil {
 			ApplyDamage(hit.Body.UserData.(*engine.Object), b.Param.Damage)
-			hit.Body.AddVelocity(b.Player.Object.VectorForward(b.Weapon.BulletObject.Phys.Mass * 10 / hit.Body.Mass()))
+			// hit.Body.AddVelocity(b.Player.Object.VectorForward(b.Weapon.BulletObject.Phys.Mass * 10 / hit.Body.Mass()))
 			hit.Body.AddAngularVelocity((rand.Float32() - 0.5) * 10 / hit.Body.Mass())
 		}
 	}
 
+	b.Weapon.BulletObject.Mesh.Y = h
 	//draw laser
-	b.Object = engine.NewPlane(b.Weapon.BulletObject, b.Weapon.BulletObject.Phys.W, h)
+	b.Object = engine.NewObject(b.Weapon.BulletObject)
+	// b.Object = engine.NewPlane(b.Weapon.BulletObject, b.Weapon.BulletObject.Phys.W, h)
 	b.Object.SetPosition(x, y)
 	b.Object.SetRotation(b.Player.Object.Rotation())
 
 	b.Param.TimePoint = time.Now().Add(b.Param.Lifetime)
-	b.Object.Callback = b.LaserCallback
+	b.Object.AddCallback(b.LaserCallback)
 
 	b.Shoot = true
 	return
@@ -162,7 +168,7 @@ func (b *Bullet) Laser() {
 //CALLBACKS
 
 //GunCallback callback each frame
-func (b *Bullet) GunCallback(ob *engine.Object, dt float32) {
+func (b *Bullet) GunCallback(dt float32) {
 	if b.Param.TimePoint.Before(time.Now()) {
 		b.Destroy()
 		// b.Object.Destroy()
@@ -174,7 +180,7 @@ func (b *Bullet) GunCallback(ob *engine.Object, dt float32) {
 }
 
 //RocketCallback callback each frame
-func (b *Bullet) RocketCallback(ob *engine.Object, dt float32) {
+func (b *Bullet) RocketCallback(dt float32) {
 	if b.Param.TimePoint.Before(time.Now()) {
 		b.Destroy()
 		return
@@ -190,9 +196,9 @@ func (b *Bullet) RocketCallback(ob *engine.Object, dt float32) {
 	case "direct":
 	case "aimed":
 		tp := b.Param.Target
-		angle = SubAngleObjectPoint(ob, mgl32.Vec2{tp.X(), tp.Y()})
+		angle = SubAngleObjectPoint(b.Object, mgl32.Vec2{tp.X(), tp.Y()})
 	case "guided":
-		angle = SubAngleObjectPoint(ob, cursor.PositionVec2())
+		angle = SubAngleObjectPoint(b.Object, cursor.PositionVec2())
 	case "homing":
 		tp := b.Param.Target
 		if b.Param.TargetObject == nil {
@@ -203,21 +209,21 @@ func (b *Bullet) RocketCallback(ob *engine.Object, dt float32) {
 		} else {
 			tp = b.Param.TargetObject.(*engine.Object).PositionVec2()
 		}
-		angle = SubAngleObjectPoint(ob, mgl32.Vec2{tp.X(), tp.Y()})
+		angle = SubAngleObjectPoint(b.Object, mgl32.Vec2{tp.X(), tp.Y()})
 	}
 
 	if angle != 0 {
-		ob.Shape.Body.AddAngularVelocity(angle * b.Param.RotSpeed * 0.05 * dt)
+		b.Object.Shape.Body.AddAngularVelocity(angle * b.Param.RotSpeed * 0.05 * dt)
 	}
 
-	if ob.Velocity().Length() < b.Param.MovSpeed {
-		ob.AddVelocity(ob.VectorForward(dt * b.Param.MovSpeed))
+	if b.Object.Velocity().Length() < b.Param.MovSpeed {
+		b.Object.AddVelocity(b.Object.VectorForward(dt * b.Param.MovSpeed))
 	}
 
 }
 
 //LaserCallback each frame
-func (b *Bullet) LaserCallback(ob *engine.Object, dt float32) {
+func (b *Bullet) LaserCallback(dt float32) {
 	color := b.Object.Node.Material.DiffuseColor
 	// color[4] =
 	color[3] = color[3] - dt
@@ -236,7 +242,7 @@ func (b *Bullet) Destroy() {
 		b.Object.Destroy()
 	case "laser":
 		b.Object.Shape.Body.Enabled = false
-		b.LaserCallback(b.Object, 0.1)
+		b.LaserCallback(0.1)
 	}
 }
 

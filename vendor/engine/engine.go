@@ -7,6 +7,7 @@ import (
 	"runtime"
 
 	"github.com/go-gl/glfw/v3.1/glfw"
+	"github.com/go-gl/mathgl/mgl32"
 	"github.com/tbogdala/fizzle"
 	"github.com/tbogdala/fizzle/graphicsprovider"
 	"github.com/tbogdala/fizzle/graphicsprovider/opengl"
@@ -37,8 +38,8 @@ type engine struct {
 	callbacks map[int]func(float32) bool
 }
 
-//Init main function create window and initialize opengl,render engine.c.
-func Init() {
+//Init main function create window and initialize opengl,render engine
+func Init(f func()) {
 	runtime.LockOSThread()
 
 	if err := e.initWindow(1024, 768, "phasarv"); err != nil {
@@ -49,11 +50,11 @@ func Init() {
 		log.Fatalf("engine: failed initialize opengl, reason: %s", err)
 	}
 
-	e.initRender()
-
 	if err := assets.LoadAssets("assets/textures", "assets/shaders", "assets/models"); err != nil {
 		log.Fatalf("failed load assets, reason: %s", err)
 	}
+
+	e.initRender()
 
 	if err := e.initShadowmap(); err != nil {
 		log.Fatalf("failed generate shadow map, reason: %s", err)
@@ -65,9 +66,11 @@ func Init() {
 
 	e.callbacks = make(map[int]func(float32) bool)
 
-	// initPhys(0.3)
+	e.camera = fizzle.NewYawPitchCamera(mgl32.Vec3{0, 0, 10})
 
-	// engine.Camera = fizzle.NewYawPitchCamera(mgl32.Vec3{0, 0, 10})
+	go f()
+
+	Loop()
 }
 
 //initWindow create window and set some opengl flags
@@ -78,7 +81,7 @@ func (e *engine) initWindow(w, h int, title string) error {
 	}
 
 	// request a OpenGL 3.3 core context
-	glfw.WindowHint(glfw.Samples, 1)
+	glfw.WindowHint(glfw.Samples, 4)
 	glfw.WindowHint(glfw.ContextVersionMajor, 3)
 	glfw.WindowHint(glfw.ContextVersionMinor, 3)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
@@ -115,18 +118,24 @@ func (e *engine) initRender() {
 	e.render.SetupShadowMapRendering()
 
 	// set some OpenGL flags
-	e.gfx.Enable(graphicsprovider.CULL_FACE)
-	e.gfx.Enable(graphicsprovider.DEPTH_TEST)
-	e.gfx.Enable(graphicsprovider.PROGRAM_POINT_SIZE)
+	// e.gfx.Enable(graphicsprovider.CULL_FACE)
+	// e.gfx.Enable(graphicsprovider.DEPTH_TEST)
 	e.gfx.Enable(graphicsprovider.TEXTURE_2D)
 	e.gfx.Enable(graphicsprovider.BLEND)
-	e.gfx.BlendFunc(graphicsprovider.SRC_ALPHA, graphicsprovider.
-		ONE_MINUS_SRC_ALPHA)
+	// e.gfx.Enable(graphicsprovider.SCISSOR_TEST)
+
+	// e.gfx.Enable(graphicsprovider.CULL_FACE)
+	// e.gfx.Enable(graphicsprovider.DEPTH_TEST)
+	// e.gfx.Enable(graphicsprovider.PROGRAM_POINT_SIZE)
+	// e.gfx.Enable(graphicsprovider.TEXTURE_2D)
+	// e.gfx.Enable(graphicsprovider.BLEND)
+
+	e.gfx.BlendFunc(graphicsprovider.SRC_ALPHA, graphicsprovider.ONE_MINUS_SRC_ALPHA)
 	e.gfx.Enable(graphicsprovider.SAMPLE_ALPHA_TO_COVERAGE)
 
 	// e.gfx.Enable(graphicsprovider.EQUAL)
 	// e.gfx.BlendFunc(graphicsprovider.ONE_MINUS_DST_ALPHA, graphicsprovider.DST_ALPHA)
-	// gfx.BlendFunc(graphicsprovider.ONE, graphicsprovider.ONE)
+	// e.gfx.BlendFunc(graphicsprovider.ONE, graphicsprovider.ONE)
 
 	// glBlendFunc(GL_ONE_MINUS_DST_ALPHA, GL_DST_ALPHA)
 }

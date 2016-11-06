@@ -72,12 +72,14 @@ type Object struct {
 
 	MaxRollAngle float32
 
+	Static      bool
 	Transparent bool
+	Shadow      bool
 }
 
 type Mesh struct {
-	Model, Texture, Shader string
-	Shadow                 bool
+	Model   string
+	X, Y, Z float32
 }
 
 type Material struct {
