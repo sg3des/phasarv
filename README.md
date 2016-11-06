@@ -4,7 +4,7 @@ This game project developed on the GO language.
 
 The game is a topdown dynamic battle.
 
-![screenshot](screenshots/2016.10.16_224356.png)
+![screenshot](screenshots/screen.png)
 
 ## Code
 
