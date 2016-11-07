@@ -4,6 +4,7 @@ import (
 	"engine"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"param"
 	"path"
 
@@ -47,6 +48,15 @@ func Load(name string) {
 	for _, o := range s.Objects {
 		o.Object.Static = true
 		engine.NewObject(o.Object)
+
+		if o.Object.Name == "tree" {
+			for i := 0; i < 1000; i++ {
+				o.Object.Pos.X = float32(rand.Intn(200)-100) + rand.Float32()
+				o.Object.Pos.Y = float32(rand.Intn(200)-100) + rand.Float32()
+				engine.NewObject(o.Object)
+			}
+		}
 		// _o.SetRotation(rand.Float32() * 3)
 	}
+
 }

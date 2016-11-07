@@ -75,6 +75,12 @@ func Loop() {
 
 	for !e.window.ShouldClose() {
 		select {
+		case no := <-cNewObjects:
+			no.create()
+			continue
+		case nl := <-cNewLights:
+			nl.create()
+			continue
 		case dt := <-cRender:
 			loopRenderShadows()
 			loopRender()
@@ -84,10 +90,7 @@ func Loop() {
 
 			e.window.SwapBuffers()
 			glfw.PollEvents()
-		case no := <-cNewObjects:
-			no.create()
-		case nl := <-cNewLights:
-			nl.create()
+
 		}
 	}
 }

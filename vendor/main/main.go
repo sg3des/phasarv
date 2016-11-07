@@ -82,7 +82,7 @@ func networkPlay() {
 }
 
 func localPlay() {
-	createEnemy(10, 15)
+	// createEnemy(10, 15)
 	CreateLocalPlayer(db.GetPlayer("player0"))
 }
 
