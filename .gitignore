@@ -1,6 +1,6 @@
 phasarv.sublime-workspace
 phasarv.sublime-project
-./models
+./models/*
 *.blend*
 *.obj
 *.mtl
