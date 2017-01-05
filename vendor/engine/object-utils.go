@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"phys"
 
 	"phys/vect"
 
@@ -14,8 +15,10 @@ func (o *Object) Angle() float32 {
 	if o.Shape != nil {
 		return o.Shape.Body.Angle()
 	}
-	x, y := o.Position()
-	return (&vect.Vect{x, y}).Angle()
+
+	return o.P.Angle
+	// x, y := o.Position()
+	// return (&vect.Vect{x, y}).Angle()
 }
 
 // func (o *Object) Length(x, y float32) float32 {
@@ -32,8 +35,13 @@ func (o *Object) Position() (x, y float32) {
 		v := o.Shape.Body.Position()
 		return v.X, v.Y
 	}
+	// if o.Body != nil {
+	// 	return o.Body.Location.X(), o.Body.Location.Y()
+	// }
 
-	return o.Node.Location.X(), o.Node.Location.Y()
+	// log.Println("warning object", o.Name, "is not yet initialize")
+	// return 0, 0
+	return o.P.Pos.X, o.P.Pos.Y
 }
 
 func (o *Object) PositionVec2() mgl32.Vec2 {
@@ -42,7 +50,13 @@ func (o *Object) PositionVec2() mgl32.Vec2 {
 		return mgl32.Vec2{v.X, v.Y}
 	}
 
-	return mgl32.Vec2{o.Node.Location.X(), o.Node.Location.Y()}
+	// if o.Body != nil {
+	// 	return mgl32.Vec2{o.Body.Location.X(), o.Body.Location.Y()}
+	// }
+
+	// log.Println("failed object", o.Name, "not yet created")
+	return o.P.Pos.Vec2()
+	// return mgl32.Vec2{}
 }
 
 func (o *Object) PositionVec3() mgl32.Vec3 {
@@ -51,26 +65,30 @@ func (o *Object) PositionVec3() mgl32.Vec3 {
 		return mgl32.Vec3{v.X, v.Y, 0}
 	}
 
-	return mgl32.Vec3{o.Node.Location.X(), o.Node.Location.Y(), o.Node.Location.Z()}
+	return o.P.Pos.Vec3()
+	// return mgl32.Vec3{o.Body.Location.X(), o.Body.Location.Y(), o.Body.Location.Z()}
 }
 
-func (e *Object) SetPosition(x, y float32) {
-	if e.Shape != nil {
-		e.Shape.Body.SetPosition(vect.Vect{x, y})
+func (o *Object) SetPosition(x, y float32) {
+	if o.Shape != nil {
+		o.Shape.Body.SetPosition(vect.Vect{x, y})
 	} else {
-		e.Node.Location = mgl32.Vec3{x, y, e.Node.Location.Z()}
+		o.P.Pos.X = x
+		o.P.Pos.Y = y
+		// e.Body.Location = mgl32.Vec3{x, y, e.Body.Location.Z()}
 	}
 }
 
-func (e *Object) VectorForward(scale float32) (float32, float32) {
+func (o *Object) VectorForward(scale float32) (float32, float32) {
 	var v vect.Vect
-	if e.Shape != nil && e.Shape.Body != nil {
+	if o.Shape != nil && o.Shape.Body != nil {
 		// v = vect.FromAngle(e.Shape.Body.Angle())
-		v = e.Shape.Body.RotVec()
+		v = o.Shape.Body.RotVec()
 	} else {
 		// v = vect.Vect{e.Node.LocalRotation.X(), e.Node.LocalRotation.Y()}
 
-		v = vect.FromAngle(float32(2 * math.Acos(float64(e.Node.Rotation.W))))
+		v = vect.FromAngle(o.P.Angle)
+		// v = vect.FromAngle(float32(2 * math.Acos(float64(e.Body.Rotation.W))))
 	}
 
 	v.Mult(scale)
@@ -84,17 +102,22 @@ func (o *Object) VectorSide(scale, angle float32) (float32, float32) {
 	// if scale < 0 {
 	// 	ang = e.Shape.Body.Angle() + 1.5708 // ~90 deg
 	// }
-	if o.Shape == nil || o.Shape.Body == nil {
-		log.Println(o.Name)
-		return 0, 0
+	var v vect.Vect
+	if o.Shape != nil || o.Shape.Body != nil {
+		v = o.Shape.Body.RotVec()
+		// log.Println(o.Name)
+		// return 0, 0
+		v = vect.FromAngle(v.Angle() + angle)
+	} else {
+		v = vect.FromAngle(o.P.Angle + angle)
 	}
 
-	rotvec := o.Shape.Body.RotVec()
+	// rotvec := o.Shape.Body.RotVec()
 	// rotvec.Mult(scale)
 
 	// log.Println(o.Shape.Body.Angle() == rotvec.Angle())
 
-	v := vect.FromAngle(rotvec.Angle() + angle)
+	// v := vect.FromAngle(rotvec.Angle() + angle)
 	v.Mult(scale)
 
 	return v.X, v.Y
@@ -105,7 +128,8 @@ func (o *Object) Rotation() float32 {
 		return o.Shape.Body.Angle()
 	}
 	// log.Println("need check get rotation fron fizzle node, it`s may be not correct!")
-	return float32(2 * math.Acos(float64(o.Node.Rotation.W)))
+	// return float32(2 * math.Acos(float64(o.Body.Rotation.W)))
+	return o.P.Angle
 }
 
 func (o *Object) SetRotation(ang float32) {
@@ -113,7 +137,8 @@ func (o *Object) SetRotation(ang float32) {
 		o.Shape.Body.SetAngle(ang)
 	} else {
 		// e.Node.LocalRotation = mgl32.AnglesToQuat(0, 0, vect.Vect{x, y}.Angle(), 1)
-		o.Node.LocalRotation = mgl32.AnglesToQuat(0, 0, ang, 1)
+		// o.Body.LocalRotation = mgl32.AnglesToQuat(0, 0, ang, 1)
+		o.P.Angle = ang
 	}
 }
 
@@ -209,7 +234,7 @@ func (o *Object) Velocity() vect.Vect {
 }
 
 func (o *Object) ShapeWidthPercent() float32 {
-	return vect.FAbs(o.RollAngle) / (o.Param.MaxRollAngle * 1.1)
+	return vect.FAbs(o.RollAngle) / (o.MaxRollAngle * 1.1)
 }
 
 func (o *Object) AddCallback(f Callback) {
@@ -220,16 +245,6 @@ func (o *Object) AddChild(child *Object) {
 	o.Childs[child] = true
 }
 
-// func (o *Object) RemoveCallback(f Callback) {
-// 	for i, c := range o.Callbacks {
-// 		if c == f {
-// 			delete(o.Callbacks, i)
-// 			return
-// 		}
-// 	}
-// 	log.Printf("failed remove callback in object with name `%s` - callback not found\n", o.Name)
-// }
-
 func (o *Object) Destroy() {
 	if o.DestroyFunc != nil {
 		o.DestroyFunc()
@@ -238,43 +253,44 @@ func (o *Object) Destroy() {
 
 	if o.Shape != nil {
 		o.Shape.Body.Enabled = false
-		space.RemoveBody(o.Shape.Body)
+		phys.RemoveBody(o.Shape.Body)
 		// space.RemoveShape(o.Shape) - crash need TODO
 	}
 
-	Objects[o] = false
+	// Objects[o] = false
 
 	for child := range o.Childs {
 		child.Destroy()
 	}
 
+	o.renderable.Destroy()
 	delete(Objects, o)
-	o = nil
+	// o = nil
 }
 
-func (o *Object) Clone() *Object {
-	newObject := &Object{
-		Name:         o.Name,
-		Node:         o.Node.Clone(),
-		MaxRollAngle: o.MaxRollAngle,
+// func (o *Object) Clone() *Object {
+// 	newObject := &Object{
+// 		Name:         o.Name,
+// 		Node:         o.Node.Clone(),
+// 		MaxRollAngle: o.MaxRollAngle,
 
-		Shadow:      o.Shadow,
-		Transparent: o.Transparent,
+// 		Shadow:      o.Shadow,
+// 		Transparent: o.Transparent,
 
-		ArtStatic: o.ArtStatic,
-		ArtRotate: o.ArtRotate,
+// 		ArtStatic: o.ArtStatic,
+// 		ArtRotate: o.ArtRotate,
 
-		// Callback:    o.Callback,
-		Callbacks:   o.Callbacks,
-		DestroyFunc: o.DestroyFunc,
+// 		// Callback:    o.Callback,
+// 		Callbacks:   o.Callbacks,
+// 		DestroyFunc: o.DestroyFunc,
 
-		Param: o.Param,
-	}
+// 		Param: o.Param,
+// 	}
 
-	newObject.SetPhys(o.Param.Phys)
-	newObject.Node.Material = Material(o.Param.Material)
+// 	newObject.SetPhys(o.Param.Phys)
+// 	newObject.Node.Material = NewMaterial(o.Param.Material)
 
-	Objects[newObject] = true
+// 	Objects[newObject] = true
 
-	return newObject
-}
+// 	return newObject
+// }

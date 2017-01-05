@@ -1,41 +1,47 @@
 name: "scene00"
 
-_box: &trees_2
-  object: 
-    name: "tree"
-    mesh:
-      model: "tree"
+_tree: &tree
+  name: "tree"
+  p:
+    z: -5
+  pi:
+    h: 3
+    w: 3
+    group: 1
+  ri:
+    meshname: "tree"
     material:
       name: "tree"
       texture: "tree"
       shader: "blend"
-    phys:
-      h: 3
-      w: 3
-      group: 1
     transparent: true
     shadow: true
 
-objects: 
-  - object:
+_ground: &ground
+  name: "ground"
+  p:
+    size: {10,10,10}
+    pos:
+      z: -5
+  ri:
+    meshname: "ground"
+    material:
       name: "ground"
-      mesh: 
-        model: "ground"
-      material:
-        name: "ground"
-        texture: "grass"
-        shader: "basic"
-      pos: {z: -5}
-  - <<: *trees_2 
-    object:
-      pos: {x: 10, y: 5, z: -5}
-  - <<: *trees_2
-    object:
-      pos: {x: 10, y: -4, z: -5}
-  - <<: *trees_2
-    object:
-      pos: {x: -10, y: 0, z: -5}
-  - <<: *trees_2
-    object:
-      pos: {x: -5, y: 5, z: -5}
+      texture: "grass"
+      shader: "basic"
+   
 
+objects:
+  - <<: *ground
+  - <<: *tree 
+    p:
+      pos: {x: 10, y: 5, z: -5}
+  - <<: *tree
+    p:
+      pos: {x: 10, y: -4, z: -5}
+  - <<: *tree
+    p:
+      pos: {x: -10, y: 0, z: -5}
+  - <<: *tree
+    p:
+      pos: {x: -5, y: 5, z: -5}

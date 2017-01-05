@@ -2,9 +2,9 @@ package main
 
 import (
 	"encoding/gob"
+	"game"
 	"log"
 	"network"
-	"param"
 	"phys/vect"
 )
 
@@ -13,7 +13,7 @@ var (
 )
 
 func Connect(addr string) {
-	gob.Register(param.Player{})
+	gob.Register(game.Player{})
 	gob.Register(vect.Vect{})
 
 	c = network.NewHandlers(map[string]network.Handler{
@@ -33,13 +33,13 @@ func Authorize(name string) {
 }
 
 func loadLocalPlayer(req *network.Request) interface{} {
-	CreateLocalPlayer(req.Data.(param.Player))
+	game.CreateLocalPlayer(req.Data.(*game.Player))
 	return nil
 }
 
 func loadEnemy(req *network.Request) interface{} {
 	pos := req.Data.(vect.Vect)
 	log.Println("load enemy", pos)
-	createEnemy(pos.X, pos.Y)
+	game.CreateEnemy(pos.X, pos.Y)
 	return nil
 }

@@ -1,22 +1,35 @@
 package db
 
 import (
-	"param"
+	"engine"
+	"game"
+	"materials"
 	"phys"
+	"point"
+	"render"
 	"time"
+
+	"github.com/go-gl/mathgl/mgl32"
 )
 
-func GetPlayer(name string) param.Player {
-	player := param.Player{
-		Name: "player0",
-		Object: param.Object{
+func GetPlayer(name string) *game.Player {
+	var v mgl32.Vec3
+
+	v[0] = 1
+
+	player := &game.Player{
+		Name: name,
+		Object: &engine.Object{
 			Name:         "player",
-			Mesh:         param.Mesh{Model: "trapeze"},
-			Material:     param.Material{Name: "player", Texture: "TestCube", Shader: "basic", SpecLevel: 1},
-			Phys:         &param.Phys{W: 2, H: 2, Mass: 12, Group: 1, Type: phys.ShapeType_Box},
 			MaxRollAngle: 1.5,
-			Shadow:       true,
-			Transparent:  false,
+
+			PI: &phys.Instruction{W: 2, H: 2, Mass: 12, Group: 1, ShapeType: phys.ShapeType_Box},
+			RI: &render.Instruction{
+				MeshName:    "trapeze",
+				Material:    &materials.Instruction{Name: "player", Texture: "TestCube", Shader: "basic", SpecLevel: 1},
+				Shadow:      true,
+				Transparent: false,
+			},
 		},
 		Health:   100,
 		MovSpeed: 20,
@@ -37,38 +50,45 @@ func GetPlayer(name string) param.Player {
 		// 	X:          -1,
 		// 	AttackRate: 200 * time.Millisecond,
 		// },
-		LeftWeapon: &param.Weapon{
-			BulletParam: param.Bullet{
+		LeftWeapon: &game.Weapon{
+			Bullet: game.Bullet{
 				Type:     "laser",
 				Lifetime: 2500 * time.Millisecond,
 				Damage:   50,
-			},
-			BulletObject: param.Object{
-				Name:     "bullet",
-				Mesh:     param.Mesh{"plane", 1, 1, 1},
-				Material: param.Material{Name: "laser", Texture: "laser", Shader: "blend"},
-				// Phys:        &param.Phys{W: 0.5, Mass: 0.5},
-				Transparent: true,
-			},
+				Object: &engine.Object{
+					Name: "bullet",
 
+					P: point.Param{Size: point.P{1, 1, 1}},
+					RI: &render.Instruction{
+						MeshName:    "plane",
+						Material:    &materials.Instruction{Name: "laser", Texture: "laser", Shader: "blend"},
+						Transparent: true,
+					},
+				},
+			},
 			X: -1,
 			// Delay:      500 * time.Millisecond,
 			AttackRate: 100 * time.Millisecond,
 		},
-		RightWeapon: &param.Weapon{
-			BulletParam: param.Bullet{
+		RightWeapon: &game.Weapon{
+			Bullet: game.Bullet{
 				Type:     "rocket",
-				SubType:  "homing",
+				SubType:  "aimed",
 				MovSpeed: 30,
 				RotSpeed: 100,
-				Lifetime: 100000 * time.Millisecond,
+				Lifetime: 20000 * time.Millisecond,
 				Damage:   200,
-			},
-			BulletObject: param.Object{
-				Name:     "bullet",
-				Mesh:     param.Mesh{Model: "rocket"},
-				Material: param.Material{Name: "bullet", Texture: "gray", Shader: "color"},
-				Phys:     &param.Phys{W: 0.1, H: 0.1, Mass: 0.5},
+
+				Object: &engine.Object{
+					Name: "bullet",
+
+					PI: &phys.Instruction{W: 0.1, H: 0.1, Mass: 0.5},
+					RI: &render.Instruction{
+						MeshName:    "rocket",
+						Material:    &materials.Instruction{Name: "bullet", Texture: "gray", Shader: "color"},
+						Transparent: true,
+					},
+				},
 			},
 			X: 1,
 			// Delay:      500 * time.Millisecond,

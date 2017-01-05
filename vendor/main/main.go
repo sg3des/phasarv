@@ -3,9 +3,12 @@ package main
 import (
 	"db"
 	"flag"
+	"game"
 	"log"
-	"param"
+	"render"
+	"runtime"
 	"scene"
+	"time"
 
 	"github.com/go-gl/glfw/v3.1/glfw"
 	"github.com/go-gl/mathgl/mgl32"
@@ -20,6 +23,7 @@ var (
 )
 
 func init() {
+	runtime.LockOSThread()
 	log.SetFlags(log.Lshortfile)
 	flag.Parse()
 	mode = flag.Arg(0)
@@ -29,12 +33,11 @@ var (
 	cursor *engine.Object
 	camera *fizzle.YawPitchCamera
 	sun    *forward.Light
-
-	players []*Player
 )
 
 func main() {
 	engine.Init(local)
+	// local()
 	// engine.SetKeyCallback(keyCallback)
 	// initEnvironment()
 
@@ -58,17 +61,19 @@ func main() {
 func local() {
 	engine.SetKeyCallback(keyCallback)
 	initEnvironment()
-	initCursor()
 
+	time.Sleep(time.Second)
 	scene.Load("scene00")
+
+	go localPlay()
 
 	// // time.Sleep(300 * time.Millisecond)
 
-	if mode == "client" {
-		networkPlay()
-	} else {
-		localPlay()
-	}
+	// if mode == "client" {
+	// 	networkPlay()
+	// } else {
+	// 	localPlay()
+	// }
 
 }
 
@@ -82,42 +87,30 @@ func networkPlay() {
 }
 
 func localPlay() {
-	// createEnemy(10, 15)
-	CreateLocalPlayer(db.GetPlayer("player0"))
+	game.CreateEnemy(10, 15)
+	game.CreateLocalPlayer(db.GetPlayer("player0"))
 }
 
 func initEnvironment() {
-	engine.NewLight(engine.ParamLight{
-		Sun:        true,
-		Pos:        mgl32.Vec3{-30, 30, 60},
+	(&render.Light{
+		Direct:     true,
+		Pos:        mgl32.Vec3{-30, 30, 100},
+		Dir:        mgl32.Vec3{30, -30, -100},
 		Strength:   0.7,
 		Specular:   0.5,
 		ShadowSize: 8192,
-	})
-	// sun = engine.NewSun()
+	}).Create()
+	// engine.NewSun()
 
-	engine.NewLight(engine.ParamLight{
-		Pos:        mgl32.Vec3{1, 1, -2},
+	(&render.Light{
+		Pos:        mgl32.Vec3{1, 1, 2},
 		Strength:   0.1,
-		Specular:   0,
+		Specular:   0.1,
 		ShadowSize: 2,
-	})
+	}).Create()
 
 	camera = engine.NewCamera(mgl32.Vec3{0, 0, 40})
 	camera.LookAtDirect(mgl32.Vec3{0, 0, 0})
-}
-
-func initCursor() {
-	cursor = engine.NewObject(
-		param.Object{
-			Name:     "cursor",
-			Mesh:     param.Mesh{Model: "plane", X: 1, Y: 1},
-			Material: param.Material{Name: "cursor", Shader: "colortext2", DiffColor: mgl32.Vec4{0.3, 0.3, 1, 0.9}},
-		},
-
-		// mgl32.Vec3{-0.5, -0.5, 1},
-		// mgl32.Vec3{0.5, 0.5, 1},
-	)
 }
 
 func keyCallback(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
@@ -128,7 +121,7 @@ func keyCallback(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action,
 		glfw.SwapInterval(1)
 	}
 	if key == glfw.KeySpace && action == glfw.Press {
-		for _, p := range players {
+		for _, p := range game.Players {
 			p.Destroy()
 		}
 	}

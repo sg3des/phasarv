@@ -9,6 +9,7 @@ import (
 
 	"github.com/tbogdala/fizzle"
 	"github.com/tbogdala/fizzle/graphicsprovider"
+	"github.com/tbogdala/fizzle/renderer/forward"
 	"github.com/tbogdala/gombz"
 )
 
@@ -48,6 +49,11 @@ func LoadAssets(texpath, shaderspath, modelspath string) error {
 			return errors.New("failed to load shader `" + shader + "` reason: " + err.Error())
 		}
 	}
+	Shaders["basic"], err = forward.CreateBasicShader()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	// Shaders["basic"] = Shaders[""]
 
 	models, err := filepath.Glob(filepath.Join(modelspath, "*.gombz"))
 	if err != nil {
@@ -139,7 +145,8 @@ func GetShader(name string) *fizzle.RenderShader {
 func GetModel(name string) *fizzle.Renderable {
 	mesh, ok := Models[name]
 	if !ok {
-		log.Fatalf("ERROR: model `%s` not found!", name)
+		panic("ERROR: model not found! " + name)
+		// log.Fatalf("ERROR: model `%s` not found!", name)
 	}
 
 	return mesh.Clone()
