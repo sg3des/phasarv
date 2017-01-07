@@ -5,6 +5,7 @@ import (
 	"log"
 	"materials"
 	"math"
+	"phys"
 	"point"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -12,8 +13,9 @@ import (
 )
 
 type Renderable struct {
-	Body  *fizzle.Renderable
-	Shape *fizzle.Renderable
+	Body      *fizzle.Renderable
+	Shape     *fizzle.Renderable
+	physShape *phys.Shape
 
 	Shadow      bool
 	Transparent bool
@@ -25,8 +27,6 @@ type Renderable struct {
 
 	P  point.Param
 	RI *Instruction
-
-	needDestroy bool
 }
 
 func (r *Renderable) AppendArt(a *Art) {
@@ -49,10 +49,10 @@ type Instruction struct {
 
 func (i *Instruction) Create(p point.Param) *Renderable {
 	r := &Renderable{
-		// Body: &fizzle.Renderable{},
-		// Body:        i.createBody(p),
 		Shadow:      i.Shadow,
 		Transparent: i.Transparent,
+		P:           p,
+		RI:          i,
 	}
 
 	if p.Static {
@@ -61,27 +61,12 @@ func (i *Instruction) Create(p point.Param) *Renderable {
 		Renderables[r] = true
 	}
 
-	r.P = p
-	r.RI = i
-
 	return r
 }
 
-// func (r *Renderable) createBody() {
-// 	switch r.RI.MeshName {
-// 	case "plane":
-// 		r.Body = fizzle.CreatePlaneV(mgl32.Vec3{0, -r.P.Size.X / 2, 0}, mgl32.Vec3{r.P.Size.Y, r.P.Size.X / 2, 0})
-// 	case "box":
-// 		log.Println("warning: fixed size")
-// 		r.Body = fizzle.CreateCube(-2, -2, -2, 2, 2, 2)
-// 	default:
-// 		r.Body = assets.GetModel(r.RI.MeshName)
-// 	}
-
-// 	r.Body.Material = r.RI.Material.Create()
-// 	r.Body.Location = r.P.Pos.Vec3()
-// 	r.Body.LocalRotation = mgl32.AnglesToQuat(0, 0, r.P.Angle, 1)
-// }
+func (r *Renderable) AddShape(physShape *phys.Shape) {
+	r.physShape = physShape
+}
 
 func (i *Instruction) createBody(p point.Param) (body *fizzle.Renderable) {
 	switch i.MeshName {
@@ -99,6 +84,29 @@ func (i *Instruction) createBody(p point.Param) (body *fizzle.Renderable) {
 	body.LocalRotation = mgl32.AnglesToQuat(0, 0, p.Angle, 1)
 
 	return body
+}
+
+func (r *Renderable) createRenderableShape(physShape *phys.Shape) (renderShape *fizzle.Renderable) {
+	switch physShape.ShapeType() {
+	case phys.ShapeType_Box:
+		shape := physShape.GetAsBox()
+		w := shape.Width
+		h := shape.Height
+		renderShape = fizzle.CreateWireframeCube(-h/2, -w/2, -0.1, h/2, w/2, 0.1)
+	case phys.ShapeType_Circle:
+		shape := physShape.GetAsCircle()
+		renderShape = fizzle.CreateWireframeCircle(0, 0, 0, shape.Radius, 32, fizzle.X|fizzle.Y)
+	case phys.ShapeType_Polygon:
+		log.Println("shapetype polygon not yet ready")
+		// renderShape = createTriangle(o.Param.Phys.W, o.Param.Phys.H, 1)
+	default:
+
+		log.Fatalf("WARNING: shape type `%s` not yet!", physShape.ShapeType())
+	}
+
+	renderShape.Material = (&materials.Instruction{Name: "shape", Shader: "color", DiffColor: mgl32.Vec4{1, 0.1, 0.1, 0.75}}).Create()
+
+	return
 }
 
 type Art struct {
@@ -128,33 +136,57 @@ func (i *Instruction) CreateArt(p point.Param) *Art {
 
 func (r *Renderable) Render() {
 	if r.Body == nil {
-		log.Println("create ", r.RI.MeshName)
+		// log.Println("create ", r.RI.MeshName)
 		r.Body = r.RI.createBody(r.P)
 	}
 
-	if r.needDestroy {
-		log.Println("destroy", r.RI.MeshName)
-		r.destroy()
-		return
-	}
+	// if r.needDestroy {
+	// 	// log.Println("destroy", r.RI.MeshName)
+	// 	r.destroy()
+	// 	return
+	// }
 
 	if r.Body == nil {
 		log.Println("WTF?!?!", r.RI.MeshName, r.P.Pos)
 		return
 	}
 
-	// log.Println("render", r.RI.MeshName, fmt.Sprintf("%#v", r.Body.Core))
 	render.DrawRenderable(r.Body, nil, perspective, view, camera)
 
-	if r.Shape != nil {
-		r.Shape.Location = mgl32.Vec3{0, 0, 1}.Add(r.Body.Location)
-		render.DrawLines(r.Shape, r.Shape.Material.Shader, nil, perspective, view, camera)
+	if r.physShape != nil {
+		r.renderShape()
 	}
 
-	r.RenderArts()
+	r.renderArts()
 }
 
-func (r *Renderable) RenderArts() {
+func (r *Renderable) renderShape() {
+	//create shape if need
+	if r.Shape == nil {
+		r.Shape = r.createRenderableShape(r.physShape)
+	}
+
+	if r.physShape == nil || r.physShape.Body == nil {
+		//then shape or body already deleted
+		return
+	}
+
+	r.Shape.Location = mgl32.Vec3{0, 0, 0}.Add(mgl32.Vec3{r.Body.Location.X(), r.Body.Location.Y(), 0})
+
+	//set rotation
+	r.Shape.LocalRotation = mgl32.AnglesToQuat(0, 0, r.physShape.Body.Angle(), 1)
+
+	//resize width if it box... crunch!!!!
+	if r.physShape.ShapeType() == phys.ShapeType_Box {
+		r.Shape.Scale = mgl32.Vec3{1, r.physShape.GetAsBox().Width / 2, 1}
+	}
+
+	//render lines
+	render.DrawLines(r.Shape, r.Shape.Material.Shader, nil, perspective, view, camera)
+
+}
+
+func (r *Renderable) renderArts() {
 	for _, a := range r.ArtStatic {
 		if a.Body == nil {
 			a.Body = a.RI.createBody(a.P)
@@ -185,13 +217,15 @@ func (r *Renderable) Angle() float32 {
 }
 
 func (r *Renderable) Destroy() {
-	r.needDestroy = true
+	// r.needDestroy = true
+
+	delete(Renderables, r)
 	// delete(Renderables, r)
 }
 
-func (r *Renderable) destroy() {
-	// r.needDestroy = true
-	// r.Body.Destroy()
-	delete(Renderables, r)
-	// r = nil
-}
+// func (r *Renderable) destroy() {
+// 	// r.needDestroy = true
+// 	// r.Body.Destroy()
+// 	delete(Renderables, r)
+// 	// r = nil
+// }

@@ -9,6 +9,29 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
+func GetPlayerInPoint(x, y float32) *Player {
+	if userData := engine.Hit(x, y); userData != nil {
+		return userData.(*Player)
+	}
+	return nil
+}
+
+func GetNearPlayerByRay(x0, y0, x1, y1 float32, ignorePlayer *Player) (p *Player) {
+	userdatas := engine.Raycast(x0, y0, x1, y1, ignorePlayer.Object.Shape.Body)
+
+	var shortDistance float32 = 999
+	for _, userdata := range userdatas {
+		if userdata != nil {
+			if dist := userdata.(*Player).Object.DistancePoint(x0, y0); dist < shortDistance {
+				shortDistance = dist
+				p = userdata.(*Player)
+			}
+		}
+	}
+
+	return
+}
+
 // func AngleBetweenPoints(px, py, cx, cy float32) float32 {
 // 	return float32(math.Atan2(float64(cy-py), float64(cx-px)))
 // }

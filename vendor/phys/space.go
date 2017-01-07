@@ -775,6 +775,7 @@ type RayCast struct {
 type RayCastHit struct {
 	Distance float32
 	Body     *Body
+	Shape    *Shape
 }
 
 // const EPS = 0.00001
@@ -964,6 +965,7 @@ func (space *Space) RayCastAll(begin vect.Vect, direction vect.Vect, group int, 
 				hits = append(hits, &RayCastHit{
 					Distance: dist,
 					Body:     body,
+					Shape:    shape,
 				})
 				continue
 			}

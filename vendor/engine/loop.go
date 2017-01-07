@@ -59,7 +59,7 @@ func Loop() {
 
 	for !e.window.ShouldClose() {
 		Rdt, Rfps = Rendframe.Next()
-		loopPhys()
+		loopPhysToRender()
 		// loopCreator()
 
 		// loopRenderShadows()
@@ -80,27 +80,23 @@ func Loop() {
 	}
 }
 
-func loopPhys() {
-	// log.Println(dt)
-	// phys.space.Step(dt)
-
-	// log.Println(len(Objects))
+//loopPhysToRender update renderable position and rotation for dynamical objects
+func loopPhysToRender() {
 	for o := range Objects {
-
-		if o.renderable.Body == nil {
-			// log.Println("skip:", o.Name)
+		if o.needDestroy {
+			o.renderable.Destroy()
+			delete(Objects, o)
 			continue
 		}
-
-		// log.Println("rend:", o.Name)
-
+		if o.renderable.Body == nil {
+			continue
+		}
 		// update position
 		o.renderable.Body.Location = o.PositionVec3()
 
-		// log.Println(o.Name, o.PositionVec3())
-
 		// update rotation
 		ang := o.Rotation()
+		//if rollAngle exist then need roll renderable object
 		if o.RollAngle != 0 {
 			q := mgl32.AnglesToQuat(0, 0, ang, 1).Mul(mgl32.AnglesToQuat(o.RollAngle, 0, 0, 1))
 			o.renderable.Body.LocalRotation = q
@@ -122,133 +118,12 @@ func loopCallbacks(dt float32) {
 	}
 
 	for o := range Objects {
+		if o.needDestroy {
+			continue
+		}
 		for _, f := range o.Callbacks {
+
 			f(dt)
 		}
 	}
 }
-
-// func loopCreator() {
-// 	for l := range lights {
-// 		if l.LightNode == nil {
-// 			log.Println("create light, direct:", l.Direct)
-// 			l.create()
-// 		}
-// 	}
-
-// 	for _, o := range Scene {
-// 		if o.Body == nil {
-// 			log.Println("create scene object: ", o.Name)
-// 			o.createRenderable(o.Param)
-// 		}
-// 	}
-
-// 	for o := range Objects {
-// 		if o.Body == nil {
-// 			log.Println("create object: ", o.Name)
-// 			o.createRenderable(o.Param)
-
-// 			// for _, art := range o.Arts {
-// 			// 	// if art.Art == nil {
-// 			// 	art.createNode(art.Param)
-// 			// 	// }
-// 			// }
-// 			// for _, art := range o.ArtRotate {
-// 			// 	if art.Body == nil {
-// 			// 		log.Println("create art:", art.Name, art.Node)
-// 			// 		art.createNode(art.Param)
-// 			// 	}
-// 			// }
-
-// 			// for _, art := range o.ArtStatic {
-// 			// 	if art.Body == nil {
-// 			// 		log.Println("create art:", art.Name, art.Node)
-// 			// 		art.createNode(art.Param)
-// 			// 	}
-// 			// }
-// 		}
-// 	}
-// }
-
-// func loopUI(dt float32) {
-// 	// e.gfx.Disable(graphicsprovider.DEPTH_TEST)
-// 	// e.gfx.Enable(graphicsprovider.SCISSOR_TEST)
-
-// 	e.ui.Construct(float64(dt))
-// 	e.ui.Draw()
-
-// 	// e.gfx.Disable(graphicsprovider.SCISSOR_TEST)
-// 	// e.gfx.Enable(graphicsprovider.DEPTH_TEST)
-// }
-
-// func loopRender() {
-// 	w, h := e.window.GetFramebufferSize()
-
-// 	// clear the screen and reset our viewport
-// 	e.gfx.Viewport(0, 0, int32(w), int32(h))
-// 	// e.gfx.ClearColor(0.5, 0.5, 0.5, 1)
-// 	e.gfx.Clear(graphicsprovider.COLOR_BUFFER_BIT | graphicsprovider.DEPTH_BUFFER_BIT)
-
-// 	render.RenderFrame(mgl32.DegToRad(50), float32(w)/float32(h))
-
-// 	// // make the projection and view matrixes
-// 	// perspective := mgl32.Perspective(mgl32.DegToRad(50), float32(w)/float32(h), 1.0, 100.0)
-// 	// view := e.camera.GetViewMatrix()
-
-// 	// // render object
-// 	// for o, b := range Objects {
-// 	// 	if b && o.Node != nil && !o.Transparent {
-// 	// 		// log.Println("render", o.Name)
-// 	// 		o.Render(perspective, view, e.camera)
-// 	// 	}
-// 	// }
-
-// 	// // render scene
-// 	// for _, o := range Scene {
-// 	// 	if o.Node != nil && !o.Transparent {
-// 	// 		o.Render(perspective, view, e.camera)
-// 	// 	}
-// 	// }
-
-// 	// // render transparent objects
-// 	// for o, b := range Objects {
-// 	// 	if b && o.Node != nil && o.Transparent {
-// 	// 		o.Render(perspective, view, e.camera)
-// 	// 	}
-// 	// }
-
-// 	// // render transparent scene objects
-// 	// for _, o := range Scene {
-// 	// 	if o.Node != nil && o.Transparent {
-// 	// 		o.Render(perspective, view, e.camera)
-// 	// 	}
-// 	// }
-
-// }
-
-// func loopRenderShadows() {
-// 	e.render.StartShadowMapping()
-// 	lightCount := e.render.GetActiveLightCount()
-// 	for i := 0; i < lightCount; i++ {
-// 		// get lights with shadow maps
-// 		lightToCast := e.render.ActiveLights[i]
-// 		if lightToCast.ShadowMap == nil {
-// 			continue
-// 		}
-
-// 		// engine.able the light to cast shadows
-// 		e.render.EnableShadowMappingLight(lightToCast)
-// 		for o, b := range Objects {
-// 			if b && o.Node != nil && o.Shadow {
-// 				e.render.DrawRenderableWithShader(o.Node, e.shadowmap, nil, lightToCast.ShadowMap.Projection, lightToCast.ShadowMap.View, e.camera)
-// 			}
-// 		}
-
-// 		for _, o := range Scene {
-// 			e.render.DrawRenderableWithShader(o.Node, e.shadowmap, nil, lightToCast.ShadowMap.Projection, lightToCast.ShadowMap.View, e.camera)
-// 		}
-// 	}
-// 	e.render.EndShadowMapping()
-// }
-
-//

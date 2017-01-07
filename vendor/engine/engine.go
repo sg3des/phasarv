@@ -27,13 +27,8 @@ var (
 type engine struct {
 	window *glfw.Window
 	gfx    graphicsprovider.GraphicsProvider
-	// render *forward.ForwardRenderer
 
 	ui *eweygewey.Manager
-
-	// shadowmap *fizzle.RenderShader
-
-	// camera *fizzle.YawPitchCamera
 
 	callbacks map[int]func(float32) bool
 }
@@ -54,12 +49,6 @@ func Init(userfunc func()) {
 		log.Fatalf("failed load assets, reason: %s", err)
 	}
 
-	// e.initRender()
-
-	// if err := e.initShadowmap(); err != nil {
-	// 	log.Fatalf("failed generate shadow map, reason: %s", err)
-	// }
-
 	render.Init(e.gfx, 1024, 768)
 	render.SetCamera(fizzle.NewYawPitchCamera(mgl32.Vec3{0, 0, 10}))
 
@@ -70,8 +59,6 @@ func Init(userfunc func()) {
 	}
 
 	e.callbacks = make(map[int]func(float32) bool)
-
-	// e.camera = fizzle.NewYawPitchCamera(mgl32.Vec3{0, 0, 10})
 
 	userfunc()
 
@@ -134,41 +121,6 @@ func (e *engine) initOpenGL() error {
 
 	return nil
 }
-
-// func (e *engine) initRender() {
-// 	// e.render = forward.NewForwardRenderer(e.gfx)
-// 	// e.render.ChangeResolution(1024, 768)
-
-// 	// // engine.able shadow mapping in the renderer
-// 	// e.render.SetupShadowMapRendering()
-
-// 	// set some OpenGL flags
-// 	// e.gfx.Enable(graphicsprovider.CULL_FACE)
-// 	// e.gfx.Enable(graphicsprovider.DEPTH_TEST)
-// 	e.gfx.Enable(graphicsprovider.TEXTURE_2D)
-// 	e.gfx.Enable(graphicsprovider.BLEND)
-// 	// e.gfx.Enable(graphicsprovider.SCISSOR_TEST)
-
-// 	// e.gfx.Enable(graphicsprovider.CULL_FACE)
-// 	// e.gfx.Enable(graphicsprovider.DEPTH_TEST)
-// 	// e.gfx.Enable(graphicsprovider.PROGRAM_POINT_SIZE)
-// 	// e.gfx.Enable(graphicsprovider.TEXTURE_2D)
-// 	// e.gfx.Enable(graphicsprovider.BLEND)
-
-// 	e.gfx.BlendFunc(graphicsprovider.SRC_ALPHA, graphicsprovider.ONE_MINUS_SRC_ALPHA)
-// 	e.gfx.Enable(graphicsprovider.SAMPLE_ALPHA_TO_COVERAGE)
-
-// 	// e.gfx.Enable(graphicsprovider.EQUAL)
-// 	// e.gfx.BlendFunc(graphicsprovider.ONE_MINUS_DST_ALPHA, graphicsprovider.DST_ALPHA)
-// 	// e.gfx.BlendFunc(graphicsprovider.ONE, graphicsprovider.ONE)
-
-// 	// glBlendFunc(GL_ONE_MINUS_DST_ALPHA, GL_DST_ALPHA)
-// }
-
-// func (e *engine) initShadowmap() error {
-// 	e.shadowmap, err = forward.CreateShadowmapGeneratorShader()
-// 	return err
-// }
 
 func (e *engine) initUI() error {
 	fontScale := 14

@@ -67,8 +67,8 @@ func (i *Instruction) createShape() (shape *Shape) {
 	return
 }
 
-func Hit(x, y float32) *Shape {
-	return space.SpacePointQueryFirst(vect.Vect{x, y}, 0, 0, false)
+func Hit(x, y float32, group int) *Shape {
+	return space.SpacePointQueryFirst(vect.Vect{x, y}, 0, group, false)
 }
 
 func Hits(x0, y0, x1, y1 float32, group int, ignoreBody *Body) []*RayCastHit {

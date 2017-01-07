@@ -40,7 +40,9 @@ func Load(name string) {
 
 	for _, o := range s.Objects {
 		o.P.Static = true
-		log.Println(o.P.Pos)
+		if o.PI != nil {
+			o.PI.Group = 1
+		}
 		o.Create()
 	}
 }

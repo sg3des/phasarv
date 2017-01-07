@@ -7,7 +7,6 @@ _tree: &tree
   pi:
     h: 3
     w: 3
-    group: 1
   ri:
     meshname: "tree"
     material:

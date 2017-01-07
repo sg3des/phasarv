@@ -46,8 +46,6 @@ func NextFrame(fov, aspect float32) {
 	perspective = mgl32.Perspective(fov, aspect, 1.0, 100.0)
 	view = camera.GetViewMatrix()
 
-	// renderShadows()
-
 	// render not transparent bodies
 	for r := range Renderables {
 		if !r.Transparent {
@@ -75,12 +73,13 @@ func NextFrame(fov, aspect float32) {
 			r.Render()
 		}
 	}
+
+	renderShadows()
 }
 
 func renderShadows() {
 	render.StartShadowMapping()
 	lightCount := render.GetActiveLightCount()
-	log.Println(lightCount)
 	for i := 0; i < lightCount; i++ {
 		// get lights with shadow maps
 		lightToCast := render.ActiveLights[i]

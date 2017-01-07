@@ -20,10 +20,8 @@ func GetPlayer(name string) *game.Player {
 	player := &game.Player{
 		Name: name,
 		Object: &engine.Object{
-			Name:         "player",
-			MaxRollAngle: 1.5,
-
-			PI: &phys.Instruction{W: 2, H: 2, Mass: 12, Group: 1, ShapeType: phys.ShapeType_Box},
+			Name: "player",
+			PI:   &phys.Instruction{W: 2, H: 2, Mass: 12, Group: 1, ShapeType: phys.ShapeType_Box},
 			RI: &render.Instruction{
 				MeshName:    "trapeze",
 				Material:    &materials.Instruction{Name: "player", Texture: "TestCube", Shader: "basic", SpecLevel: 1},
@@ -31,9 +29,13 @@ func GetPlayer(name string) *game.Player {
 				Transparent: false,
 			},
 		},
-		Health:   100,
-		MovSpeed: 20,
-		RotSpeed: 50,
+
+		InitParam: game.PlayerParam{
+			Health:    100,
+			MovSpeed:  20,
+			RotSpeed:  50,
+			RollAngle: 1.5,
+		},
 
 		// LeftWeapon: &param.Weapon{
 		// 	BulletParam: param.Bullet{

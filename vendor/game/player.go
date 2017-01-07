@@ -19,14 +19,37 @@ var (
 	Players []*Player
 )
 
+func CreateLocalPlayer(p *Player) {
+	log.Println("CreateLocalPlayer")
+
+	// p := &Player{Param: paramPlayer}
+	p.CreateCursor(mgl32.Vec4{0.3, 0.3, 0.9, 0.7})
+	p.CreatePlayer()
+
+	Players = append(Players, p)
+	// p.Object.Shape.Body.CallBackCollision = p.Collision
+
+	engine.AddCallback(p.Movement, p.PlayerRotation, p.CameraMovement, p.Attack)
+	engine.SetMouseCallback(p.MouseControl)
+}
+
+type PlayerParam struct {
+	Health, Shield                float32
+	Energy, Metal                 float32
+	MovSpeed, RotSpeed, RollAngle float32
+}
+
 type Player struct {
 	Name   string
 	Object *engine.Object
 
-	Health, MovSpeed, RotSpeed, RollAngle float32
-	LeftWeapon, RightWeapon               *Weapon
+	CurrParam PlayerParam
+	InitParam PlayerParam
 
-	Target       *Player
+	LeftWeapon, RightWeapon *Weapon
+
+	Target *Player
+
 	targetAngle  float32
 	respawnPoint mgl32.Vec2
 
@@ -34,8 +57,12 @@ type Player struct {
 }
 
 func (p *Player) CreatePlayer() {
-	hb := NewHealthBar(p.Health)
+	p.CurrParam = p.InitParam
+	p.Object.PI.Group = 2
+
+	hb := NewHealthBar(p.InitParam.Health)
 	p.Object.Create(hb)
+	p.Object.MaxRollAngle = p.InitParam.RollAngle
 
 	// aim := &engine.Art{
 	// 	Name: "aim",
@@ -49,26 +76,13 @@ func (p *Player) CreatePlayer() {
 
 	// p.Object.AddArt(aim)
 
-	if p.MovSpeed > 5 {
-		createTrail(p.Object, 0.5, int(p.MovSpeed), mgl32.Vec2{1.4, 2.95})
-		createTrail(p.Object, 0.5, int(p.MovSpeed), mgl32.Vec2{1.4, -2.95})
+	if p.InitParam.MovSpeed > 5 {
+		createTrail(p.Object, 0.5, int(p.InitParam.MovSpeed), mgl32.Vec2{1.4, 2.95})
+		createTrail(p.Object, 0.5, int(p.InitParam.MovSpeed), mgl32.Vec2{1.4, -2.95})
 	}
 
 	p.Object.DestroyFunc = p.Destroy
-}
-
-func CreateLocalPlayer(p *Player) {
-	log.Println("CreateLocalPlayer")
-
-	// p := &Player{Param: paramPlayer}
-	p.CreateCursor(mgl32.Vec4{0.3, 0.3, 0.9, 0.7})
-	p.CreatePlayer()
-
-	Players = append(Players, p)
-	// p.Object.Shape.Body.CallBackCollision = p.Collision
-
-	engine.AddCallback(p.Movement, p.PlayerRotation, p.CameraMovement, p.Attack)
-	engine.SetMouseCallback(p.MouseControl)
+	p.Object.SetUserData(p)
 }
 
 func (p *Player) CreateCursor(color mgl32.Vec4) {
@@ -107,25 +121,43 @@ func (p *Player) Destroy() {
 	p.Object.SetVelocity(0, 0)
 	p.Object.SetRotation(0)
 
-	hp, ok := p.Object.GetArt("health")
-	if !ok {
-		log.Fatalln("helth bar not found", p.Object.Name)
-	}
+	p.CurrParam = p.InitParam
 
-	hp.Value = hp.MaxValue
-	hp.Resize()
+	// hp, ok := p.Object.GetArt("health")
+	// if !ok {
+	// 	log.Fatalln("helth bar not found", p.Object.Name)
+	// }
+
+	// hp.Value = hp.MaxValue
+	// hp.Resize()
+}
+
+func (p *Player) ApplyDamage(damage float32) {
+	p.CurrParam.Health -= damage
+	p.updateArt("health", p.CurrParam.Health)
+	if p.CurrParam.Health <= 0 {
+		p.Destroy()
+	}
+}
+
+func (p *Player) updateArt(name string, value float32) {
+	if art, ok := p.Object.GetArt(name); ok {
+		art.Resize(value)
+		return
+	}
+	log.Printf("warning: art by name: `%s` not found", name)
 }
 
 func (p *Player) Movement(dt float32) bool {
 	// log.Println(p.Object.Velocity().Length())
-	if p.Object.Velocity().Length() < p.MovSpeed {
+	if p.Object.Velocity().Length() < p.CurrParam.MovSpeed {
 		dist := p.Object.Distance(p.Cursor)
 		// log.Println(dist)
 		// if dist > p.Param.MovSpeed {
 		// 	dist = p.Param.MovSpeed
 		// }
 
-		p.Object.AddVelocity(p.Object.VectorForward(p.MovSpeed * 0.05 * dist * dt))
+		p.Object.AddVelocity(p.Object.VectorForward(p.CurrParam.MovSpeed * 0.05 * dist * dt))
 	}
 
 	return true
@@ -149,8 +181,8 @@ func (p *Player) PlayerRotation(dt float32) bool {
 func (p *Player) rotation(dt float32, target mgl32.Vec2) float32 {
 	angle := SubAngleObjectPoint(p.Object, target)
 
-	if vect.FAbs(p.Object.Shape.Body.AngularVelocity()) < vect.FAbs(p.RotSpeed/10) {
-		p.Object.Shape.Body.AddAngularVelocity(p.RotSpeed * 0.05 * angle * dt)
+	if vect.FAbs(p.Object.Shape.Body.AngularVelocity()) < vect.FAbs(p.CurrParam.RotSpeed/10) {
+		p.Object.Shape.Body.AddAngularVelocity(p.CurrParam.RotSpeed * 0.05 * angle * dt)
 	}
 
 	return angle
@@ -206,10 +238,14 @@ func (p *Player) MouseControl(w *glfw.Window, button glfw.MouseButton, action gl
 	}
 
 	if action == 1 {
-		object := engine.Hit(p.Cursor.Position())
-		if object != nil {
-			log.Println(object.Name)
+		target := GetPlayerInPoint(p.Cursor.Position())
+		if target != nil {
+			log.Println(target.Name)
 		}
+		// object := engine.Hit(p.Cursor.Position())
+		// if object != nil {
+		// 	log.Println(object.Name)
+		// }
 	}
 }
 
@@ -236,8 +272,8 @@ func NewHealthBar(value float32) *engine.Art {
 		Value:    value,
 		MaxValue: value,
 		P: point.Param{
-			Pos:    point.P{0, 1, 1.1},
-			Size:   point.P{2, 0.2, 0},
+			Pos:    point.P{-1, 1, 1.1},
+			Size:   point.P{0.2, 2, 0},
 			Static: true,
 		},
 		RI: &render.Instruction{

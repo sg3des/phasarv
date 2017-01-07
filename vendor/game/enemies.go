@@ -30,9 +30,12 @@ func CreateEnemy(x, y float32) {
 			},
 			PI: &phys.Instruction{W: 2, H: 2, Mass: 12, Group: 1, ShapeType: phys.ShapeType_Box},
 		},
-		Health:   100,
-		MovSpeed: 0,
-		RotSpeed: 50,
+
+		InitParam: PlayerParam{
+			Health:   100,
+			MovSpeed: 0,
+			RotSpeed: 50,
+		},
 
 		LeftWeapon: &Weapon{
 			Bullet: Bullet{
@@ -93,7 +96,7 @@ func (p *Player) EnemyAttack(dt float32) bool {
 		return true
 	}
 
-	p.LeftWeapon.TargetObject = p.Target.Object
+	p.LeftWeapon.TargetPlayer = p.Target
 
 	if p.LeftWeapon.Bullet.Type != "rocket" && vect.FAbs(p.targetAngle) > 0.2 {
 		p.LeftWeapon.Shoot = false

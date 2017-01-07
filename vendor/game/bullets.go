@@ -2,7 +2,6 @@ package game
 
 import (
 	"log"
-	"math/rand"
 	"phys"
 	"point"
 	"time"
@@ -34,7 +33,7 @@ type Bullet struct {
 	Player *Player
 
 	TargetPoint  mgl32.Vec2
-	TargetObject *engine.Object
+	TargetPlayer *Player
 
 	RotSpeed  float32
 	MovSpeed  float32
@@ -77,34 +76,12 @@ func (p *Player) Fire(w *Weapon) {
 
 //Shoot create new bullet
 func (p *Player) Shoot(w *Weapon) Bullet {
-	// b := w.Bullet
-	b := Bullet{
-		Type:    w.Bullet.Type,
-		SubType: w.Bullet.SubType,
-
-		Object: &engine.Object{},
-		Weapon: &Weapon{},
-		Player: &Player{},
-
-		// TargetPoint: mgl32.Vec2{},
-		// TargetObject: &engine.Object{},
-
-		RotSpeed:  w.Bullet.RotSpeed,
-		MovSpeed:  w.Bullet.MovSpeed,
-		Lifetime:  w.Bullet.Lifetime,
-		TimePoint: time.Time{},
-
-		Damage: w.Bullet.Damage,
-		// Shoot  bool
-	}
-
-	// b.Object = &engine.Object{}
+	b := w.Bullet
+	b.Object = &engine.Object{}
 	*b.Object = *w.Bullet.Object
-	*b.Weapon = *w
-	*b.Player = *p
+	b.Weapon = w
+	b.Player = p
 	b.TargetPoint = p.Cursor.PositionVec2()
-
-	log.Println(&b.Object.RI, &w.Bullet.Object.RI)
 
 	switch b.Type {
 	case "gun":
@@ -132,6 +109,7 @@ func (b *Bullet) CreateObject() {
 	// log.Println(b.Object.Shape, b.Object.Param.Phys)
 
 	b.Object.Shape.Body.CallBackCollision = b.Collision
+	b.Object.SetUserData(b)
 
 	b.TimePoint = time.Now().Add(b.Lifetime)
 }
@@ -152,13 +130,18 @@ func (b *Bullet) Gun() {
 func (b *Bullet) Rocket() {
 	if b.SubType == "homing" {
 
-		if b.TargetObject == nil {
-			target := engine.Hit(b.Player.Cursor.Position())
-			if target == nil || target.Name == "bullet" {
+		if b.TargetPlayer == nil {
+			target := GetPlayerInPoint(b.Player.Cursor.Position())
+			if target == nil {
 				b.Weapon.DelayTime = time.Time{}
-				return
 			}
-			b.TargetObject = target
+			b.TargetPlayer = target
+			// target := engine.Hit(b.Player.Cursor.Position())
+			// if target == nil || target.Name == "bullet" {
+			// 	b.Weapon.DelayTime = time.Time{}
+			// 	return
+			// }
+			// b.TargetObject = target
 		}
 
 	}
@@ -188,15 +171,20 @@ func (b *Bullet) Laser() {
 	tx += x
 	ty += y
 
-	if hit := engine.Raycast(x, y, tx, ty, 1, b.Player.Object.Shape.Body); hit != nil {
-		h = hit.Distance
-
-		if hit.Body.UserData != nil {
-			ApplyDamage(hit.Body.UserData.(*engine.Object), b.Damage)
-			// hit.Body.AddVelocity(b.Player.Object.VectorForward(b.Weapon.BulletObject.Phys.Mass * 10 / hit.Body.Mass()))
-			hit.Body.AddAngularVelocity((rand.Float32() - 0.5) * 10 / hit.Body.Mass())
-		}
+	if target := GetNearPlayerByRay(x, y, tx, ty, b.Player); target != nil {
+		target.ApplyDamage(b.Damage)
 	}
+
+	// if hit := engine.Raycast(x, y, tx, ty, b.Player.Object.Shape.Body); hit != nil {
+	// 	h = hit.Distance
+
+	// 	if hit.Body.UserData != nil {
+
+	// 		// ApplyDamage(hit.Body.UserData.(*engine.Object), b.Damage)
+	// 		// // hit.Body.AddVelocity(b.Player.Object.VectorForward(b.Weapon.BulletObject.Phys.Mass * 10 / hit.Body.Mass()))
+	// 		// hit.Body.AddAngularVelocity((rand.Float32() - 0.5) * 10 / hit.Body.Mass())
+	// 	}
+	// }
 
 	b.Object.P.Size.Y = h
 	b.Object.P.Pos = point.P{x, y, 0}
@@ -248,13 +236,19 @@ func (b *Bullet) RocketCallback(dt float32) {
 		angle = SubAngleObjectPoint(b.Object, b.Player.Cursor.PositionVec2())
 	case "homing":
 		tp := b.TargetPoint
-		if b.TargetObject == nil {
-			if target := engine.Hit(b.Player.Cursor.Position()); target != nil {
-				b.TargetObject = target
-				tp = target.PositionVec2()
+		if b.TargetPlayer == nil {
+			target := GetPlayerInPoint(b.Player.Cursor.Position())
+			if target != nil {
+				b.TargetPlayer = target
+				tp = target.Object.PositionVec2()
 			}
+
+			// if target := engine.Hit(b.Player.Cursor.Position()); target != nil {
+			// 	b.TargetObject = target
+			// 	tp = target.PositionVec2()
+			// }
 		} else {
-			tp = b.TargetObject.PositionVec2()
+			tp = b.TargetPlayer.Object.PositionVec2()
 		}
 		angle = SubAngleObjectPoint(b.Object, mgl32.Vec2{tp.X(), tp.Y()})
 	}
@@ -306,52 +300,59 @@ func (b *Bullet) Destroy() {
 
 //Collision event bullet collision
 func (b *Bullet) Collision(arb *phys.Arbiter) bool {
-	if arb.BodyA.UserData == nil || arb.BodyB.UserData == nil {
-		log.Println("unset bodies")
+	if arb.ShapeA.UserData == nil || arb.ShapeB.UserData == nil {
+		//then one of objects is scene object
+		b.Destroy()
 		return true
 	}
 
-	var target *engine.Object
-
-	if arb.BodyA.UserData.(*engine.Object) == b.Object {
-		target = arb.BodyB.UserData.(*engine.Object)
-	} else if arb.BodyB.UserData.(*engine.Object) == b.Object {
-		target = arb.BodyA.UserData.(*engine.Object)
-	} else {
-		log.Println("WTF?!")
+	p, b := resolveCollisionShapes(arb.ShapeA, arb.ShapeB)
+	if p == nil {
+		//then both shapes is bullets
 		return false
 	}
-
-	if b.Player.Object == target {
+	if p == b.Player {
+		//then player is parent of bullet
 		return false
 	}
-
-	if target.Name == "bullet" {
-		return false
+	if b == nil {
+		log.Fatalln("WTF?!? bullet not found")
 	}
 
-	if _, ok := target.Arts["health"]; ok {
-		ApplyDamage(target, b.Damage)
-	}
+	p.ApplyDamage(b.Damage)
 
 	b.Destroy()
-
 	return true
 }
 
-//ApplyDamage to object
-func ApplyDamage(target *engine.Object, damage float32) {
-	hp, ok := target.GetArt("health")
-	if !ok {
-		// log.Printf("WARINING: art by name: %s not found", "health")
-		return
+func resolveCollisionShapes(shapes ...*phys.Shape) (p *Player, b *Bullet) {
+	for _, shape := range shapes {
+		if shape.UserData == nil {
+			continue
+		}
+		switch shape.UserData.(type) {
+		case *Bullet:
+			b = shape.UserData.(*Bullet)
+		case *Player:
+			p = shape.UserData.(*Player)
+		}
 	}
-
-	hp.Value -= damage
-	if hp.Value <= 0 {
-		target.Destroy()
-		return
-	}
-	hp.Resize()
-
+	return
 }
+
+// //ApplyDamage to object
+// func ApplyDamage(target *engine.Object, damage float32) {
+// 	hp, ok := target.GetArt("health")
+// 	if !ok {
+// 		// log.Printf("WARINING: art by name: %s not found", "health")
+// 		return
+// 	}
+
+// 	hp.Value -= damage
+// 	if hp.Value <= 0 {
+// 		target.Destroy()
+// 		return
+// 	}
+// 	hp.Resize()
+
+// }

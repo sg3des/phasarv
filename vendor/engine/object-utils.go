@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"math"
-	"phys"
 
 	"phys/vect"
 
@@ -236,61 +235,3 @@ func (o *Object) Velocity() vect.Vect {
 func (o *Object) ShapeWidthPercent() float32 {
 	return vect.FAbs(o.RollAngle) / (o.MaxRollAngle * 1.1)
 }
-
-func (o *Object) AddCallback(f Callback) {
-	o.Callbacks[len(o.Callbacks)] = f
-}
-
-func (o *Object) AddChild(child *Object) {
-	o.Childs[child] = true
-}
-
-func (o *Object) Destroy() {
-	if o.DestroyFunc != nil {
-		o.DestroyFunc()
-		return
-	}
-
-	if o.Shape != nil {
-		o.Shape.Body.Enabled = false
-		phys.RemoveBody(o.Shape.Body)
-		// space.RemoveShape(o.Shape) - crash need TODO
-	}
-
-	// Objects[o] = false
-
-	for child := range o.Childs {
-		child.Destroy()
-	}
-
-	o.renderable.Destroy()
-	delete(Objects, o)
-	// o = nil
-}
-
-// func (o *Object) Clone() *Object {
-// 	newObject := &Object{
-// 		Name:         o.Name,
-// 		Node:         o.Node.Clone(),
-// 		MaxRollAngle: o.MaxRollAngle,
-
-// 		Shadow:      o.Shadow,
-// 		Transparent: o.Transparent,
-
-// 		ArtStatic: o.ArtStatic,
-// 		ArtRotate: o.ArtRotate,
-
-// 		// Callback:    o.Callback,
-// 		Callbacks:   o.Callbacks,
-// 		DestroyFunc: o.DestroyFunc,
-
-// 		Param: o.Param,
-// 	}
-
-// 	newObject.SetPhys(o.Param.Phys)
-// 	newObject.Node.Material = NewMaterial(o.Param.Material)
-
-// 	Objects[newObject] = true
-
-// 	return newObject
-// }
