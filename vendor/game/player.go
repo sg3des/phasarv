@@ -26,6 +26,8 @@ func CreateLocalPlayer(p *Player) {
 	p.CreateCursor(mgl32.Vec4{0.3, 0.3, 0.9, 0.7})
 	p.CreatePlayer()
 
+	p.Object.DestroyFunc = p.Destroy
+
 	Players = append(Players, p)
 	// p.Object.Shape.Body.CallBackCollision = p.Collision
 
@@ -64,25 +66,27 @@ func (p *Player) CreatePlayer() {
 	p.Object.Create(hb)
 	p.Object.MaxRollAngle = p.InitParam.RollAngle
 
-	// aim := &engine.Art{
-	// 	Name: "aim",
-	// 	Param: engine.ObjectParam{
-	// 		Node:     "plane",
-	// 		Size:     engine.Point{1, 1, 1},
-	// 		Pos:      engine.Point{15, 0, 1},
-	// 		Material: engine.Material{Name: "aim", Texture: "cursor", Shader: "colortext2", DiffColor: mgl32.Vec4{1, 1, 1, 0.5}},
-	// 	},
-	// }
-
-	// p.Object.AddArt(aim)
+	p.createWeapon(p.LeftWeapon)
+	p.createWeapon(p.RightWeapon)
 
 	if p.InitParam.MovSpeed > 5 {
 		createTrail(p.Object, 0.5, int(p.InitParam.MovSpeed), mgl32.Vec2{1.4, 2.95})
 		createTrail(p.Object, 0.5, int(p.InitParam.MovSpeed), mgl32.Vec2{1.4, -2.95})
 	}
 
-	p.Object.DestroyFunc = p.Destroy
 	p.Object.SetUserData(p)
+}
+
+func (p *Player) createWeapon(w *Weapon) {
+	if w == nil {
+		return
+	}
+	w.Player = p
+
+	w.Aim = w.NewAim()
+	p.Object.AppendArt(w.Aim)
+
+	p.Object.AddCallback(w.Callback)
 }
 
 func (p *Player) CreateCursor(color mgl32.Vec4) {
@@ -115,13 +119,12 @@ func (p *Player) Collision(arb *phys.Arbiter) bool {
 }
 
 func (p *Player) Destroy() {
-	x := 20 - rand.Float32()*40
-	y := 20 - rand.Float32()*40
-	p.Object.SetPosition(x, y)
+	p.Object.SetPosition(GetRandomPoint(20, 20))
 	p.Object.SetVelocity(0, 0)
 	p.Object.SetRotation(0)
 
 	p.CurrParam = p.InitParam
+	p.updateArt("health", p.CurrParam.Health)
 
 	// hp, ok := p.Object.GetArt("health")
 	// if !ok {
@@ -132,16 +135,22 @@ func (p *Player) Destroy() {
 	// hp.Resize()
 }
 
+func GetRandomPoint(x, y float32) (float32, float32) {
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	return x/2 - r.Float32()*x, y/2 - r.Float32()*y
+}
+
 func (p *Player) ApplyDamage(damage float32) {
 	p.CurrParam.Health -= damage
 	p.updateArt("health", p.CurrParam.Health)
 	if p.CurrParam.Health <= 0 {
-		p.Destroy()
+		p.Object.Destroy()
 	}
 }
 
 func (p *Player) updateArt(name string, value float32) {
-	if art, ok := p.Object.GetArt(name); ok {
+	if art := p.Object.GetArt(name); art != nil {
 		art.Resize(value)
 		return
 	}
@@ -190,12 +199,12 @@ func (p *Player) rotation(dt float32, target mgl32.Vec2) float32 {
 
 func (p *Player) Attack(dt float32) bool {
 	if p.LeftWeapon != nil {
-		p.Fire(p.LeftWeapon)
+		p.LeftWeapon.Fire()
 		p.WeaponDelay(p.LeftWeapon, "leftDelay")
 	}
 
 	if p.RightWeapon != nil {
-		p.Fire(p.RightWeapon)
+		p.RightWeapon.Fire()
 		p.WeaponDelay(p.RightWeapon, "rightDelay")
 	}
 
@@ -218,8 +227,8 @@ func (p *Player) WeaponDelay(w *Weapon, name string) {
 		value = value / float32(w.Delay.Seconds())
 	}
 
-	delayBar, ok := p.Object.GetArt(name)
-	if !ok {
+	delayBar := p.Object.GetArt(name)
+	if delayBar == nil {
 		log.Printf("WARINING: art by name: %s not found", name)
 		return
 	}
@@ -230,11 +239,11 @@ func (p *Player) WeaponDelay(w *Weapon, name string) {
 func (p *Player) MouseControl(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw.ModifierKey) {
 
 	if button == 0 {
-		p.LeftWeapon.Shoot = action == 1
+		p.LeftWeapon.shoot = action == 1
 	}
 
 	if button == 1 {
-		p.RightWeapon.Shoot = action == 1
+		p.RightWeapon.shoot = action == 1
 	}
 
 	if action == 1 {

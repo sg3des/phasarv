@@ -16,8 +16,9 @@ var (
 	camera      *fizzle.YawPitchCamera
 	shadowmap   *fizzle.RenderShader
 
-	Renderables map[*Renderable]bool
-	Scene       []*Renderable
+	Renderables []*Renderable
+	// Renderables map[*Renderable]bool
+	Scene []*Renderable
 )
 
 func Init(gfx graphicsprovider.GraphicsProvider, w, h int32) {
@@ -33,7 +34,7 @@ func Init(gfx graphicsprovider.GraphicsProvider, w, h int32) {
 		log.Fatalln("failed init shadowmap", err)
 	}
 
-	Renderables = make(map[*Renderable]bool)
+	// Renderables = make(map[*Renderable]bool)
 	// Scene = make(map[*Body]bool)
 }
 
@@ -46,8 +47,23 @@ func NextFrame(fov, aspect float32) {
 	perspective = mgl32.Perspective(fov, aspect, 1.0, 100.0)
 	view = camera.GetViewMatrix()
 
+	for i, r := range Renderables {
+		if i >= len(Renderables) {
+			break
+		}
+		if r.needDestroy {
+			DeleteRenderables(i)
+		}
+	}
+
 	// render not transparent bodies
-	for r := range Renderables {
+	for _, r := range Renderables {
+		if r == nil || r.needDestroy {
+			// log.Println("DELETEED!!!")
+			// DeleteRenderables(i)
+			continue
+			// r = Renderables[i]
+		}
 		if !r.Transparent {
 			r.Render()
 		}
@@ -61,7 +77,7 @@ func NextFrame(fov, aspect float32) {
 	}
 
 	// render transparent bodies
-	for r := range Renderables {
+	for _, r := range Renderables {
 		if r.Transparent {
 			r.Render()
 		}
@@ -89,7 +105,7 @@ func renderShadows() {
 
 		// enable the light to cast shadows
 		render.EnableShadowMappingLight(lightToCast)
-		for r := range Renderables {
+		for _, r := range Renderables {
 			if r.Shadow && r.Body != nil {
 				render.DrawRenderableWithShader(r.Body, shadowmap, nil, lightToCast.ShadowMap.Projection, lightToCast.ShadowMap.View, camera)
 			}
@@ -102,4 +118,10 @@ func renderShadows() {
 		}
 	}
 	render.EndShadowMapping()
+}
+
+func DeleteRenderables(i int) {
+	Renderables[i] = nil
+	Renderables[i] = Renderables[len(Renderables)-1]
+	Renderables = Renderables[:len(Renderables)-1]
 }

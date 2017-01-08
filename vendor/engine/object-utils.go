@@ -43,6 +43,14 @@ func (o *Object) Position() (x, y float32) {
 	return o.P.Pos.X, o.P.Pos.Y
 }
 
+func (o *Object) PositionVect() vect.Vect {
+	if o.Shape != nil {
+		return o.Shape.Body.Position()
+	}
+
+	return o.P.Pos.Vect()
+}
+
 func (o *Object) PositionVec2() mgl32.Vec2 {
 	if o.Shape != nil {
 		v := o.Shape.Body.Position()
@@ -102,7 +110,7 @@ func (o *Object) VectorSide(scale, angle float32) (float32, float32) {
 	// 	ang = e.Shape.Body.Angle() + 1.5708 // ~90 deg
 	// }
 	var v vect.Vect
-	if o.Shape != nil || o.Shape.Body != nil {
+	if o.Shape != nil && o.Shape.Body != nil {
 		v = o.Shape.Body.RotVec()
 		// log.Println(o.Name)
 		// return 0, 0
@@ -234,4 +242,48 @@ func (o *Object) Velocity() vect.Vect {
 
 func (o *Object) ShapeWidthPercent() float32 {
 	return vect.FAbs(o.RollAngle) / (o.MaxRollAngle * 1.1)
+}
+
+func (o *Object) SubAngleToPoint(b mgl32.Vec2, off mgl32.Vec2) float32 {
+	var v mgl32.Vec2
+
+	if off.Len() > 0 {
+		vx, vy := o.VectorSide(2, -1.5704)
+		v = mgl32.Vec2{vx, vy}
+	}
+
+	// log.Println(off.Len(), v)
+	a := o.PositionVec2().Add(v)
+	oAngleVec := vect.FromAngle(o.Angle())
+
+	abAngle := float32(math.Atan2(float64(b.Y()-a.Y()), float64(b.X()-a.X())))
+	abAngleVec := vect.FromAngle(abAngle)
+
+	sin := oAngleVec.X*abAngleVec.Y - abAngleVec.X*oAngleVec.Y
+	cos := oAngleVec.X*abAngleVec.X + oAngleVec.Y*abAngleVec.Y
+
+	return float32(math.Atan2(float64(sin), float64(cos)))
+}
+
+func (o *Object) SubPoint(b mgl32.Vec2) mgl32.Vec2 {
+	a := o.PositionVec2()
+	scale := a.Sub(b).Len()
+
+	var v = vect.Vect{b.X(), b.Y()}
+	angle := v.Angle()
+
+	// oAngleVec := vect.FromAngle(o.Angle())
+
+	// abAngle := float32(math.Atan2(float64(b.Y()-a.Y()), float64(b.X()-a.X())))
+	// abAngleVec := vect.FromAngle(abAngle)
+
+	// sin := oAngleVec.X*abAngleVec.Y - abAngleVec.X*oAngleVec.Y
+	// cos := oAngleVec.X*abAngleVec.X + oAngleVec.Y*abAngleVec.Y
+
+	// angle := float32(math.Atan2(float64(sin), float64(cos)))
+
+	x, y := o.VectorSide(scale, angle)
+
+	log.Println(x, y, scale, angle)
+	return mgl32.Vec2{x, y}
 }

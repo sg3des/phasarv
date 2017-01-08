@@ -30,7 +30,7 @@ type engine struct {
 
 	ui *eweygewey.Manager
 
-	callbacks map[int]func(float32) bool
+	callbacks []func(float32) bool
 }
 
 //Init main function create window and initialize opengl,render engine
@@ -58,7 +58,7 @@ func Init(userfunc func()) {
 		log.Fatalf("failed initialise user interface, %s", err)
 	}
 
-	e.callbacks = make(map[int]func(float32) bool)
+	// e.callbacks = make(map[int]func(float32) bool)
 
 	userfunc()
 
@@ -147,7 +147,8 @@ func (e *engine) initUI() error {
 //AddCallback add  engine.ch frame callback with deltaT as one argument
 func AddCallback(funcs ...func(float32) bool) {
 	for _, f := range funcs {
-		e.callbacks[len(e.callbacks)] = f
+		e.callbacks = append(e.callbacks, f)
+		// e.callbacks[len(e.callbacks)] = f
 	}
 }
 

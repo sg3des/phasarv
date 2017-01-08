@@ -22,6 +22,18 @@ func (p P) Vect() vect.Vect {
 	return vect.Vect{p.X, p.Y}
 }
 
+func PFromVect(v vect.Vect) P {
+	return P{v.X, v.Y, 0}
+}
+
+func PFromVec2(v mgl32.Vec2) P {
+	return P{v.X(), v.Y(), 0}
+}
+
+func PFromVec3(v mgl32.Vec3) P {
+	return P{v.X(), v.Y(), v.Z()}
+}
+
 type Param struct {
 	Pos    P
 	Size   P

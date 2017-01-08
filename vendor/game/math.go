@@ -9,6 +9,16 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
+// func SubPoint(angle, x, y float32) (float32, float32) {
+// 	b := vect.Vect{x, y}
+// 	scale := vect.Dist(vect.Vect{}, b)
+
+// 	v := vect.FromAngle(angle + b.Angle())
+// 	v.Mult(scale)
+
+// 	return v.X, v.Y
+// }
+
 func GetPlayerInPoint(x, y float32) *Player {
 	if userData := engine.Hit(x, y); userData != nil {
 		return userData.(*Player)

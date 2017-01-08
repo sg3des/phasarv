@@ -40,6 +40,6 @@ func loadLocalPlayer(req *network.Request) interface{} {
 func loadEnemy(req *network.Request) interface{} {
 	pos := req.Data.(vect.Vect)
 	log.Println("load enemy", pos)
-	game.CreateEnemy(pos.X, pos.Y)
+	game.CreateEnemy()
 	return nil
 }

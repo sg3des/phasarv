@@ -1,131 +1,179 @@
 package engine
 
-import (
-	"log"
-	"point"
-	"render"
+import "github.com/go-gl/mathgl/mgl32"
 
-	"phys"
-)
+var Objects objects
 
-var (
-	//dynamic objects
-	Objects = make(map[*Object]bool)
-)
+type objects []*Object
 
-//Callback function type
-type Callback func(float32)
-
-//Object is universal object type union 3d renderable object and 2d physic object
-type Object struct {
-	Name string
-
-	RollAngle    float32
-	MaxRollAngle float32
-
-	Shape       *phys.Shape
-	renderable  *render.Renderable
-	needDestroy bool
-
-	Childs map[*Object]bool
-	Arts   map[string]*Art
-
-	Callbacks   map[int]Callback
-	DestroyFunc func()
-
-	P  point.Param
-	RI *render.Instruction
-	PI *phys.Instruction
+func (objects) Add(o *Object) {
+	Objects = append(Objects, o)
 }
 
-//Create object by instructons
-func (o *Object) Create(arts ...*Art) {
-	o.renderable = o.RI.Create(o.P)
+func (objects) Del(i int) {
+	Objects[i] = Objects[len(Objects)-1]
+	Objects[len(Objects)-1] = nil
+	Objects = Objects[:len(Objects)-1]
+}
 
-	if o.PI != nil {
-		o.Shape = o.PI.Create(o.P)
-		// o.Shape.Body.UserData = o
-		o.renderable.AddShape(o.Shape)
+func (objects) loopPhysToRender() {
+	for i, o := range Objects {
+		if i >= len(Objects) {
+			break
+		}
+		if o.needDestroy {
+			o.renderable.Destroy()
+			Objects.Del(i)
+		}
 	}
 
-	for _, a := range arts {
-		o.AppendArt(a)
-	}
+	for _, o := range Objects {
+		if o == nil || o.needDestroy {
+			continue
+		}
+		if o.renderable.Body == nil {
+			continue
+		}
+		// update position
+		o.renderable.Body.Location = o.PositionVec3()
+		if o.renderable.Shape != nil {
 
-	if !o.P.Static {
-		Objects[o] = true
+		}
+
+		// update rotation
+		ang := o.Rotation()
+		if o.renderable.Shape != nil {
+			o.renderable.Shape.LocalRotation = mgl32.AnglesToQuat(0, 0, ang, 1)
+		}
+
+		//if rollAngle exist then need roll renderable object
+		if o.RollAngle != 0 {
+			q := mgl32.AnglesToQuat(0, 0, ang, 1).Mul(mgl32.AnglesToQuat(o.RollAngle, 0, 0, 1))
+			o.renderable.Body.LocalRotation = q
+
+			shape := o.Shape.GetAsBox()
+			shape.Width = o.PI.W - o.PI.W*o.ShapeWidthPercent()
+			if o.renderable.Shape != nil {
+				o.renderable.Shape.Scale = mgl32.Vec3{o.PI.H, shape.Width, 1}
+			}
+			shape.UpdatePoly()
+		} else {
+			o.renderable.Body.LocalRotation = mgl32.AnglesToQuat(0, 0, ang, 1)
+		}
+
+		// for _, art := range o.Arts {
+		// 	art.Art.Angle = 1
+		// }
 	}
 }
 
-func (o *Object) SetUserData(i interface{}) {
-	if o.Shape == nil {
-		log.Fatalln("shape not created, name:", o.Name)
+func (objects) loopCallbacks(dt float32) {
+	for _, o := range Objects {
+		if o == nil || o.needDestroy {
+			// Objects.Del(i)
+			// o.renderable
+			continue
+		}
+		for _, f := range o.Callbacks {
+			f(dt)
+		}
 	}
-	o.Shape.UserData = i
 }
 
-func (o *Object) AddCallback(f Callback) {
-	if o.Callbacks == nil {
-		o.Callbacks = make(map[int]Callback)
-	}
-	o.Callbacks[len(o.Callbacks)] = f
-}
+// var Objects = NewObjectsMap()
 
-func (o *Object) AddChild(child *Object) {
-	if o.Childs == nil {
-		o.Childs = make(map[*Object]bool)
-	}
-	o.Childs[child] = true
-}
+// type objectsMap struct {
+// 	Items map[*Object]bool
+// 	sync.RWMutex
+// }
 
-func (o *Object) Destroy() {
-	if o.DestroyFunc != nil {
-		o.DestroyFunc()
-		return
-	}
-
-	o.needDestroy = true
-
-	if o.Shape != nil {
-		o.Shape.Body.Enabled = false
-		phys.RemoveBody(o.Shape.Body)
-		// space.RemoveShape(o.Shape) - crash need TODO
-	}
-
-	// Objects[o] = false
-
-	for child := range o.Childs {
-		child.Destroy()
-	}
-
-	// o.renderable.Destroy()
-	// delete(Objects, o)
-	// o = nil
-}
-
-// func (o *Object) Clone() *Object {
-// 	newObject := &Object{
-// 		Name:         o.Name,
-// 		Node:         o.Node.Clone(),
-// 		MaxRollAngle: o.MaxRollAngle,
-
-// 		Shadow:      o.Shadow,
-// 		Transparent: o.Transparent,
-
-// 		ArtStatic: o.ArtStatic,
-// 		ArtRotate: o.ArtRotate,
-
-// 		// Callback:    o.Callback,
-// 		Callbacks:   o.Callbacks,
-// 		DestroyFunc: o.DestroyFunc,
-
-// 		Param: o.Param,
+// func NewObjectsMap() *objectsMap {
+// 	m := &objectsMap{
+// 		Items: make(map[*Object]bool),
 // 	}
+// 	return m
+// }
 
-// 	newObject.SetPhys(o.Param.Phys)
-// 	newObject.Node.Material = NewMaterial(o.Param.Material)
+// func (m *objectsMap) Add(o *Object) {
+// 	m.Lock()
+// 	m.Items[o] = true
+// 	m.Unlock()
+// }
 
-// 	Objects[newObject] = true
+// func (m *objectsMap) loopPhysToRender() {
+// 	m.Lock()
+// 	for o := range m.Items {
+// 		if o.needDestroy {
+// 			o.renderable.Destroy()
+// 			delete(m.Items, o)
+// 			continue
+// 		}
+// 		if o.renderable.Body == nil {
+// 			continue
+// 		}
+// 		// update position
+// 		o.renderable.Body.Location = o.PositionVec3()
+// 		if o.renderable.Shape != nil {
 
-// 	return newObject
+// 		}
+
+// 		// update rotation
+// 		ang := o.Rotation()
+// 		if o.renderable.Shape != nil {
+// 			o.renderable.Shape.LocalRotation = mgl32.AnglesToQuat(0, 0, ang, 1)
+// 		}
+// 		// if o.Shape != nil {
+// 		// 	o.PI.Angle = ang
+// 		// 	o.PI
+// 		// }
+
+// 		//if rollAngle exist then need roll renderable object
+// 		if o.RollAngle != 0 {
+// 			q := mgl32.AnglesToQuat(0, 0, ang, 1).Mul(mgl32.AnglesToQuat(o.RollAngle, 0, 0, 1))
+// 			o.renderable.Body.LocalRotation = q
+
+// 			shape := o.Shape.GetAsBox()
+// 			shape.Width = o.PI.W - o.PI.W*o.ShapeWidthPercent()
+// 			if o.renderable.Shape != nil {
+// 				o.renderable.Shape.Scale = mgl32.Vec3{o.PI.H, shape.Width, 1}
+// 			}
+// 			shape.UpdatePoly()
+// 		} else {
+// 			o.renderable.Body.LocalRotation = mgl32.AnglesToQuat(0, 0, ang, 1)
+// 		}
+// 	}
+// 	m.Unlock()
+// }
+
+// func (m *objectsMap) loopCallbacks(dt float32) {
+// 	m.Lock()
+// 	for o := range m.Items {
+// 		if o.needDestroy {
+// 			continue
+// 		}
+// 		for _, f := range o.Callbacks {
+// 			f(dt)
+// 		}
+// 	}
+// 	m.Unlock()
+// }
+
+// // func (m *objectsMap) Get(key int) (Info, bool) {
+// // 	m.RLock()
+// // 	item, ok := m.Items[key]
+// // 	m.RUnlock()
+// // 	return item, ok
+// // }
+
+// // func (m *objectsMap) Has(key int) bool {
+// // 	m.RLock()
+// // 	_, ok := m.Items[key]
+// // 	m.RUnlock()
+// // 	return ok
+// // }
+
+// func (m *objectsMap) Del(o *Object) {
+// 	m.Lock()
+// 	delete(m.Items, o)
+// 	m.Unlock()
 // }

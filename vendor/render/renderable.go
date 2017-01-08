@@ -6,6 +6,7 @@ import (
 	"materials"
 	"math"
 	"phys"
+	"phys/vect"
 	"point"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -13,12 +14,14 @@ import (
 )
 
 type Renderable struct {
-	Body      *fizzle.Renderable
-	Shape     *fizzle.Renderable
-	physShape *phys.Shape
+	Body  *fizzle.Renderable
+	Shape *fizzle.Renderable
+	// ShapeParam
+	// physShape *phys.Shape
 
 	Shadow      bool
 	Transparent bool
+	needDestroy bool
 
 	ArtStatic []*Art
 	ArtRotate []*Art
@@ -27,7 +30,12 @@ type Renderable struct {
 
 	P  point.Param
 	RI *Instruction
+	PI *phys.Instruction
 }
+
+// type ShapeParam struct {
+// 	Angle
+// }
 
 func (r *Renderable) AppendArt(a *Art) {
 	if a.Static {
@@ -58,14 +66,15 @@ func (i *Instruction) Create(p point.Param) *Renderable {
 	if p.Static {
 		Scene = append(Scene, r)
 	} else {
-		Renderables[r] = true
+		Renderables = append(Renderables, r)
+		// Renderables[r] = true
 	}
 
 	return r
 }
 
-func (r *Renderable) AddShape(physShape *phys.Shape) {
-	r.physShape = physShape
+func (r *Renderable) AddShape(pi *phys.Instruction) {
+	r.PI = pi
 }
 
 func (i *Instruction) createBody(p point.Param) (body *fizzle.Renderable) {
@@ -86,22 +95,21 @@ func (i *Instruction) createBody(p point.Param) (body *fizzle.Renderable) {
 	return body
 }
 
-func (r *Renderable) createRenderableShape(physShape *phys.Shape) (renderShape *fizzle.Renderable) {
-	switch physShape.ShapeType() {
+func (r *Renderable) createRenderableShape(i *phys.Instruction) (renderShape *fizzle.Renderable) {
+	switch i.ShapeType {
 	case phys.ShapeType_Box:
-		shape := physShape.GetAsBox()
-		w := shape.Width
-		h := shape.Height
-		renderShape = fizzle.CreateWireframeCube(-h/2, -w/2, -0.1, h/2, w/2, 0.1)
+		// shape := physShape.GetAsBox()
+		// w := shape.Width
+		// h := shape.Height
+		renderShape = fizzle.CreateWireframeCube(-i.H, -i.W, -0.1, i.H, i.W, 0.1)
 	case phys.ShapeType_Circle:
-		shape := physShape.GetAsCircle()
-		renderShape = fizzle.CreateWireframeCircle(0, 0, 0, shape.Radius, 32, fizzle.X|fizzle.Y)
+		renderShape = fizzle.CreateWireframeCircle(0, 0, 0, i.W, 32, fizzle.X|fizzle.Y)
 	case phys.ShapeType_Polygon:
 		log.Println("shapetype polygon not yet ready")
 		// renderShape = createTriangle(o.Param.Phys.W, o.Param.Phys.H, 1)
 	default:
 
-		log.Fatalf("WARNING: shape type `%s` not yet!", physShape.ShapeType())
+		log.Fatalf("WARNING: shape type `%s` not yet!", i.ShapeType)
 	}
 
 	renderShape.Material = (&materials.Instruction{Name: "shape", Shader: "color", DiffColor: mgl32.Vec4{1, 0.1, 0.1, 0.75}}).Create()
@@ -153,7 +161,7 @@ func (r *Renderable) Render() {
 
 	render.DrawRenderable(r.Body, nil, perspective, view, camera)
 
-	if r.physShape != nil {
+	if r.PI != nil {
 		r.renderShape()
 	}
 
@@ -162,24 +170,24 @@ func (r *Renderable) Render() {
 
 func (r *Renderable) renderShape() {
 	//create shape if need
-	if r.Shape == nil {
-		r.Shape = r.createRenderableShape(r.physShape)
+	if r.Shape == nil && r.PI != nil {
+		r.Shape = r.createRenderableShape(r.PI)
 	}
 
-	if r.physShape == nil || r.physShape.Body == nil {
-		//then shape or body already deleted
-		return
-	}
+	// if r.physShape == nil || r.physShape.Body == nil {
+	// 	//then shape or body already deleted
+	// 	return
+	// }
 
 	r.Shape.Location = mgl32.Vec3{0, 0, 0}.Add(mgl32.Vec3{r.Body.Location.X(), r.Body.Location.Y(), 0})
 
 	//set rotation
-	r.Shape.LocalRotation = mgl32.AnglesToQuat(0, 0, r.physShape.Body.Angle(), 1)
+	// r.Shape.LocalRotation = mgl32.AnglesToQuat(0, 0, r.PI.Angle, 1)
 
 	//resize width if it box... crunch!!!!
-	if r.physShape.ShapeType() == phys.ShapeType_Box {
-		r.Shape.Scale = mgl32.Vec3{1, r.physShape.GetAsBox().Width / 2, 1}
-	}
+	// if r.PI.ShapeType == phys.ShapeType_Box {
+	// 	r.Shape.Scale = mgl32.Vec3{1, r.PI.W / 2, 1}
+	// }
 
 	//render lines
 	render.DrawLines(r.Shape, r.Shape.Material.Shader, nil, perspective, view, camera)
@@ -201,8 +209,15 @@ func (r *Renderable) renderArts() {
 	}
 
 	for _, a := range r.ArtRotate {
-		a.Body.Location = mgl32.Vec3{}.Add(r.Body.Location).Add(a.Pos)
-		a.Body.LocalRotation = mgl32.AnglesToQuat(0, 0, r.Angle(), 1)
+		if a.Body == nil {
+			a.Body = a.RI.createBody(a.P)
+		}
+
+		a.Body.Location = vect.FromVec3(r.Body.Location).SubPoint(r.Angle(), vect.FromVec3(a.Pos)).Vec3()
+		// a.Body.Location = mgl32.Vec3{}.Add(r.Body.Location).Add(a.Pos)
+
+		// r.Body.LocalRotation
+		a.Body.LocalRotation = mgl32.AnglesToQuat(0, 0, r.Angle()+a.Angle, 1)
 
 		if a.Line {
 			render.DrawLines(a.Body, a.Body.Material.Shader, nil, perspective, view, camera)
@@ -213,13 +228,23 @@ func (r *Renderable) renderArts() {
 }
 
 func (r *Renderable) Angle() float32 {
-	return float32(2 * math.Acos(float64(r.Body.Rotation.W)))
+	q := r.Body.LocalRotation
+
+	var ysqr = q.Y() * q.Y()
+
+	// yaw (z-axis rotation)
+	var t3 = 2.0 * float64(q.W*q.Z()+q.X()*q.Y())
+	var t4 = 1.0 - 2.0*float64(ysqr+q.Z()*q.Z())
+	return float32(math.Atan2(t3, t4))
+
+	// return float32(2 * math.Acos(float64(r.Body.LocalRotation.W)))
 }
 
 func (r *Renderable) Destroy() {
 	// r.needDestroy = true
+	r.needDestroy = true
 
-	delete(Renderables, r)
+	// delete(Renderables, r)
 	// delete(Renderables, r)
 }
 

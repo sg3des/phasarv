@@ -13,7 +13,8 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-func CreateEnemy(x, y float32) {
+func CreateEnemy() {
+	x, y := GetRandomPoint(50, 50)
 	log.Println("createEnemy", x, y)
 	var p = &Player{
 		Name: "enemy0",
@@ -28,7 +29,7 @@ func CreateEnemy(x, y float32) {
 
 				Shadow: true,
 			},
-			PI: &phys.Instruction{W: 2, H: 2, Mass: 12, Group: 1, ShapeType: phys.ShapeType_Box},
+			PI: &phys.Instruction{W: 1, H: 1, Mass: 12, Group: 1, ShapeType: phys.ShapeType_Box},
 		},
 
 		InitParam: PlayerParam{
@@ -62,12 +63,13 @@ func CreateEnemy(x, y float32) {
 	p.CreateCursor(mgl32.Vec4{1, 0.1, 0.1, 0.7})
 	p.CreatePlayer()
 
-	engine.AddCallback(p.EnemyRotation, p.EnemyAttack)
+	p.Object.AddCallback(p.EnemyRotation, p.EnemyAttack)
+	// engine.AddCallback(p.EnemyRotation, p.EnemyAttack)
 }
 
-func (p *Player) EnemyRotation(dt float32) bool {
+func (p *Player) EnemyRotation(dt float32) {
 	if p == nil {
-		return false
+		return
 	}
 
 	if p.Target == nil || p.Object.Distance(p.Target.Object) > 20 {
@@ -76,37 +78,35 @@ func (p *Player) EnemyRotation(dt float32) bool {
 	}
 
 	if p.Target == nil {
-		return true
+		return
 	}
 
 	p.Cursor.SetPosition(p.Target.Object.Position())
 
 	p.targetAngle = p.rotation(dt, p.Target.Object.PositionVec2())
-
-	return true
 }
 
-func (p *Player) EnemyAttack(dt float32) bool {
+func (p *Player) EnemyAttack(dt float32) {
 	if p == nil {
-		return false
+		return
 	}
 
 	if p.Target == nil {
-		p.LeftWeapon.Shoot = false
-		return true
+		p.LeftWeapon.shoot = false
+		return
 	}
 
 	p.LeftWeapon.TargetPlayer = p.Target
 
 	if p.LeftWeapon.Bullet.Type != "rocket" && vect.FAbs(p.targetAngle) > 0.2 {
-		p.LeftWeapon.Shoot = false
-		return true
+		p.LeftWeapon.shoot = false
+		return
 	}
 
-	p.LeftWeapon.Shoot = true
-	p.Fire(p.LeftWeapon)
+	p.LeftWeapon.shoot = true
+	p.LeftWeapon.Fire()
 
-	return true
+	return
 }
 
 // func (p *Player) EnemyCursor(dt float32) bool {

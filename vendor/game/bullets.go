@@ -11,19 +11,6 @@ import (
 	"engine"
 )
 
-type Weapon struct {
-	NextShot  time.Time
-	Shoot     bool
-	Delay     time.Duration
-	DelayTime time.Time
-
-	Bullet
-
-	X float32
-
-	AttackRate time.Duration
-}
-
 type Bullet struct {
 	Type    string
 	SubType string
@@ -44,65 +31,29 @@ type Bullet struct {
 	Shoot  bool
 }
 
-//Fire is main function for make shoot
-func (p *Player) Fire(w *Weapon) {
-	if !w.Shoot {
-		w.DelayTime = time.Time{}
-		return
-	}
-
-	if w.NextShot.After(time.Now()) {
-		return
-	}
-
-	if w.Delay > 0 {
-
-		if w.DelayTime.IsZero() {
-			w.DelayTime = time.Now().Add(w.Delay)
-			return
-		}
-
-		if w.DelayTime.After(time.Now()) {
-			//wait - no shot was
-			return
-		}
-	}
-
-	b := p.Shoot(w)
-	if b.Shoot {
-		w.NextShot = time.Now().Add(w.AttackRate)
-	}
-}
-
-//Shoot create new bullet
-func (p *Player) Shoot(w *Weapon) Bullet {
-	b := w.Bullet
-	b.Object = &engine.Object{}
-	*b.Object = *w.Bullet.Object
-	b.Weapon = w
-	b.Player = p
-	b.TargetPoint = p.Cursor.PositionVec2()
-
-	switch b.Type {
-	case "gun":
-		b.Gun()
-	case "rocket":
-		b.Rocket()
-	case "laser":
-		b.Laser()
-	}
-
-	return b
-}
-
 //CreateObject create bullet for gun and rocket
 func (b *Bullet) CreateObject() {
-	vx, vy := b.Player.Object.VectorSide(1, -1.5704)
-	x, y := b.Player.Object.Position()
+	// vx, vy := b.Player.Object.VectorSide(1, -1.5704)
+	// x, y := b.Player.Object.Position()
+
+	// log.Println(ang, b.Weapon.Angle)
+	// if ang > b.Weapon.Angle {
+	// 	ang = b.Weapon.Angle
+	// } else if ang < -b.Weapon.Angle {
+	// 	ang = -b.Weapon.Angle
+	// }
+
+	// log.Println(ang)
+
+	// b.Object.P = point.Param{
+	// 	Pos:   point.P{x + b.Weapon.X*vx, y + b.Weapon.X*vy, 0},
+	// 	Angle: b.Player.Object.Rotation() + ang,
+	// 	// Angle: ang,
+	// }
 
 	b.Object.P = point.Param{
-		Pos:   point.P{x + b.Weapon.X*vx, y + b.Weapon.X*vy, 0},
-		Angle: b.Player.Object.Rotation(),
+		Pos:   point.PFromVect(b.Weapon.GetPosition()),
+		Angle: b.Weapon.GetAngle(),
 	}
 
 	b.Object.Create()
@@ -148,7 +99,7 @@ func (b *Bullet) Rocket() {
 
 	b.CreateObject()
 	b.Object.AddCallback(b.RocketCallback)
-	b.Object.SetVelocity(b.Player.Object.VectorSide(b.Object.PI.Mass*5*b.Weapon.X, -1.5704))
+	b.Object.SetVelocity(b.Player.Object.VectorSide(b.Object.PI.Mass*5*b.Weapon.Pos.X, -1.5704))
 	// b.Target = b.Player.Cursor.PositionVec2()
 
 	createTrail(b.Object, 0.75, int(b.MovSpeed), mgl32.Vec2{-0.5})
@@ -161,7 +112,7 @@ func (b *Bullet) Rocket() {
 func (b *Bullet) Laser() {
 	//start position
 	x, y := b.Player.Object.Position()
-	wX, wY := b.Player.Object.VectorSide(b.Weapon.X, -1.5704)
+	wX, wY := b.Player.Object.VectorSide(b.Weapon.Pos.X, -1.5704)
 	x += wX
 	y += wY
 

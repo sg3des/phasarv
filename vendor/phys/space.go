@@ -202,7 +202,6 @@ func (space *Space) Step(dt float32) {
 
 	start := time.Now()
 	space.activeShapes.ReindexQuery(func(a, b Indexable) {
-
 		SpaceCollideShapes(a.Shape(), b.Shape(), space)
 	})
 	space.ReindexQueryTime = time.Since(start)
@@ -647,6 +646,7 @@ func SpaceCollideShapes(a, b *Shape, space *Space) {
 	contacts := space.pullContactBuffer()
 
 	numContacts := collide(contacts, a, b)
+	// log.Println(numContacts)
 	if numContacts <= 0 {
 		space.pushContactBuffer(contacts)
 		return // Shapes are not colliding.
@@ -750,6 +750,10 @@ func queryReject(a, b *Shape) bool {
 		return true
 	}
 
+	if a.Body == nil || b.Body == nil {
+		return true
+	}
+
 	if a.Body == b.Body {
 		return true
 	}
@@ -759,6 +763,7 @@ func queryReject(a, b *Shape) bool {
 	// }
 
 	if !a.Body.Enabled || !b.Body.Enabled {
+		// log.Println("disabled")
 		return true
 	}
 

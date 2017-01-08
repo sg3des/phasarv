@@ -87,8 +87,13 @@ func networkPlay() {
 }
 
 func localPlay() {
-	game.CreateEnemy(10, 15)
 	game.CreateLocalPlayer(db.GetPlayer("player0"))
+	// for i := 0; i < 10; i++ {
+	// 	game.CreateEnemy()
+	// 	log.Println(i)
+	// }
+	// log.Println("created")
+
 }
 
 func initEnvironment() {
