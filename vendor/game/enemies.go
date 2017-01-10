@@ -39,9 +39,10 @@ func CreateEnemy() {
 		},
 
 		LeftWeapon: &Weapon{
+			Type:    Weapons.Rocket,
+			SubType: Weapons.RocketType.Homing,
+
 			Bullet: Bullet{
-				Type:     "rocket",
-				SubType:  "homing",
 				MovSpeed: 20,
 				RotSpeed: 50,
 				Lifetime: 10000 * time.Millisecond,
@@ -98,7 +99,7 @@ func (p *Player) EnemyAttack(dt float32) {
 
 	p.LeftWeapon.TargetPlayer = p.Target
 
-	if p.LeftWeapon.Bullet.Type != "rocket" && vect.FAbs(p.targetAngle) > 0.2 {
+	if p.LeftWeapon.Type != Weapons.Rocket && vect.FAbs(p.targetAngle) > 0.2 {
 		p.LeftWeapon.shoot = false
 		return
 	}

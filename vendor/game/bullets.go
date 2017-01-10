@@ -12,9 +12,6 @@ import (
 )
 
 type Bullet struct {
-	Type    string
-	SubType string
-
 	Object *engine.Object
 	Weapon *Weapon
 	Player *Player
@@ -79,7 +76,7 @@ func (b *Bullet) Gun() {
 
 //Rocket create rocket bullet
 func (b *Bullet) Rocket() {
-	if b.SubType == "homing" {
+	if b.Weapon.SubType == Weapons.RocketType.Homing {
 
 		if b.TargetPlayer == nil {
 			target := GetPlayerInPoint(b.Player.Cursor.Position())
@@ -179,13 +176,13 @@ func (b *Bullet) RocketCallback(dt float32) {
 	}
 
 	var angle float32
-	switch b.SubType {
-	case "direct":
-	case "aimed":
+	switch b.Weapon.SubType {
+	case Weapons.RocketType.Direct:
+	case Weapons.RocketType.Aimed:
 		angle = SubAngleObjectPoint(b.Object, b.TargetPoint)
-	case "guided":
+	case Weapons.RocketType.Guided:
 		angle = SubAngleObjectPoint(b.Object, b.Player.Cursor.PositionVec2())
-	case "homing":
+	case Weapons.RocketType.Homing:
 		tp := b.TargetPoint
 		if b.TargetPlayer == nil {
 			target := GetPlayerInPoint(b.Player.Cursor.Position())
@@ -237,12 +234,12 @@ func (b *Bullet) LaserCallback(dt float32) {
 
 //Destroy handler for bullet destroy
 func (b *Bullet) Destroy() {
-	switch b.Type {
-	case "gun":
+	switch b.Weapon.Type {
+	case Weapons.Gun:
 		b.Object.Destroy()
-	case "rocket":
+	case Weapons.Rocket:
 		b.Object.Destroy()
-	case "laser":
+	case Weapons.Laser:
 		b.Object.Destroy()
 		// b.Object.Shape.Body.Enabled = false
 		// b.LaserCallback(0.1)

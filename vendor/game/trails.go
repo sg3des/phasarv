@@ -3,6 +3,7 @@ package game
 import (
 	"engine"
 	"materials"
+	"math/rand"
 	"phys/vect"
 	"point"
 	"render"
@@ -11,7 +12,7 @@ import (
 )
 
 func createTrail(p *engine.Object, piecelength float32, count int, offset mgl32.Vec2) {
-	return
+	// return
 	x, y := p.Position()
 	t := &Trail{
 		parent:    p,
@@ -74,8 +75,8 @@ func (p *trialPoints) Vec2() mgl32.Vec2 {
 
 func (t *Trail) trailCallback(dt float32) {
 
-	// //calculate alpha channel for trail pieces
-	// // var sumAlpha float32
+	//calculate alpha channel for trail pieces
+	// var sumAlpha float32
 	// for i, o := range t.objects {
 	// 	t.points[i].Alpha = t.points[i].Alpha - 1/float32(len(t.points)) - dt/2
 	// 	if o.Body == nil {
@@ -97,36 +98,36 @@ func (t *Trail) trailCallback(dt float32) {
 	// 	// sumAlpha += t.points[i].Alpha
 	// }
 
-	// // log.Println(t.parent.Name)
-	// //destroy trail if parent is nil
-	// if t.parent.Shape.Body == nil || t.parent == nil || t.parent.Body == nil || t.parent.Shape == nil {
-	// 	t.Destroy()
-	// }
+	// log.Println(t.parent.Name)
+	//destroy trail if parent is nil
+	if t.parent.Shape.Body == nil || t.parent == nil || t.parent.Shape == nil {
+		t.Destroy()
+	}
 
-	// //calculate offset
-	// px, py := t.parent.Position()
-	// // off := vect{}
-	// // off := t.offset.Mul(vect.FAbs(t.parent.RollAngle / 2)).Add(t.offset)
-	// vx, vy := t.parent.VectorSide(t.offset.X()+rand.Float32()*0.2, t.offset.Y())
-	// px += vx
-	// py += vy
-	// t.objects[0].SetPosition(px, py)
+	//calculate offset
+	px, py := t.parent.Position()
+	// off := vect{}
+	// off := t.offset.Mul(vect.FAbs(t.parent.RollAngle / 2)).Add(t.offset)
+	vx, vy := t.parent.VectorSide(t.offset.X()+rand.Float32()*0.2, t.offset.Y())
+	px += vx
+	py += vy
+	t.objects[0].SetPosition(px, py)
 
-	// //if distance more then trail length, renew\shift trails
-	// dist := vect.Dist(vect.Vect{px, py}, t.points[0].Vect())
-	// if dist > t.maxLength {
-	// 	point := trialPoints{px, py, t.parent.Rotation(), 1}
-	// 	t.points = append([]trialPoints{point}, t.points[:len(t.points)]...)
+	//if distance more then trail length, renew\shift trails
+	dist := vect.Dist(vect.Vect{px, py}, t.points[0].Vect())
+	if dist > t.maxLength {
+		point := trialPoints{px, py, t.parent.Rotation(), 1}
+		t.points = append([]trialPoints{point}, t.points[:len(t.points)]...)
 
-	// 	for i, o := range t.objects {
-	// 		o.SetPosition(t.points[i].X, t.points[i].Y)
-	// 		if i == 0 {
-	// 			o.SetRotation(t.points[i].Angle)
-	// 		} else {
-	// 			o.SetRotation(AngleObjectPoint(o, t.points[i-1].Vec2()))
-	// 		}
-	// 	}
-	// }
+		for i, o := range t.objects {
+			o.SetPosition(t.points[i].X, t.points[i].Y)
+			if i == 0 {
+				o.SetRotation(t.points[i].Angle)
+			} else {
+				o.SetRotation(AngleObjectPoint(o, t.points[i-1].Vec2()))
+			}
+		}
+	}
 }
 
 func (t *Trail) Destroy() {

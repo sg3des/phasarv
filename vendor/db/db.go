@@ -32,14 +32,14 @@ func GetPlayer(name string) *game.Player {
 
 		InitParam: game.PlayerParam{
 			Health:    100,
-			MovSpeed:  0,
+			MovSpeed:  10,
 			RotSpeed:  50,
 			RollAngle: 1.5,
 		},
 
 		LeftWeapon: &game.Weapon{
+			Type: game.Weapons.Gun,
 			Bullet: game.Bullet{
-				Type:     "gun",
 				MovSpeed: 30,
 				Lifetime: 1000 * time.Millisecond,
 				Damage:   20,
@@ -76,10 +76,11 @@ func GetPlayer(name string) *game.Player {
 		// 	// Delay:      500 * time.Millisecond,
 		// 	AttackRate: 100 * time.Millisecond,
 		// },
+
 		RightWeapon: &game.Weapon{
+			Type:    game.Weapons.Rocket,
+			SubType: game.Weapons.RocketType.Aimed,
 			Bullet: game.Bullet{
-				Type:     "rocket",
-				SubType:  "aimed",
 				MovSpeed: 25,
 				RotSpeed: 100,
 				Lifetime: 20000 * time.Millisecond,
