@@ -7,7 +7,8 @@ type Frame struct {
 	timePrev time.Time
 	timeNow  time.Time
 
-	dt float32
+	dtPrev float32
+	dt     float32
 
 	timeFPS time.Time
 	prefps  int
@@ -41,5 +42,8 @@ func (f *Frame) Next() (float32, int) {
 	// log.Println(f.timeNow.After(f.timeFPS))
 	f.prefps++
 
-	return f.dt, f.fps
+	dt := (f.dt + f.dtPrev) / 2
+	f.dtPrev = f.dt
+
+	return dt, f.fps
 }

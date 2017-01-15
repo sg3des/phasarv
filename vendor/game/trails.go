@@ -75,6 +75,7 @@ func (p *trialPoints) Vec2() mgl32.Vec2 {
 
 func (t *Trail) trailCallback(dt float32) {
 
+	// return
 	//calculate alpha channel for trail pieces
 	// var sumAlpha float32
 	// for i, o := range t.objects {

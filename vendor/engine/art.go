@@ -20,6 +20,9 @@ type Art struct {
 }
 
 func (o *Object) AppendArt(a *Art) {
+	if a == nil {
+		return
+	}
 	a.Art = a.RI.CreateArt(a.P)
 	o.renderable.AppendArt(a.Art)
 

@@ -21,7 +21,7 @@ var (
 
 func CreateLocalPlayer(p *Player) {
 	log.Println("CreateLocalPlayer")
-
+	p.Local = true
 	// p := &Player{Param: paramPlayer}
 	p.CreateCursor(mgl32.Vec4{0.3, 0.3, 0.9, 0.7})
 	p.CreatePlayer()
@@ -43,6 +43,7 @@ type PlayerParam struct {
 
 type Player struct {
 	Name   string
+	Local  bool
 	Object *engine.Object
 
 	CurrParam PlayerParam
@@ -83,8 +84,10 @@ func (p *Player) createWeapon(w *Weapon) {
 	}
 	w.Player = p
 
-	w.Aim = w.NewAim()
-	p.Object.AppendArt(w.Aim)
+	if p.Local {
+		w.Aim = w.NewAim()
+		p.Object.AppendArt(w.Aim)
+	}
 
 	p.Object.AddCallback(w.Callback)
 }
