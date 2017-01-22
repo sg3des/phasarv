@@ -34,11 +34,12 @@ func (objects) loopPhysToRender() {
 		if o.renderable.Body == nil {
 			continue
 		}
+
 		// update position
 		o.renderable.Body.Location = o.PositionVec3()
-		if o.renderable.Shape != nil {
+		// if o.renderable.Shape != nil {
 
-		}
+		// }
 
 		// update rotation
 		ang := o.Rotation()
@@ -51,7 +52,7 @@ func (objects) loopPhysToRender() {
 			q := mgl32.AnglesToQuat(0, 0, ang, 1).Mul(mgl32.AnglesToQuat(o.RollAngle, 0, 0, 1))
 			o.renderable.Body.LocalRotation = q
 
-			shape := o.Shape.GetAsBox()
+			shape := o.shape.GetAsBox()
 			shape.Width = o.PI.W - o.PI.W*o.ShapeWidthPercent()
 			if o.renderable.Shape != nil {
 				o.renderable.Shape.Scale = mgl32.Vec3{o.PI.H, shape.Width, 1}
@@ -74,7 +75,7 @@ func (objects) loopCallbacks(dt float32) {
 			// o.renderable
 			continue
 		}
-		for _, f := range o.Callbacks {
+		for _, f := range o.callbacks {
 			f(dt)
 		}
 	}
@@ -122,7 +123,7 @@ func (objects) loopCallbacks(dt float32) {
 // 		if o.renderable.Shape != nil {
 // 			o.renderable.Shape.LocalRotation = mgl32.AnglesToQuat(0, 0, ang, 1)
 // 		}
-// 		// if o.Shape != nil {
+// 		// if o.shape != nil {
 // 		// 	o.PI.Angle = ang
 // 		// 	o.PI
 // 		// }
@@ -132,8 +133,8 @@ func (objects) loopCallbacks(dt float32) {
 // 			q := mgl32.AnglesToQuat(0, 0, ang, 1).Mul(mgl32.AnglesToQuat(o.RollAngle, 0, 0, 1))
 // 			o.renderable.Body.LocalRotation = q
 
-// 			shape := o.Shape.GetAsBox()
-// 			shape.Width = o.PI.W - o.PI.W*o.ShapeWidthPercent()
+// 			shape := o.shape.GetAsBox()
+// 			shape.Width = o.PI.W - o.PI.W*o.shapeWidthPercent()
 // 			if o.renderable.Shape != nil {
 // 				o.renderable.Shape.Scale = mgl32.Vec3{o.PI.H, shape.Width, 1}
 // 			}

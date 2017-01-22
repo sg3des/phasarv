@@ -22,7 +22,7 @@ type Connection struct {
 
 	Handlers map[string]Handler
 
-	Clients map[string]*net.UDPAddr
+	Clients []*net.UDPAddr
 }
 
 type Handler func(*Request) interface{}
@@ -39,7 +39,6 @@ func udpAddr(addr string) *net.UDPAddr {
 func NewHandlers(h map[string]Handler) *Connection {
 	c := &Connection{
 		Handlers: h,
-		Clients:  make(map[string]*net.UDPAddr),
 	}
 	return c
 }
@@ -84,21 +83,48 @@ func (c *Connection) Close() {
 	c.Handlers = nil
 }
 
+func (c *Connection) DeleteClient(addr *net.UDPAddr) {
+	for i, a := range c.Clients {
+		if a == addr {
+			c.DeleteClientN(i)
+		}
+	}
+}
+
+func (c *Connection) DeleteClientN(i int) {
+	c.Clients[i] = c.Clients[len(c.Clients)-1]
+	c.Clients[len(c.Clients)-1] = nil
+	c.Clients = c.Clients[:len(c.Clients)-1]
+}
+
+func (c *Connection) AddClient(addr *net.UDPAddr) {
+	for _, a := range c.Clients {
+		if a.String() == addr.String() {
+			return
+		}
+	}
+
+	c.Clients = append(c.Clients, addr)
+}
+
 //carrier manage incoming messages
 func (c *Connection) carrier() {
 	for {
-		var b = make([]byte, 2048)
+		var b = make([]byte, 8192)
 		i, addr, err := c.Conn.ReadFromUDP(b)
 		if err != nil {
+			c.DeleteClient(addr)
 			log.Println(c.Type, "failed read udp package, error: ", err)
 			continue
 		}
+
 		b = b[:i]
 		if len(b) == 0 {
 			continue
 		}
 
-		c.Clients[addr.String()] = addr
+		c.AddClient(addr)
+		// c.Clients = append(c.Clients, addr)
 
 		m, err := c.decodeMessage(b)
 		if err != nil {
@@ -117,9 +143,13 @@ func (c *Connection) carrier() {
 		responseMsg, err := c.callHandler(req)
 		if err != nil {
 			log.Println(c.Type, "failed send response:", err)
+			continue
 		}
 		if responseMsg != nil {
-			c.Conn.WriteToUDP(responseMsg, addr)
+			_, err := c.Conn.WriteToUDP(responseMsg, addr)
+			if err != nil {
+				log.Println("failed write to udp channel:", err)
+			}
 		}
 
 		// if data != nil {
@@ -195,7 +225,7 @@ func NewMessage(reqfunc, resfunc string, data interface{}) *Message {
 func (m *Message) encode() ([]byte, error) {
 	buf := bytes.NewBuffer([]byte{})
 	err := gob.NewEncoder(buf).Encode(m)
-	return buf.Bytes(), err
+	return append(buf.Bytes(), '\n'), err
 }
 
 func (c *Connection) Broadcast(reqfunc, resfunc string, data interface{}) error {
@@ -206,12 +236,12 @@ func (c *Connection) Broadcast(reqfunc, resfunc string, data interface{}) error 
 	}
 
 	log.Println("send broadcast to ", c.Clients)
-	for name, client := range c.Clients {
+	for i, client := range c.Clients {
 		log.Println("send to", client.String())
 		_, err := c.Conn.WriteToUDP(bMsg, client)
 		if err != nil {
-			delete(c.Clients, name)
-			log.Printf("failed send broadcast message to `%s:%s`, reason: %s\n", name, client, err)
+			c.DeleteClientN(i)
+			log.Printf("failed send broadcast message to `%s:%s`, reason: %s\n", client, err)
 		}
 	}
 
@@ -237,7 +267,10 @@ func (req *Request) NewResponse(data interface{}) ([]byte, error) {
 	if req.ResponseFunc == "" {
 		return nil, errors.New("response function is empty")
 	}
-	return NewMessage(req.ResponseFunc, "", data).encode()
+
+	message := NewMessage(req.ResponseFunc, "", data)
+
+	return message.encode()
 }
 
 // func (req *Request) SendResponse(data interface{}) error {

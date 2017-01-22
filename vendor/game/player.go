@@ -26,12 +26,12 @@ func CreateLocalPlayer(p *Player) {
 	p.CreateCursor(mgl32.Vec4{0.3, 0.3, 0.9, 0.7})
 	p.CreatePlayer()
 
-	p.Object.DestroyFunc = p.Destroy
+	p.Object.SetDestroyFunc(p.Destroy)
 
 	Players = append(Players, p)
 	// p.Object.Shape.Body.CallBackCollision = p.Collision
 
-	engine.AddCallback(p.Movement, p.PlayerRotation, p.CameraMovement, p.Attack)
+	p.Object.AddCallback(p.Movement, p.PlayerRotation, p.CameraMovement, p.Attack)
 	engine.SetMouseCallback(p.MouseControl)
 }
 
@@ -63,14 +63,23 @@ func (p *Player) CreatePlayer() {
 	p.CurrParam = p.InitParam
 	p.Object.PI.Group = 2
 
-	hb := NewHealthBar(p.InitParam.Health)
+	var hb *engine.Art
+	if Render {
+		hb = NewHealthBar(p.InitParam.Health)
+	}
 	p.Object.Create(hb)
+
 	p.Object.MaxRollAngle = p.InitParam.RollAngle
 
 	p.createWeapon(p.LeftWeapon)
 	p.createWeapon(p.RightWeapon)
 
-	if p.InitParam.MovSpeed > 5 {
+	if p.Cursor == nil {
+		p.Cursor = &engine.Object{}
+		p.Cursor.Create()
+	}
+
+	if p.InitParam.MovSpeed > 5 && Render {
 		createTrail(p.Object, 0.5, int(p.InitParam.MovSpeed), mgl32.Vec2{1.4, 2.95})
 		createTrail(p.Object, 0.5, int(p.InitParam.MovSpeed), mgl32.Vec2{1.4, -2.95})
 	}
@@ -160,7 +169,7 @@ func (p *Player) updateArt(name string, value float32) {
 	log.Printf("warning: art by name: `%s` not found", name)
 }
 
-func (p *Player) Movement(dt float32) bool {
+func (p *Player) Movement(dt float32) {
 	// log.Println(p.Object.Velocity().Length())
 	if p.Object.Velocity().Length() < p.CurrParam.MovSpeed {
 		dist := p.Object.Distance(p.Cursor)
@@ -171,14 +180,12 @@ func (p *Player) Movement(dt float32) bool {
 
 		p.Object.AddVelocity(p.Object.VectorForward(p.CurrParam.MovSpeed * 0.05 * dist * dt))
 	}
-
-	return true
 }
 
-func (p *Player) PlayerRotation(dt float32) bool {
+func (p *Player) PlayerRotation(dt float32) {
 	p.rotation(dt, p.Cursor.PositionVec2())
 
-	angVel := p.Object.Shape.Body.AngularVelocity() / 2
+	angVel := p.Object.AngularVelocity() / 2
 	if angVel > p.Object.MaxRollAngle {
 		angVel = p.Object.MaxRollAngle
 	}
@@ -186,21 +193,19 @@ func (p *Player) PlayerRotation(dt float32) bool {
 		angVel = -p.Object.MaxRollAngle
 	}
 	p.Object.RollAngle = -angVel
-
-	return true
 }
 
 func (p *Player) rotation(dt float32, target mgl32.Vec2) float32 {
 	angle := SubAngleObjectPoint(p.Object, target)
 
-	if vect.FAbs(p.Object.Shape.Body.AngularVelocity()) < vect.FAbs(p.CurrParam.RotSpeed/10) {
-		p.Object.Shape.Body.AddAngularVelocity(p.CurrParam.RotSpeed * 0.05 * angle * dt)
+	if vect.FAbs(p.Object.AngularVelocity()) < vect.FAbs(p.CurrParam.RotSpeed/10) {
+		p.Object.AddAngularVelocity(p.CurrParam.RotSpeed * 0.05 * angle * dt)
 	}
 
 	return angle
 }
 
-func (p *Player) Attack(dt float32) bool {
+func (p *Player) Attack(dt float32) {
 	if p.LeftWeapon != nil {
 		p.LeftWeapon.Fire()
 		p.WeaponDelay(p.LeftWeapon, "leftDelay")
@@ -210,8 +215,6 @@ func (p *Player) Attack(dt float32) bool {
 		p.RightWeapon.Fire()
 		p.WeaponDelay(p.RightWeapon, "rightDelay")
 	}
-
-	return true
 }
 
 func (p *Player) WeaponDelay(w *Weapon, name string) {
@@ -261,7 +264,7 @@ func (p *Player) MouseControl(w *glfw.Window, button glfw.MouseButton, action gl
 	}
 }
 
-func (p *Player) CameraMovement(dt float32) bool {
+func (p *Player) CameraMovement(dt float32) {
 	engine.Camera.SetPosition(p.Object.Position())
 
 	// sun.Position = pp.Add(mgl32.Vec3{-30, 30, 100})
@@ -270,8 +273,6 @@ func (p *Player) CameraMovement(dt float32) bool {
 	w, h := engine.WindowSize()
 
 	p.Cursor.SetPosition(getCursorPos(x, y, w, h, engine.Camera.GetPosition()))
-
-	return true
 }
 
 // func keyboardControl(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {

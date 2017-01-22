@@ -144,15 +144,8 @@ func (i *Instruction) CreateArt(p point.Param) *Art {
 
 func (r *Renderable) Render() {
 	if r.Body == nil {
-		// log.Println("create ", r.RI.MeshName)
 		r.Body = r.RI.createBody(r.P)
 	}
-
-	// if r.needDestroy {
-	// 	// log.Println("destroy", r.RI.MeshName)
-	// 	r.destroy()
-	// 	return
-	// }
 
 	if r.Body == nil {
 		log.Println("WTF?!?!", r.RI.MeshName, r.P.Pos)

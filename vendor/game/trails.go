@@ -12,7 +12,7 @@ import (
 )
 
 func createTrail(p *engine.Object, piecelength float32, count int, offset mgl32.Vec2) {
-	// return
+	return
 	x, y := p.Position()
 	t := &Trail{
 		parent:    p,
@@ -101,8 +101,9 @@ func (t *Trail) trailCallback(dt float32) {
 
 	// log.Println(t.parent.Name)
 	//destroy trail if parent is nil
-	if t.parent.Shape.Body == nil || t.parent == nil || t.parent.Shape == nil {
+	if t.parent == nil {
 		t.Destroy()
+		return
 	}
 
 	//calculate offset

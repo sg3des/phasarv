@@ -3,12 +3,13 @@ package main
 import (
 	"db"
 	"encoding/gob"
+	"engine"
+	"game"
 	"log"
 	"math/rand"
 	"network"
-	"param"
 	"phys/vect"
-	"time"
+	"scene"
 )
 
 var (
@@ -18,28 +19,49 @@ var (
 
 func init() {
 	log.SetFlags(log.Lshortfile)
+	players = make(map[string]*game.Player)
 }
 
 func main() {
-	gob.Register(param.Player{})
-	gob.Register(vect.Vect{})
+	engine.Server(server)
+}
 
-	s = network.NewHandlers(map[string]network.Handler{"auth": auth})
+func server() {
+	scene.Load("scene00")
+
+	gob.Register(game.Player{})
+	gob.Register(vect.Vect{})
+	gob.Register(game.NetPacket{})
+
+	s = network.NewHandlers(map[string]network.Handler{
+		"auth":          auth,
+		"playersCursor": playersCursor,
+	})
+
 	if err := s.Server(addr); err != nil {
 		log.Fatalln(err)
 	}
 
-	for {
-		log.Printf("listen '%s', clients: '%v' \n", addr, s.Clients)
-		sendEnemy()
+	log.Println("server listen on addr", addr)
 
-		time.Sleep(10 * time.Second)
-	}
+	// for {
+	// 	log.Printf("listen '%s', clients: '%v' \n", addr, s.Clients)
+	// 	sendEnemy()
+
+	// 	time.Sleep(10 * time.Second)
+	// }
 }
 
 func auth(req *network.Request) interface{} {
 	log.Println("auth", req.Data.(string))
-	return db.GetPlayer(req.Data.(string))
+
+	name := req.Data.(string)
+	p := db.GetPlayer(name)
+	p.CreatePlayer()
+	p.Object.AddCallback(p.Movement, p.PlayerRotation)
+	players[req.RemoteAddr.String()] = p
+
+	return db.GetPlayer(name)
 }
 
 func sendEnemy() {

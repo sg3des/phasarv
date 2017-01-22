@@ -10,18 +10,16 @@ import (
 
 	"github.com/go-gl/glfw/v3.1/glfw"
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/tbogdala/eweygewey"
+	"github.com/tbogdala/eweygewey/glfwinput"
 	"github.com/tbogdala/fizzle"
 	"github.com/tbogdala/fizzle/graphicsprovider"
 	"github.com/tbogdala/fizzle/graphicsprovider/opengl"
-
-	"github.com/tbogdala/eweygewey"
-	"github.com/tbogdala/eweygewey/glfwinput"
 )
 
 var (
 	err error
 	e   = &engine{}
-	mem runtime.MemStats
 )
 
 type engine struct {
@@ -31,11 +29,13 @@ type engine struct {
 	ui *eweygewey.Manager
 
 	callbacks []func(float32) bool
+
+	render bool
 }
 
 //Init main function create window and initialize opengl,render engine
 func Init(userfunc func()) {
-	// runtime.LockOSThread()
+	runtime.LockOSThread()
 
 	if err := e.initWindow(1024, 768, "phasarv"); err != nil {
 		log.Fatalf("engine: failed initialize window, reason: %s", err)
@@ -51,18 +51,26 @@ func Init(userfunc func()) {
 
 	render.Init(e.gfx, 1024, 768)
 	render.SetCamera(fizzle.NewYawPitchCamera(mgl32.Vec3{0, 0, 10}))
+	e.render = true
 
 	phys.Init()
 
 	if err := e.initUI(); err != nil {
-		log.Fatalf("failed initialise user interface, %s", err)
+		log.Fatalln(err)
 	}
-
-	// e.callbacks = make(map[int]func(float32) bool)
 
 	userfunc()
 
-	Loop()
+	go LoopPlay()
+	LoopRender()
+}
+
+func Server(userfunc func()) {
+	phys.Init()
+
+	userfunc()
+
+	LoopPlay()
 }
 
 //initWindow create window and set some opengl flags
@@ -140,6 +148,8 @@ func (e *engine) initUI() error {
 	if err != nil {
 		return fmt.Errorf("Failed to load the font file! reason: %s", err)
 	}
+
+	InitializeSystemUI()
 
 	return nil
 }

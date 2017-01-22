@@ -6,9 +6,7 @@ import (
 	"game"
 	"log"
 	"render"
-	"runtime"
 	"scene"
-	"time"
 
 	"github.com/go-gl/glfw/v3.1/glfw"
 	"github.com/go-gl/mathgl/mgl32"
@@ -19,24 +17,26 @@ import (
 )
 
 var (
-	mode string
-)
-
-func init() {
-	runtime.LockOSThread()
-	log.SetFlags(log.Lshortfile)
-	flag.Parse()
-	mode = flag.Arg(0)
-}
-
-var (
+	client bool
 	cursor *engine.Object
 	camera *fizzle.YawPitchCamera
 	sun    *forward.Light
 )
 
+func init() {
+	// runtime.LockOSThread()
+	log.SetFlags(log.Lshortfile)
+	flag.Parse()
+	if flag.Arg(0) == "client" {
+		client = true
+	}
+	// mode =
+}
+
 func main() {
+	game.Render = true
 	engine.Init(local)
+
 	// local()
 	// engine.SetKeyCallback(keyCallback)
 	// initEnvironment()
@@ -62,26 +62,16 @@ func local() {
 	engine.SetKeyCallback(keyCallback)
 	initEnvironment()
 
-	time.Sleep(time.Second)
 	scene.Load("scene00")
 
-	go localPlay()
-
-	// // time.Sleep(300 * time.Millisecond)
-
-	// if mode == "client" {
-	// 	networkPlay()
-	// } else {
-	// 	localPlay()
-	// }
-
+	if client {
+		go networkPlay()
+	} else {
+		localPlay()
+	}
 }
 
 func networkPlay() {
-	// client.AddRoutes(map[string]func(interface{}) interface{}{
-	// 	"CreateLocalPlayer": CreateLocalPlayer,
-	// })
-
 	Connect("127.0.0.1:9696")
 	Authorize("player0")
 }
@@ -90,10 +80,7 @@ func localPlay() {
 	game.CreateLocalPlayer(db.GetPlayer("player0"))
 	for i := 0; i < 10; i++ {
 		game.CreateEnemy()
-		log.Println(i)
 	}
-	// log.Println("created")
-
 }
 
 func initEnvironment() {

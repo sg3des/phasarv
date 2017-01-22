@@ -35,30 +35,30 @@ func Hit(x, y float32) interface{} {
 	return nil
 }
 
-//Raycast
-func Raycast(x0, y0, x1, y1 float32, ignoreBody *phys.Body) (players []interface{}) {
-	// r := []phys.RayCastHit{phys.RayCastHit{}}
-	hits := phys.Hits(x0, y0, x1, y1, 2, ignoreBody)
+// //Raycast
+// func Raycast(x0, y0, x1, y1 float32, ignoreBody *phys.Body) (players []interface{}) {
+// 	// r := []phys.RayCastHit{phys.RayCastHit{}}
+// 	hits := phys.Hits(x0, y0, x1, y1, 2, ignoreBody)
 
-	for _, hit := range hits {
-		if hit.Shape.Group != 2 || hit.Shape.UserData == nil {
-			continue
-		}
+// 	for _, hit := range hits {
+// 		if hit.Shape.Group != 2 || hit.Shape.UserData == nil {
+// 			continue
+// 		}
 
-		players = append(players, hit.Shape.UserData)
-		// if hit.Body.UserData.(*Object).Name == "bullet" {
-		// 	continue
-		// }
+// 		players = append(players, hit.Shape.UserData)
+// 		// if hit.Body.UserData.(*Object).Name == "bullet" {
+// 		// 	continue
+// 		// }
 
-		// firstpos := vect.Vect{x0, y0}
-		// if firstpos == hit.Body.Position() {
-		// 	continue
-		// }
+// 		// firstpos := vect.Vect{x0, y0}
+// 		// if firstpos == hit.Body.Position() {
+// 		// 	continue
+// 		// }
 
-		// 	return hit
-		// }
-		// log.Println(hit.MinT, x0, y0, hit.Body.Position(), hit.Body.UserData)
-	}
+// 		// 	return hit
+// 		// }
+// 		// log.Println(hit.MinT, x0, y0, hit.Body.Position(), hit.Body.UserData)
+// 	}
 
-	return
-}
+// 	return
+// }

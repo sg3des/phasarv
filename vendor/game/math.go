@@ -27,7 +27,8 @@ func GetPlayerInPoint(x, y float32) *Player {
 }
 
 func GetNearPlayerByRay(x0, y0, x1, y1 float32, ignorePlayer *Player) (p *Player) {
-	userdatas := engine.Raycast(x0, y0, x1, y1, ignorePlayer.Object.Shape.Body)
+
+	userdatas := ignorePlayer.Object.Raycast(x0, y0, x1, y1)
 
 	var shortDistance float32 = 999
 	for _, userdata := range userdatas {

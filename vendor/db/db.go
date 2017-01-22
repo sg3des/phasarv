@@ -8,14 +8,12 @@ import (
 	"phys/vect"
 	"render"
 	"time"
-
-	"github.com/go-gl/mathgl/mgl32"
 )
 
 func GetPlayer(name string) *game.Player {
-	var v mgl32.Vec3
+	// var v mgl32.Vec3
 
-	v[0] = 1
+	// v[0] = 1
 
 	player := &game.Player{
 		Name: name,

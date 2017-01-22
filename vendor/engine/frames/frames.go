@@ -42,8 +42,8 @@ func (f *Frame) Next() (float32, int) {
 	// log.Println(f.timeNow.After(f.timeFPS))
 	f.prefps++
 
-	dt := (f.dt + f.dtPrev) / 2
-	f.dtPrev = f.dt
+	// dt := (f.dt + f.dtPrev) / 2
+	// f.dtPrev = f.dt
 
-	return dt, f.fps
+	return f.dt, f.fps
 }

@@ -56,7 +56,7 @@ func (b *Bullet) CreateObject() {
 	b.Object.Create()
 	// log.Println(b.Object.Shape, b.Object.Param.Phys)
 
-	b.Object.Shape.Body.CallBackCollision = b.Collision
+	b.Object.SetCallbackCollision(b.Collision)
 	b.Object.SetUserData(b)
 
 	b.TimePoint = time.Now().Add(b.Lifetime)
@@ -202,7 +202,7 @@ func (b *Bullet) RocketCallback(dt float32) {
 	}
 
 	if angle != 0 {
-		b.Object.Shape.Body.AddAngularVelocity(angle * b.RotSpeed * 0.05 * dt)
+		b.Object.AddAngularVelocity(angle * b.RotSpeed * 0.05 * dt)
 	}
 
 	if b.Object.Velocity().Length() < b.MovSpeed {
