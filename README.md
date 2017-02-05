@@ -6,9 +6,17 @@ The game is a topdown dynamic battle.
 
 ![screenshot](screenshots/screen.png)
 
-## Code
 
-Project code is in the vendor directory
+## About code and project structure
+
+All code is in the **vendor** directory - as the used internal packages can not be used elsewhere.
+
+Idea about project structure is, use one code for client and server.
+
+Game engine have two separately loop: in first only render opengl, in second, everything else - physics, game logic, callbacks etc. As opengl should be in main process, second loop launched with goroutine.
+
+For network interaction is used only **UDP** packages. For the packaging network data used **encoding/gob**.
+
 
 ## Engines
 

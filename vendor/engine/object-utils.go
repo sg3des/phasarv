@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"phys"
 
 	"phys/vect"
 
@@ -11,11 +12,13 @@ import (
 )
 
 func (o *Object) Angle() float32 {
-	if o.Shape != nil {
-		return o.Shape.Body.Angle()
+	if o.shape != nil {
+		return o.shape.Body.Angle()
 	}
-	x, y := o.Position()
-	return (&vect.Vect{x, y}).Angle()
+
+	return o.P.Angle
+	// x, y := o.Position()
+	// return (&vect.Vect{x, y}).Angle()
 }
 
 // func (o *Object) Length(x, y float32) float32 {
@@ -24,96 +27,126 @@ func (o *Object) Angle() float32 {
 // }
 
 func (o *Object) Position() (x, y float32) {
-	// if o.Shape != nil && o.Node != nil {
-	// 	log.Println(o.Shape.Body.Position(), o.Node.Location)
+	// if o.shape != nil && o.Node != nil {
+	// 	log.Println(o.shape.Body.Position(), o.Node.Location)
 	// }
 
-	if o.Shape != nil {
-		v := o.Shape.Body.Position()
+	if o.shape != nil {
+		v := o.shape.Body.Position()
 		return v.X, v.Y
 	}
+	// if o.Body != nil {
+	// 	return o.Body.Location.X(), o.Body.Location.Y()
+	// }
 
-	return o.Node.Location.X(), o.Node.Location.Y()
+	// log.Println("warning object", o.Name, "is not yet initialize")
+	// return 0, 0
+	return o.P.Pos.X, o.P.Pos.Y
+}
+
+func (o *Object) PositionVect() vect.Vect {
+	if o.shape != nil {
+		return o.shape.Body.Position()
+	}
+
+	return o.P.Pos.Vect()
 }
 
 func (o *Object) PositionVec2() mgl32.Vec2 {
-	if o.Shape != nil {
-		v := o.Shape.Body.Position()
+	if o.shape != nil {
+		v := o.shape.Body.Position()
 		return mgl32.Vec2{v.X, v.Y}
 	}
 
-	return mgl32.Vec2{o.Node.Location.X(), o.Node.Location.Y()}
+	// if o.Body != nil {
+	// 	return mgl32.Vec2{o.Body.Location.X(), o.Body.Location.Y()}
+	// }
+
+	// log.Println("failed object", o.Name, "not yet created")
+	return o.P.Pos.Vec2()
+	// return mgl32.Vec2{}
 }
 
 func (o *Object) PositionVec3() mgl32.Vec3 {
-	if o.Shape != nil {
-		v := o.Shape.Body.Position()
+	if o.shape != nil {
+		v := o.shape.Body.Position()
 		return mgl32.Vec3{v.X, v.Y, 0}
 	}
 
-	return mgl32.Vec3{o.Node.Location.X(), o.Node.Location.Y(), o.Node.Location.Z()}
+	return o.P.Pos.Vec3()
+	// return mgl32.Vec3{o.Body.Location.X(), o.Body.Location.Y(), o.Body.Location.Z()}
 }
 
-func (e *Object) SetPosition(x, y float32) {
-	if e.Shape != nil {
-		e.Shape.Body.SetPosition(vect.Vect{x, y})
+func (o *Object) SetPosition(x, y float32) {
+	if o.shape != nil {
+		o.shape.Body.SetPosition(vect.Vect{x, y})
 	} else {
-		e.Node.Location = mgl32.Vec3{x, y, e.Node.Location.Z()}
+		o.P.Pos.X = x
+		o.P.Pos.Y = y
+		// e.Body.Location = mgl32.Vec3{x, y, e.Body.Location.Z()}
 	}
 }
 
-func (e *Object) VectorForward(scale float32) (float32, float32) {
+func (o *Object) VectorForward(scale float32) (float32, float32) {
 	var v vect.Vect
-	if e.Shape != nil && e.Shape.Body != nil {
-		// v = vect.FromAngle(e.Shape.Body.Angle())
-		v = e.Shape.Body.RotVec()
+	if o.shape != nil && o.shape.Body != nil {
+		// v = vect.FromAngle(e.shape.Body.Angle())
+		v = o.shape.Body.RotVec()
 	} else {
 		// v = vect.Vect{e.Node.LocalRotation.X(), e.Node.LocalRotation.Y()}
 
-		v = vect.FromAngle(float32(2 * math.Acos(float64(e.Node.Rotation.W))))
+		v = vect.FromAngle(o.P.Angle)
+		// v = vect.FromAngle(float32(2 * math.Acos(float64(e.Body.Rotation.W))))
 	}
 
 	v.Mult(scale)
 
-	// pvx, pvy := e.Shape.Body.Rot()
+	// pvx, pvy := e.shape.Body.Rot()
 	return v.X, v.Y
 }
 
 func (o *Object) VectorSide(scale, angle float32) (float32, float32) {
-	// ang := e.Shape.Body.Angle() - 1.5708 // ~90 deg
+	// ang := e.shape.Body.Angle() - 1.5708 // ~90 deg
 	// if scale < 0 {
-	// 	ang = e.Shape.Body.Angle() + 1.5708 // ~90 deg
+	// 	ang = e.shape.Body.Angle() + 1.5708 // ~90 deg
 	// }
-	if o.Shape == nil || o.Shape.Body == nil {
-		log.Println(o.Name)
-		return 0, 0
+	var v vect.Vect
+	if o.shape != nil && o.shape.Body != nil {
+		v = o.shape.Body.RotVec()
+		// log.Println(o.Name)
+		// return 0, 0
+		v = vect.FromAngle(v.Angle() + angle)
+	} else {
+		v = vect.FromAngle(o.P.Angle + angle)
 	}
 
-	rotvec := o.Shape.Body.RotVec()
+	// rotvec := o.shape.Body.RotVec()
 	// rotvec.Mult(scale)
 
-	// log.Println(o.Shape.Body.Angle() == rotvec.Angle())
+	// log.Println(o.shape.Body.Angle() == rotvec.Angle())
 
-	v := vect.FromAngle(rotvec.Angle() + angle)
+	// v := vect.FromAngle(rotvec.Angle() + angle)
 	v.Mult(scale)
 
 	return v.X, v.Y
 }
 
 func (o *Object) Rotation() float32 {
-	if o.Shape != nil {
-		return o.Shape.Body.Angle()
+	if o.shape != nil {
+		return o.shape.Body.Angle()
 	}
 	// log.Println("need check get rotation fron fizzle node, it`s may be not correct!")
-	return float32(2 * math.Acos(float64(o.Node.Rotation.W)))
+	// return float32(2 * math.Acos(float64(o.Body.Rotation.W)))
+	return o.P.Angle
 }
 
 func (o *Object) SetRotation(ang float32) {
-	if o.Shape != nil {
-		o.Shape.Body.SetAngle(ang)
+	if o.shape != nil {
+		o.shape.Body.SetAngle(ang)
 	} else {
 		// e.Node.LocalRotation = mgl32.AnglesToQuat(0, 0, vect.Vect{x, y}.Angle(), 1)
-		o.Node.LocalRotation = mgl32.AnglesToQuat(0, 0, ang, 1)
+		// o.Body.LocalRotation = mgl32.AnglesToQuat(0, 0, ang, 1)
+		o.P.Angle = ang
 	}
 }
 
@@ -182,17 +215,26 @@ func (o *Object) DistancePoint(bx, by float32) float32 {
 }
 
 func (o *Object) SetVelocity(x, y float32) {
-	if o.Shape != nil {
-		o.Shape.Body.SetVelocity(x, y)
+	if o.shape != nil {
+		o.shape.Body.SetVelocity(x, y)
 		return
 	}
-	log.Println("velocity can not be set - shape is nil, name of object:", o.Name)
+	log.Println("WARNING: velocity can not be set - shape is nil, name of object:", o.Name)
+	return
+}
+
+func (o *Object) SetAngularVelocity(w float32) {
+	if o.shape != nil {
+		o.shape.Body.SetAngularVelocity(w)
+		return
+	}
+	log.Println("WARNING: angular velocity can not be set - shape is nil, name of object:", o.Name)
 	return
 }
 
 func (o *Object) AddVelocity(x, y float32) {
-	if o.Shape != nil {
-		o.Shape.Body.AddVelocity(x, y)
+	if o.shape != nil {
+		o.shape.Body.AddVelocity(x, y)
 		return
 	}
 	log.Println("velocity can not be set - shape is nil, name of object:", o.Name)
@@ -200,8 +242,8 @@ func (o *Object) AddVelocity(x, y float32) {
 }
 
 func (o *Object) Velocity() vect.Vect {
-	if o.Shape != nil {
-		return o.Shape.Body.Velocity()
+	if o.shape != nil {
+		return o.shape.Body.Velocity()
 	}
 
 	log.Println("velocity can not be set - shape is nil, name of object:", o.Name)
@@ -209,72 +251,92 @@ func (o *Object) Velocity() vect.Vect {
 }
 
 func (o *Object) ShapeWidthPercent() float32 {
-	return vect.FAbs(o.RollAngle) / (o.Param.MaxRollAngle * 1.1)
+	return vect.FAbs(o.RollAngle) / (o.MaxRollAngle * 1.1)
 }
 
-func (o *Object) AddCallback(f Callback) {
-	o.Callbacks[len(o.Callbacks)] = f
+func (o *Object) SubAngleToPoint(b mgl32.Vec2, off mgl32.Vec2) float32 {
+	var v mgl32.Vec2
+
+	if off.Len() > 0 {
+		vx, vy := o.VectorSide(2, -1.5704)
+		v = mgl32.Vec2{vx, vy}
+	}
+
+	// log.Println(off.Len(), v)
+	a := o.PositionVec2().Add(v)
+	oAngleVec := vect.FromAngle(o.Angle())
+
+	abAngle := float32(math.Atan2(float64(b.Y()-a.Y()), float64(b.X()-a.X())))
+	abAngleVec := vect.FromAngle(abAngle)
+
+	sin := oAngleVec.X*abAngleVec.Y - abAngleVec.X*oAngleVec.Y
+	cos := oAngleVec.X*abAngleVec.X + oAngleVec.Y*abAngleVec.Y
+
+	return float32(math.Atan2(float64(sin), float64(cos)))
 }
 
-func (o *Object) AddChild(child *Object) {
-	o.Childs[child] = true
+func (o *Object) SubPoint(b mgl32.Vec2) mgl32.Vec2 {
+	a := o.PositionVec2()
+	scale := a.Sub(b).Len()
+
+	var v = vect.Vect{b.X(), b.Y()}
+	angle := v.Angle()
+
+	// oAngleVec := vect.FromAngle(o.Angle())
+
+	// abAngle := float32(math.Atan2(float64(b.Y()-a.Y()), float64(b.X()-a.X())))
+	// abAngleVec := vect.FromAngle(abAngle)
+
+	// sin := oAngleVec.X*abAngleVec.Y - abAngleVec.X*oAngleVec.Y
+	// cos := oAngleVec.X*abAngleVec.X + oAngleVec.Y*abAngleVec.Y
+
+	// angle := float32(math.Atan2(float64(sin), float64(cos)))
+
+	x, y := o.VectorSide(scale, angle)
+
+	log.Println(x, y, scale, angle)
+	return mgl32.Vec2{x, y}
 }
 
-// func (o *Object) RemoveCallback(f Callback) {
-// 	for i, c := range o.Callbacks {
-// 		if c == f {
-// 			delete(o.Callbacks, i)
-// 			return
-// 		}
-// 	}
-// 	log.Printf("failed remove callback in object with name `%s` - callback not found\n", o.Name)
-// }
+func (o *Object) AddAngularVelocity(w float32) {
+	if o.shape != nil && o.shape.Body != nil {
+		o.shape.Body.AddAngularVelocity(w)
+	}
+}
 
-func (o *Object) Destroy() {
-	if o.DestroyFunc != nil {
-		o.DestroyFunc()
+func (o *Object) AngularVelocity() float32 {
+	if o.shape == nil || o.shape.Body == nil {
+		return 0
+	}
+
+	return o.shape.Body.AngularVelocity()
+}
+
+func (o *Object) Raycast(x0, y0, x1, y1 float32) (players []interface{}) {
+	if o.shape == nil || o.shape.Body == nil {
+		log.Println("failed raycast for non phys object", o.Name)
 		return
 	}
+	hits := phys.Hits(x0, y0, x1, y1, 2, o.shape.Body)
 
-	if o.Shape != nil {
-		o.Shape.Body.Enabled = false
-		space.RemoveBody(o.Shape.Body)
-		// space.RemoveShape(o.Shape) - crash need TODO
+	for _, hit := range hits {
+		if hit.Shape.Group != 2 || hit.Shape.UserData == nil {
+			continue
+		}
+
+		players = append(players, hit.Shape.UserData)
+		// if hit.Body.UserData.(*Object).Name == "bullet" {
+		// 	continue
+		// }
+
+		// firstpos := vect.Vect{x0, y0}
+		// if firstpos == hit.Body.Position() {
+		// 	continue
+		// }
+
+		// 	return hit
+		// }
+		// log.Println(hit.MinT, x0, y0, hit.Body.Position(), hit.Body.UserData)
 	}
-
-	Objects[o] = false
-
-	for child := range o.Childs {
-		child.Destroy()
-	}
-
-	delete(Objects, o)
-	o = nil
-}
-
-func (o *Object) Clone() *Object {
-	newObject := &Object{
-		Name:         o.Name,
-		Node:         o.Node.Clone(),
-		MaxRollAngle: o.MaxRollAngle,
-
-		Shadow:      o.Shadow,
-		Transparent: o.Transparent,
-
-		ArtStatic: o.ArtStatic,
-		ArtRotate: o.ArtRotate,
-
-		// Callback:    o.Callback,
-		Callbacks:   o.Callbacks,
-		DestroyFunc: o.DestroyFunc,
-
-		Param: o.Param,
-	}
-
-	newObject.SetPhys(o.Param.Phys)
-	newObject.Node.Material = Material(o.Param.Material)
-
-	Objects[newObject] = true
-
-	return newObject
+	return
 }

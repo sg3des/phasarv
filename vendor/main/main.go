@@ -3,9 +3,12 @@ package main
 import (
 	"db"
 	"flag"
+	"game"
 	"log"
-	"param"
+	"math/rand"
+	"render"
 	"scene"
+	"time"
 
 	"github.com/go-gl/glfw/v3.1/glfw"
 	"github.com/go-gl/mathgl/mgl32"
@@ -16,25 +19,27 @@ import (
 )
 
 var (
-	mode string
-)
-
-func init() {
-	log.SetFlags(log.Lshortfile)
-	flag.Parse()
-	mode = flag.Arg(0)
-}
-
-var (
+	client bool
 	cursor *engine.Object
 	camera *fizzle.YawPitchCamera
 	sun    *forward.Light
-
-	players []*Player
 )
 
+func init() {
+	// runtime.LockOSThread()
+	log.SetFlags(log.Lshortfile)
+	flag.Parse()
+	if flag.Arg(0) == "client" {
+		client = true
+	}
+	// mode =
+}
+
 func main() {
+	game.Render = true
 	engine.Init(local)
+
+	// local()
 	// engine.SetKeyCallback(keyCallback)
 	// initEnvironment()
 
@@ -58,66 +63,60 @@ func main() {
 func local() {
 	engine.SetKeyCallback(keyCallback)
 	initEnvironment()
-	initCursor()
 
 	scene.Load("scene00")
 
-	// // time.Sleep(300 * time.Millisecond)
-
-	if mode == "client" {
-		networkPlay()
+	if client {
+		go networkPlay()
 	} else {
 		localPlay()
 	}
-
 }
 
 func networkPlay() {
-	// client.AddRoutes(map[string]func(interface{}) interface{}{
-	// 	"CreateLocalPlayer": CreateLocalPlayer,
-	// })
-
 	Connect("127.0.0.1:9696")
-	Authorize("player0")
+	Authorize(randomName())
 }
 
 func localPlay() {
-	// createEnemy(10, 15)
-	CreateLocalPlayer(db.GetPlayer("player0"))
+	game.CreateLocalPlayer(db.GetPlayer(randomName()))
+	// for i := 0; i < 10; i++ {
+	// 	game.CreateEnemy()
+	// }
+}
+
+var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+
+func randomName() string {
+	rand.Seed(time.Now().UnixNano())
+
+	b := make([]rune, 6)
+	for i := range b {
+		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+	}
+	return string(b)
 }
 
 func initEnvironment() {
-	engine.NewLight(engine.ParamLight{
-		Sun:        true,
-		Pos:        mgl32.Vec3{-30, 30, 60},
+	(&render.Light{
+		Direct:     true,
+		Pos:        mgl32.Vec3{-30, 30, 100},
+		Dir:        mgl32.Vec3{30, -30, -100},
 		Strength:   0.7,
 		Specular:   0.5,
 		ShadowSize: 8192,
-	})
-	// sun = engine.NewSun()
+	}).Create()
+	// engine.NewSun()
 
-	engine.NewLight(engine.ParamLight{
-		Pos:        mgl32.Vec3{1, 1, -2},
+	(&render.Light{
+		Pos:        mgl32.Vec3{1, 1, 2},
 		Strength:   0.1,
-		Specular:   0,
+		Specular:   0.1,
 		ShadowSize: 2,
-	})
+	}).Create()
 
 	camera = engine.NewCamera(mgl32.Vec3{0, 0, 40})
 	camera.LookAtDirect(mgl32.Vec3{0, 0, 0})
-}
-
-func initCursor() {
-	cursor = engine.NewObject(
-		param.Object{
-			Name:     "cursor",
-			Mesh:     param.Mesh{Model: "plane", X: 1, Y: 1},
-			Material: param.Material{Name: "cursor", Shader: "colortext2", DiffColor: mgl32.Vec4{0.3, 0.3, 1, 0.9}},
-		},
-
-		// mgl32.Vec3{-0.5, -0.5, 1},
-		// mgl32.Vec3{0.5, 0.5, 1},
-	)
 }
 
 func keyCallback(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
@@ -128,7 +127,7 @@ func keyCallback(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action,
 		glfw.SwapInterval(1)
 	}
 	if key == glfw.KeySpace && action == glfw.Press {
-		for _, p := range players {
+		for _, p := range game.Players {
 			p.Destroy()
 		}
 	}

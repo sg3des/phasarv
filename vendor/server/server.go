@@ -1,14 +1,13 @@
 package main
 
 import (
-	"db"
-	"encoding/gob"
+	"engine"
+	"game"
 	"log"
 	"math/rand"
 	"network"
-	"param"
 	"phys/vect"
-	"time"
+	"scene"
 )
 
 var (
@@ -18,28 +17,38 @@ var (
 
 func init() {
 	log.SetFlags(log.Lshortfile)
+	players = make(map[string]*game.Player)
 }
 
 func main() {
-	gob.Register(param.Player{})
-	gob.Register(vect.Vect{})
+	engine.Server(server)
+}
 
-	s = network.NewHandlers(map[string]network.Handler{"auth": auth})
+func server() {
+	scene.Load("scene00")
+
+	game.RegisterNetworkTypes()
+
+	s = network.NewHandlers(map[string]network.Handler{
+		"auth":        auth,
+		"clientState": clientState,
+		"getPlayer":   getPlayer,
+	})
+
 	if err := s.Server(addr); err != nil {
 		log.Fatalln(err)
 	}
 
-	for {
-		log.Printf("listen '%s', clients: '%v' \n", addr, s.Clients)
-		sendEnemy()
+	log.Println("server listen on addr", addr)
 
-		time.Sleep(10 * time.Second)
-	}
-}
+	engine.AddCallback(sendServersState)
 
-func auth(req *network.Request) interface{} {
-	log.Println("auth", req.Data.(string))
-	return db.GetPlayer(req.Data.(string))
+	// for {
+	// 	log.Printf("listen '%s', clients: '%v' \n", addr, s.Clients)
+	// 	sendEnemy()
+
+	// 	time.Sleep(10 * time.Second)
+	// }
 }
 
 func sendEnemy() {

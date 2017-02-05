@@ -1,6 +1,7 @@
 package network
 
 import (
+	"encoding/gob"
 	"log"
 	"testing"
 	"time"
@@ -11,6 +12,8 @@ func init() {
 }
 
 func TestServerClient(t *testing.T) {
+	gob.Register(Data{})
+
 	s := NewHandlers(map[string]Handler{"server": serverHandler})
 	if err := s.Server(":9690"); err != nil {
 		t.Error(err)
@@ -29,14 +32,40 @@ func TestServerClient(t *testing.T) {
 	}
 	defer c2.Close()
 
-	c.SendMessage("server", "client", "hello from client")
-	c2.SendMessage("server", "client", "hello i`m client2")
+	c.SendMessage("server", "client", getData("client1"))
+	c2.SendMessage("server", "client", getData("client2"))
 	// time.Sleep(1 * time.Second)
 	// s.Broadcast("client", "", "i`m server")
 
 	time.Sleep(1 * time.Second)
 	return
 	log.Println(s, c)
+}
+
+type Data struct {
+	Name string
+	S    *SubData
+	s    SubData
+
+	Func func()
+}
+
+type SubData struct {
+	SubName string
+}
+
+func getData(name string) *Data {
+	d := &Data{
+		Name: "TestName: " + name,
+		S: &SubData{
+			SubName: "TestSubName: " + name,
+		},
+		s: SubData{
+			SubName: "Unexported",
+		},
+	}
+
+	return d
 }
 
 func serverHandler(req *Request) interface{} {

@@ -4,45 +4,40 @@ import (
 	"assets"
 	"fmt"
 	"log"
+	"phys"
+	"render"
 	"runtime"
 
 	"github.com/go-gl/glfw/v3.1/glfw"
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/tbogdala/eweygewey"
+	"github.com/tbogdala/eweygewey/glfwinput"
 	"github.com/tbogdala/fizzle"
 	"github.com/tbogdala/fizzle/graphicsprovider"
 	"github.com/tbogdala/fizzle/graphicsprovider/opengl"
-	// "github.com/tbogdala/fizzle/input/glfwinput"
-	"github.com/tbogdala/fizzle/renderer/forward"
-
-	"github.com/tbogdala/eweygewey"
-	"github.com/tbogdala/eweygewey/glfwinput"
 )
 
 var (
 	err error
 	e   = &engine{}
-	mem runtime.MemStats
 )
 
 type engine struct {
 	window *glfw.Window
 	gfx    graphicsprovider.GraphicsProvider
-	render *forward.ForwardRenderer
 
 	ui *eweygewey.Manager
 
-	shadowmap *fizzle.RenderShader
+	callbacks []func(float32) bool
 
-	camera *fizzle.YawPitchCamera
-
-	callbacks map[int]func(float32) bool
+	render bool
 }
 
 //Init main function create window and initialize opengl,render engine
-func Init(f func()) {
+func Init(userfunc func()) {
 	runtime.LockOSThread()
 
-	if err := e.initWindow(1024, 768, "phasarv"); err != nil {
+	if err := e.initWindow(600, 400, "phasarv-client"); err != nil {
 		log.Fatalf("engine: failed initialize window, reason: %s", err)
 	}
 
@@ -54,23 +49,29 @@ func Init(f func()) {
 		log.Fatalf("failed load assets, reason: %s", err)
 	}
 
-	e.initRender()
+	render.Init(e.gfx, 600, 400)
+	render.SetCamera(fizzle.NewYawPitchCamera(mgl32.Vec3{0, 0, 10}))
+	e.render = true
 
-	if err := e.initShadowmap(); err != nil {
-		log.Fatalf("failed generate shadow map, reason: %s", err)
-	}
+	phys.Init()
 
 	if err := e.initUI(); err != nil {
-		log.Fatalf("failed initialise user interface, %s", err)
+		log.Fatalln(err)
 	}
 
-	e.callbacks = make(map[int]func(float32) bool)
+	userfunc()
 
-	e.camera = fizzle.NewYawPitchCamera(mgl32.Vec3{0, 0, 10})
+	// go LoopPlay()
+	LoopRender()
+}
 
-	go f()
+func Server(userfunc func()) {
+	phys.Init()
 
-	Loop()
+	userfunc()
+
+	LoopServer()
+	// LoopPlay()
 }
 
 //initWindow create window and set some opengl flags
@@ -95,7 +96,7 @@ func (e *engine) initWindow(w, h int, title string) error {
 	e.window.MakeContextCurrent()
 
 	// v-sync
-	glfw.SwapInterval(0)
+	glfw.SwapInterval(1)
 	return nil
 }
 
@@ -107,19 +108,7 @@ func (e *engine) initOpenGL() error {
 	}
 
 	fizzle.SetGraphics(e.gfx)
-	return nil
-}
 
-func (e *engine) initRender() {
-	e.render = forward.NewForwardRenderer(e.gfx)
-	e.render.ChangeResolution(1024, 768)
-
-	// engine.able shadow mapping in the renderer
-	e.render.SetupShadowMapRendering()
-
-	// set some OpenGL flags
-	// e.gfx.Enable(graphicsprovider.CULL_FACE)
-	// e.gfx.Enable(graphicsprovider.DEPTH_TEST)
 	e.gfx.Enable(graphicsprovider.TEXTURE_2D)
 	e.gfx.Enable(graphicsprovider.BLEND)
 	// e.gfx.Enable(graphicsprovider.SCISSOR_TEST)
@@ -138,11 +127,8 @@ func (e *engine) initRender() {
 	// e.gfx.BlendFunc(graphicsprovider.ONE, graphicsprovider.ONE)
 
 	// glBlendFunc(GL_ONE_MINUS_DST_ALPHA, GL_DST_ALPHA)
-}
 
-func (e *engine) initShadowmap() error {
-	e.shadowmap, err = forward.CreateShadowmapGeneratorShader()
-	return err
+	return nil
 }
 
 func (e *engine) initUI() error {
@@ -164,13 +150,16 @@ func (e *engine) initUI() error {
 		return fmt.Errorf("Failed to load the font file! reason: %s", err)
 	}
 
+	InitializeSystemUI()
+
 	return nil
 }
 
 //AddCallback add  engine.ch frame callback with deltaT as one argument
 func AddCallback(funcs ...func(float32) bool) {
 	for _, f := range funcs {
-		e.callbacks[len(e.callbacks)] = f
+		e.callbacks = append(e.callbacks, f)
+		// e.callbacks[len(e.callbacks)] = f
 	}
 }
 

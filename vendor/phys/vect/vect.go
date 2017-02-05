@@ -1,6 +1,10 @@
 package vect
 
-import "math"
+import (
+	"math"
+
+	"github.com/go-gl/mathgl/mgl32"
+)
 
 var (
 	Vector_Zero = Vect{0, 0}
@@ -255,4 +259,57 @@ func Intersection(a, b, c, d Vect) bool {
 	}
 
 	return true
+}
+
+// phasarv
+
+func FromVec3(v mgl32.Vec3) Vect {
+	return Vect{v.X(), v.Y()}
+}
+
+func FromVec2(v mgl32.Vec2) Vect {
+	return Vect{v.X(), v.Y()}
+}
+
+//Vec2 return mgl32.Vec2 from Vect
+func (v Vect) Vec2() mgl32.Vec2 {
+	return mgl32.Vec2{v.X, v.Y}
+}
+
+//Vec3 return mgl32.Vec3 from Vect with zero in Z axis
+func (v Vect) Vec3() mgl32.Vec3 {
+	return mgl32.Vec3{v.X, v.Y, 0}
+}
+
+//SubPoint return absolute point from relative offset of v1 and angle
+func (v1 Vect) SubPoint(angle float32, v2 Vect) Vect {
+	scale := Dist(Vect{}, v2)
+
+	v := FromAngle(angle + v2.Angle())
+	v.Mult(scale)
+	v.Add(v1)
+
+	return v
+}
+
+func (v1 Vect) SubAngle(angle float32, v2 Vect) float32 {
+
+	// a := o.PositionVec2()
+
+	// var oAngleVec float32
+	// if o.Shape != nil {
+	oAngleVec := FromAngle(angle)
+	// }else{
+	// 	oAngleVec =
+	// }
+
+	//angle between points
+	abAngle := float32(math.Atan2(float64(v2.Y-v1.Y), float64(v2.X-v1.X)))
+	abAngleVec := FromAngle(abAngle)
+
+	sin := oAngleVec.X*abAngleVec.Y - abAngleVec.X*oAngleVec.Y
+	cos := oAngleVec.X*abAngleVec.X + oAngleVec.Y*abAngleVec.Y
+
+	return float32(math.Atan2(float64(sin), float64(cos)))
+
 }

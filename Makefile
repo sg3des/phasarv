@@ -5,6 +5,9 @@ name=phasarv
 run:
 	go build -o $(name) ./vendor/main && ./$(name) ${ARGS}
 
+client:
+	go build -o $(name) ./vendor/main && ./$(name) client
+
 server:
 	go build -o phServer ./vendor/server && ./phServer
 

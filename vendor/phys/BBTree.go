@@ -9,19 +9,96 @@ import (
 
 var VoidQueryFunc = func(a, b Indexable) {}
 
-type HashSet map[HashValue]*Node
+type HashSet struct {
+	HashValue
+	*Node
+}
 
-func (set HashSet) Each(fnc HashSetIterator) {
-	for _, node := range set {
-		fnc(node)
+type HashSets struct {
+	set []HashSet
+}
+
+func (h *HashSets) Each(fnc HashSetIterator) {
+	for _, hs := range h.set {
+		fnc(hs.Node)
 	}
 }
+
+func (h *HashSets) Set(v HashValue, n *Node) {
+	for i, hs := range h.set {
+		if hs.HashValue == v {
+			h.set[i].Node = n
+			return
+		}
+	}
+	h.set = append(h.set, HashSet{v, n})
+}
+
+func (h *HashSets) Get(v HashValue) *Node {
+	for _, hs := range h.set {
+		if hs.HashValue == v {
+			return hs.Node
+		}
+	}
+	return nil
+}
+
+func (h *HashSets) Del(v HashValue) {
+	for i, hs := range h.set {
+		if hs.HashValue == v {
+			h.set[i] = h.set[len(h.set)-1]
+			h.set = h.set[:len(h.set)-1]
+		}
+	}
+}
+
+// type HashSet struct {
+// 	m map[HashValue]*Node
+// 	sync.RWMutex
+// }
+
+// func (set HashSet) Each(fnc HashSetIterator) {
+// 	set.Lock()
+// 	for _, node := range set.m {
+// 		fnc(node)
+// 	}
+// 	set.Unlock()
+// }
+
+// func (set HashSet) Set(v HashValue, n *Node) {
+// 	set.Lock()
+// 	set.m[v] = n
+// 	set.Unlock()
+// }
+
+// func (set HashSet) Get(v HashValue) (n *Node) {
+// 	set.Lock()
+// 	if node, ok := set.m[v]; ok {
+// 		n = node
+// 	}
+// 	set.Unlock()
+// 	return
+// }
+
+// func (set HashSet) Del(v HashValue) {
+// 	set.Lock()
+// 	delete(set.m, v)
+// 	set.Unlock()
+// }
+
+// func (set HashSet) Count() (n int) {
+// 	set.Lock()
+// 	n = len(set.m)
+// 	set.Unlock()
+
+// 	return n
+// }
 
 type BBTree struct {
 	SpatialIndexClass
 	SpatialIndex *SpatialIndex
 
-	leaves HashSet
+	leaves *HashSets
 	root   *Node
 
 	pairBuffer []*Pair
@@ -85,7 +162,8 @@ type Pair struct {
 
 func NewBBTree(staticIndex *SpatialIndex) *SpatialIndex {
 	tree := &BBTree{}
-	tree.leaves = make(map[HashValue]*Node)
+	tree.leaves = &HashSets{}
+	// tree.leaves = HashSet{m: make(map[HashValue]*Node)}
 
 	tree.SpatialIndex = NewSpartialIndex(tree, staticIndex)
 	tree.pairBuffer = make([]*Pair, 0)
@@ -94,7 +172,9 @@ func NewBBTree(staticIndex *SpatialIndex) *SpatialIndex {
 }
 
 func (tree *BBTree) Count() int {
-	return len(tree.leaves)
+	// return len(tree.leaves)
+	// return tree.leaves.Count()
+	return len(tree.leaves.set)
 }
 
 func (tree *BBTree) NewLeaf(obj Indexable) *Node {
@@ -230,7 +310,9 @@ func (tree *BBTree) Insert(obj Indexable) {
 
 	leaf := tree.NewLeaf(obj)
 
-	tree.leaves[obj.Hash()] = leaf
+	// tree.leaves[obj.Hash()] = leaf
+	tree.leaves.Set(obj.Hash(), leaf)
+	// tree
 
 	root := tree.root
 	tree.root = tree.SubtreeInsert(root, leaf)
@@ -332,8 +414,11 @@ func (tree *BBTree) NodeReplaceChild(parent, child, value *Node) {
 }
 
 func (tree *BBTree) Remove(obj Indexable) {
-	leaf := tree.leaves[obj.Hash()]
-	delete(tree.leaves, obj.Hash())
+	// leaf := tree.leaves[obj.Hash()]
+
+	leaf := tree.leaves.Get(obj.Hash())
+	// delete(tree.leaves, obj.Hash())
+	tree.leaves.Del(obj.Hash())
 
 	if leaf == nil {
 		return
@@ -431,9 +516,11 @@ func (tree *BBTree) ReindexQuery(fnc SpatialIndexQueryFunc) {
 	}
 
 	// LeafUpdate() may modify tree->root. Don't cache it.
-	for _, node := range tree.leaves {
-		LeafUpdate(node, tree)
+	// tree.leaves.Lock()
+	for _, hs := range tree.leaves.set {
+		LeafUpdate(hs.Node, tree)
 	}
+	// tree.leaves.Unlock()
 
 	staticIndex := GetTree(tree.SpatialIndex.staticIndex)
 	var staticRoot *Node = nil
