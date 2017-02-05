@@ -27,3 +27,7 @@ func (c *camera) SetPosition(x, y float32) {
 func (c *camera) GetPosition() mgl32.Vec3 {
 	return c.mainCamera.GetPosition()
 }
+
+func (c *camera) GetViewMatrix() mgl32.Mat4 {
+	return c.mainCamera.GetViewMatrix()
+}

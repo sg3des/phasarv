@@ -46,7 +46,7 @@ type Weapon struct {
 	SubType byte
 
 	NextShot  time.Time
-	shoot     bool
+	ToShoot   bool
 	Delay     time.Duration
 	DelayTime time.Time
 
@@ -69,7 +69,7 @@ func (w *Weapon) Callback(dt float32) {
 
 //Fire is main function for make shoot
 func (w *Weapon) Fire() {
-	if !w.shoot {
+	if !w.ToShoot {
 		w.DelayTime = time.Time{}
 		return
 	}

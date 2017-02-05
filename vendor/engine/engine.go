@@ -37,7 +37,7 @@ type engine struct {
 func Init(userfunc func()) {
 	runtime.LockOSThread()
 
-	if err := e.initWindow(1024, 768, "phasarv"); err != nil {
+	if err := e.initWindow(600, 400, "phasarv-client"); err != nil {
 		log.Fatalf("engine: failed initialize window, reason: %s", err)
 	}
 
@@ -49,7 +49,7 @@ func Init(userfunc func()) {
 		log.Fatalf("failed load assets, reason: %s", err)
 	}
 
-	render.Init(e.gfx, 1024, 768)
+	render.Init(e.gfx, 600, 400)
 	render.SetCamera(fizzle.NewYawPitchCamera(mgl32.Vec3{0, 0, 10}))
 	e.render = true
 
@@ -61,7 +61,7 @@ func Init(userfunc func()) {
 
 	userfunc()
 
-	go LoopPlay()
+	// go LoopPlay()
 	LoopRender()
 }
 
@@ -70,7 +70,8 @@ func Server(userfunc func()) {
 
 	userfunc()
 
-	LoopPlay()
+	LoopServer()
+	// LoopPlay()
 }
 
 //initWindow create window and set some opengl flags
@@ -95,7 +96,7 @@ func (e *engine) initWindow(w, h int, title string) error {
 	e.window.MakeContextCurrent()
 
 	// v-sync
-	glfw.SwapInterval(0)
+	glfw.SwapInterval(1)
 	return nil
 }
 

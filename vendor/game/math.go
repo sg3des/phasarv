@@ -58,11 +58,38 @@ func GetNearPlayerByRay(x0, y0, x1, y1 float32, ignorePlayer *Player) (p *Player
 // }
 
 func getCursorPos(x, y, w, h float32, campos mgl32.Vec3) (float32, float32) {
+	// m := engine.Camera.GetViewMatrix()
+
+	// p := mgl32.Perspective(mgl32.DegToRad(50), w/h, 1.0, 100.0)
+	// rowy, rowx, _, _ := p.Rows()
+	// px := rowx[1]
+	// py := rowy[0]
+
+	// curX := x/w - 0.5
+	// curY := y/h - 0.5
+
+	// log.Println(curX, curY, px, py)
+
+	// normalised_x := 2*x/w - 1
+	// normalised_y := 1 - 2*y/h
+	// log.Println(normalised_x, normalised_y)
+
+	// unviewMat = (projectionMat * modelViewMat).inverse()
+
+	// near_point = unviewMat * Vec(normalised_x, normalised_y, 0, 1)
+	// camera_pos = ray_origin = modelViewMat.inverse().col(4)
+	// ray_dir = near_point - camera_pos
+
+	// log.Println(curX, curY)
 	//that`s black magic constant!
-	x = (x-w/2)/840*campos.Z() + campos.X()
-	y = (h/2-y)/840*campos.Z() + campos.Y()
+	// var d float32 = 840
+	var d = h + campos.Z()
+
+	x = (x-w/2)/d*campos.Z() + campos.X()
+	y = (h/2-y)/d*campos.Z() + campos.Y()
 	// y = (y-float32(h)/2)/820*campos.Z() + campos.Y()
 
+	// log.Println(x, y)
 	return x, y
 }
 

@@ -30,7 +30,7 @@ func GetPlayer(name string) *game.Player {
 
 		InitParam: game.PlayerParam{
 			Health:    100,
-			MovSpeed:  10,
+			MovSpeed:  1,
 			RotSpeed:  50,
 			RollAngle: 1.5,
 		},

@@ -24,12 +24,22 @@ func NewFrame() *Frame {
 	return f
 }
 
+var fps60 float32 = 1.0 / 80.0
+
 //Next calculate next frame
 func (f *Frame) Next() (float32, int) {
 
 	f.timePrev = f.timeNow
 	f.timeNow = time.Now()
 	f.dt = float32(f.timeNow.Sub(f.timePrev).Seconds())
+	// log.Println(f.dt, fps60)
+	// if f.dt < fps60 {
+	// 	pause := time.Duration((fps60 - f.dt) * 3500000000)
+	// 	log.Println("SLEEP", pause)
+	// 	time.Sleep(pause)
+	// 	f.dt = fps60
+	// 	// log.Println("WAKE UP")
+	// }
 
 	if f.timeFPS.Before(f.timeNow) {
 		f.fps = f.prefps

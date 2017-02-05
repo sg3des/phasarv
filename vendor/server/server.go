@@ -1,8 +1,6 @@
 package main
 
 import (
-	"db"
-	"encoding/gob"
 	"engine"
 	"game"
 	"log"
@@ -29,13 +27,12 @@ func main() {
 func server() {
 	scene.Load("scene00")
 
-	gob.Register(game.Player{})
-	gob.Register(vect.Vect{})
-	gob.Register(game.NetPacket{})
+	game.RegisterNetworkTypes()
 
 	s = network.NewHandlers(map[string]network.Handler{
-		"auth":          auth,
-		"playersCursor": playersCursor,
+		"auth":        auth,
+		"clientState": clientState,
+		"getPlayer":   getPlayer,
 	})
 
 	if err := s.Server(addr); err != nil {
@@ -44,24 +41,14 @@ func server() {
 
 	log.Println("server listen on addr", addr)
 
+	engine.AddCallback(sendServersState)
+
 	// for {
 	// 	log.Printf("listen '%s', clients: '%v' \n", addr, s.Clients)
 	// 	sendEnemy()
 
 	// 	time.Sleep(10 * time.Second)
 	// }
-}
-
-func auth(req *network.Request) interface{} {
-	log.Println("auth", req.Data.(string))
-
-	name := req.Data.(string)
-	p := db.GetPlayer(name)
-	p.CreatePlayer()
-	p.Object.AddCallback(p.Movement, p.PlayerRotation)
-	players[req.RemoteAddr.String()] = p
-
-	return db.GetPlayer(name)
 }
 
 func sendEnemy() {

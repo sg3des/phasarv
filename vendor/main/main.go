@@ -5,8 +5,10 @@ import (
 	"flag"
 	"game"
 	"log"
+	"math/rand"
 	"render"
 	"scene"
+	"time"
 
 	"github.com/go-gl/glfw/v3.1/glfw"
 	"github.com/go-gl/mathgl/mgl32"
@@ -73,14 +75,26 @@ func local() {
 
 func networkPlay() {
 	Connect("127.0.0.1:9696")
-	Authorize("player0")
+	Authorize(randomName())
 }
 
 func localPlay() {
-	game.CreateLocalPlayer(db.GetPlayer("player0"))
-	for i := 0; i < 10; i++ {
-		game.CreateEnemy()
+	game.CreateLocalPlayer(db.GetPlayer(randomName()))
+	// for i := 0; i < 10; i++ {
+	// 	game.CreateEnemy()
+	// }
+}
+
+var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+
+func randomName() string {
+	rand.Seed(time.Now().UnixNano())
+
+	b := make([]rune, 6)
+	for i := range b {
+		b[i] = letterRunes[rand.Intn(len(letterRunes))]
 	}
+	return string(b)
 }
 
 func initEnvironment() {

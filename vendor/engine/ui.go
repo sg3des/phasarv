@@ -5,11 +5,11 @@ import (
 	"github.com/tbogdala/fizzle/graphicsprovider"
 )
 
-func uiConstruct(dt float32) {
+func uiConstruct(dt float64) {
 	e.gfx.Disable(graphicsprovider.DEPTH_TEST)
 	e.gfx.Enable(graphicsprovider.SCISSOR_TEST)
 
-	e.ui.Construct(float64(dt))
+	e.ui.Construct(dt)
 	e.ui.Draw()
 
 	e.gfx.Disable(graphicsprovider.SCISSOR_TEST)

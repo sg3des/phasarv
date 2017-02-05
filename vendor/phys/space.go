@@ -271,7 +271,7 @@ func (space *Space) Step(dt float32) {
 	}
 
 	//fmt.Println("STEP")
-	start = time.Now()
+	// start = time.Now()
 
 	//fmt.Println("Arbiters", len(space.Arbiters), biasCoef, dt)
 	//spew.Config.MaxDepth = 3

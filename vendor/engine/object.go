@@ -64,7 +64,7 @@ func (o *Object) Create(arts ...*Art) {
 		// Objects[o] = true
 	}
 	// }
-	log.Println("create", o.Name)
+	// log.Println("create", o.Name)
 }
 
 func (o *Object) SetUserData(i interface{}) {

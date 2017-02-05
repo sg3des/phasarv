@@ -93,18 +93,18 @@ func (p *Player) EnemyAttack(dt float32) {
 	}
 
 	if p.Target == nil {
-		p.LeftWeapon.shoot = false
+		p.LeftWeapon.ToShoot = false
 		return
 	}
 
 	p.LeftWeapon.TargetPlayer = p.Target
 
 	if p.LeftWeapon.Type != Weapons.Rocket && vect.FAbs(p.targetAngle) > 0.2 {
-		p.LeftWeapon.shoot = false
+		p.LeftWeapon.ToShoot = false
 		return
 	}
 
-	p.LeftWeapon.shoot = true
+	p.LeftWeapon.ToShoot = true
 	p.LeftWeapon.Fire()
 
 	return

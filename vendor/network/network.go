@@ -235,9 +235,9 @@ func (c *Connection) Broadcast(reqfunc, resfunc string, data interface{}) error 
 		return err
 	}
 
-	log.Println("send broadcast to ", c.Clients)
+	// log.Println("send broadcast to ", c.Clients)
 	for i, client := range c.Clients {
-		log.Println("send to", client.String())
+		// log.Println("send to", client.String())
 		_, err := c.Conn.WriteToUDP(bMsg, client)
 		if err != nil {
 			c.DeleteClientN(i)

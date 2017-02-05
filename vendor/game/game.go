@@ -1,13 +1,53 @@
 package game
 
-import "phys/vect"
+import (
+	"encoding/gob"
+	"phys/vect"
+)
 
-//Render flag if it false, graphics elements(bars,aims,trails,etc...) should not be initialized.
-var Render bool
+var (
+	//Players its clients
+	Players []*Player
 
-//NetPacket structure of standard network packet
-type NetPacket struct {
+	//Render flag if it false, graphics elements(bars,aims,trails,etc...) should not be initialized.
+	Render bool
+)
+
+func LookupPlayer(name string) (*Player, bool) {
+	for _, p := range Players {
+		if p.Name == name {
+			return p, true
+		}
+	}
+
+	return nil, false
+}
+
+//ServerState structure of standard network packet
+type ServerState struct {
+	Name string
+
 	Vel  vect.Vect
 	AVel float32
-	Pos  vect.Vect
+
+	Pos vect.Vect
+	Rot float32
+
+	ClientState
+}
+
+type ServersState []ServerState
+
+type ClientState struct {
+	CurPos vect.Vect
+	LW     bool
+	RW     bool
+}
+
+func RegisterNetworkTypes() {
+	gob.Register(Player{})
+
+	gob.Register(ServerState{})
+	gob.Register(ClientState{})
+	gob.Register(ServersState{})
 }

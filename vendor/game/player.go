@@ -15,10 +15,6 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-var (
-	Players []*Player
-)
-
 func CreateLocalPlayer(p *Player) {
 	log.Println("CreateLocalPlayer")
 	p.Local = true
@@ -35,10 +31,64 @@ func CreateLocalPlayer(p *Player) {
 	engine.SetMouseCallback(p.MouseControl)
 }
 
+func CreatePlayer(p *Player) {
+	log.Println("CreatePlayer", p.Name)
+
+	// p := &Player{Param: paramPlayer}
+	p.CreateCursor(mgl32.Vec4{0.3, 0.3, 0.9, 0.7})
+	p.CreatePlayer()
+
+	p.Object.SetDestroyFunc(p.Destroy)
+
+	Players = append(Players, p)
+	// p.Object.Shape.Body.CallBackCollision = p.Collision
+
+	p.Object.AddCallback(p.Movement, p.PlayerRotation, p.Attack)
+}
+
 type PlayerParam struct {
 	Health, Shield                float32
 	Energy, Metal                 float32
 	MovSpeed, RotSpeed, RollAngle float32
+}
+
+func (p *Player) GetClientState() ClientState {
+	return ClientState{
+		CurPos: p.Cursor.PositionVect(),
+		LW:     p.LeftWeapon.ToShoot,
+		RW:     p.RightWeapon.ToShoot,
+	}
+}
+
+func (p *Player) GetServerState() ServerState {
+	return ServerState{
+		Name: p.Name,
+
+		Vel:  p.Object.Velocity(),
+		AVel: p.Object.AngularVelocity(),
+
+		Pos: p.Object.PositionVect(),
+		Rot: p.Object.Rotation(),
+
+		ClientState: p.GetClientState(),
+	}
+}
+
+func (p *Player) UpdateFromClientState(s ClientState) {
+	p.Cursor.SetPosition(s.CurPos.X, s.CurPos.Y)
+	p.CursorOffset = p.Cursor.PositionVect()
+	p.CursorOffset.Sub(p.Object.PositionVect())
+
+	p.LeftWeapon.ToShoot = s.LW
+	p.RightWeapon.ToShoot = s.RW
+}
+
+func (p *Player) UpdateFromServerState(s ServerState) {
+	p.Object.SetPosition(s.Pos.X, s.Pos.Y)
+	p.Object.SetRotation(s.Rot)
+	p.Object.SetVelocity(s.Vel.X, s.Vel.Y)
+	p.Object.SetAngularVelocity(s.AVel)
+	p.UpdateFromClientState(s.ClientState)
 }
 
 type Player struct {
@@ -56,7 +106,8 @@ type Player struct {
 	targetAngle  float32
 	respawnPoint mgl32.Vec2
 
-	Cursor *engine.Object
+	Cursor       *engine.Object
+	CursorOffset vect.Vect //only for network
 }
 
 func (p *Player) CreatePlayer() {
@@ -205,6 +256,13 @@ func (p *Player) rotation(dt float32, target mgl32.Vec2) float32 {
 	return angle
 }
 
+//ClientCursor is update cursor position on server side by cursor offset
+func (p *Player) ClientCursor(dt float32) {
+	pos := p.Object.PositionVect()
+	pos.Add(p.CursorOffset)
+	p.Cursor.SetPosition(pos.X, pos.Y)
+}
+
 func (p *Player) Attack(dt float32) {
 	if p.LeftWeapon != nil {
 		p.LeftWeapon.Fire()
@@ -244,24 +302,19 @@ func (p *Player) WeaponDelay(w *Weapon, name string) {
 
 func (p *Player) MouseControl(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw.ModifierKey) {
 
-	if button == 0 {
-		p.LeftWeapon.shoot = action == 1
+	switch button {
+	case 0:
+		p.LeftWeapon.ToShoot = action == 1
+	case 1:
+		p.RightWeapon.ToShoot = action == 1
 	}
 
-	if button == 1 {
-		p.RightWeapon.shoot = action == 1
-	}
-
-	if action == 1 {
-		target := GetPlayerInPoint(p.Cursor.Position())
-		if target != nil {
-			log.Println(target.Name)
-		}
-		// object := engine.Hit(p.Cursor.Position())
-		// if object != nil {
-		// 	log.Println(object.Name)
-		// }
-	}
+	// if action == 1 {
+	// 	target := GetPlayerInPoint(p.Cursor.Position())
+	// 	if target != nil {
+	// 		log.Println(target.Name)
+	// 	}
+	// }
 }
 
 func (p *Player) CameraMovement(dt float32) {

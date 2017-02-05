@@ -1,91 +1,142 @@
 package main
 
 import (
-	"encoding/gob"
+	"engine"
 	"game"
 	"log"
+	"materials"
 	"network"
 	"phys/vect"
-	"time"
+	"render"
+
+	"github.com/go-gl/mathgl/mgl32"
 )
 
 var (
-	p = &game.Player{}
-	c *network.Connection
+	localplayer = &game.Player{}
+	pshadow     *engine.Object
+	conn        *network.Connection
 )
 
 func Connect(addr string) {
-	gob.Register(game.Player{})
-	// gob.Register(game.Weapon{})
-	gob.Register(vect.Vect{})
-	gob.Register(game.NetPacket{})
-	// gob.Register(point.P{})
-	// gob.Register(point.Param{})
-	// gob.Register(render.Renderable{})
-	// gob.Register(render.Instruction{})
-	// gob.Register(phys.Instruction{})
-	// gob.Register(engine.Object{})
-	// gob.Register(mgl32.Vec3{})
-	// gob.Register(materials.Instruction{})
+	game.RegisterNetworkTypes()
 
-	c = network.NewHandlers(map[string]network.Handler{
-		"loadLocalPlayer":   loadLocalPlayer,
-		"loadEnemy":         loadEnemy,
-		"getPlayerPosition": getPlayerPosition,
+	conn = network.NewHandlers(map[string]network.Handler{
+		"loadLocalPlayer": loadLocalPlayer,
+		"loadPlayer":      loadPlayer,
+		"loadEnemy":       loadEnemy,
+		"getServerState":  getServerState,
+		"getServersState": getServersState,
 	})
-	if err := c.Client(addr); err != nil {
+	if err := conn.Client(addr); err != nil {
 		log.Fatalln(err)
 	}
 
 }
 
 func Authorize(name string) {
-	if err := c.SendMessage("auth", "loadLocalPlayer", name); err != nil {
+	if err := conn.SendMessage("auth", "loadLocalPlayer", name); err != nil {
 		log.Fatalln("failed authorize", err)
 	}
 }
 
 func loadLocalPlayer(req *network.Request) interface{} {
-	*p = req.Data.(game.Player)
-	game.CreateLocalPlayer(p)
-	p.Object.AddCallback(sendCursorPosition)
+	*localplayer = req.Data.(game.Player)
+	game.CreateLocalPlayer(localplayer)
+	localplayer.Object.AddCallback(sendClientState)
+
+	pshadow = &engine.Object{
+		Name: "shadow",
+		RI: &render.Instruction{
+			MeshName:    "trapeze",
+			Material:    &materials.Instruction{Name: "player", Texture: "gray", Shader: "blend", SpecLevel: 1, DiffColor: mgl32.Vec4{1, 0, 0, 0.7}},
+			Shadow:      false,
+			Transparent: true,
+		},
+	}
+	pshadow.Create()
+
 	return nil
 }
 
-var sendCursorPositionTime time.Time
-
-func sendCursorPosition(dt float32) {
-	t := time.Now()
-	if t.After(sendCursorPositionTime) {
-		c.SendMessage("playersCursor", "getPlayerPosition", p.Cursor.PositionVect())
-		sendCursorPositionTime = t.Add(time.Millisecond * 100)
-	}
-}
-
-func getPlayerPosition(req *network.Request) interface{} {
-	np, ok := req.Data.(game.NetPacket)
+func loadPlayer(req *network.Request) interface{} {
+	p, ok := req.Data.(game.Player)
 	if !ok {
 		log.Println("WARNING! recieve data is not correct")
 		return nil
 	}
 
-	// log.Println(p.Object.PositionVect(), p.Cursor.PositionVect())
-	dist := p.Object.DistancePoint(np.Pos.X, np.Pos.Y)
-	if dist > 1 {
-		log.Println("correct position")
-		p.Object.SetPosition(np.Pos.X, np.Pos.Y)
-	}
-	// log.Println("update position")
-	// p.Object.SetPosition(v.X, v.Y)
-	// pos := p.Object.PositionVect()
-	// pos.Sub(np.Pos)
-	// np.Vel.Add(pos)
-	// pos.Add(np.Vel)
+	game.CreatePlayer(&p)
 
-	p.Object.SetVelocity(np.Vel.X, np.Vel.Y)
-	p.Object.SetAngularVelocity(np.AVel)
-	log.Println(dist, p.Object.PositionVect(), np.Pos)
+	return nil
+}
+
+// var sendCursorPositionTime time.Time
+
+func sendClientState(dt float32) {
+	// t := time.Now()
+	// if t.After(sendCursorPositionTime) {
+	// state := game.ClientState{
+	// 	CurPos: p.Cursor.PositionVect(),
+	// 	LW:     p.LeftWeapon.ToShoot,
+	// 	RW:     p.RightWeapon.ToShoot,
 	// }
+
+	conn.SendMessage("clientState", "getServerState", localplayer.GetClientState())
+	// sendCursorPositionTime = t.Add(time.Millisecond * 50)
+	// }
+}
+
+func getServerState(req *network.Request) interface{} {
+	s, ok := req.Data.(game.ServerState)
+	if !ok {
+		log.Println("WARNING! recieve data is not correct")
+		return nil
+	}
+
+	pshadow.SetPosition(s.Pos.X, s.Pos.Y)
+	pshadow.SetRotation(s.Rot)
+
+	dist := localplayer.Object.DistancePoint(s.Pos.X, s.Pos.Y)
+	if dist > 2 {
+		log.Println("WARNING! need correct position")
+		localplayer.UpdateFromServerState(s)
+		return nil
+	}
+
+	localplayer.Object.SetVelocity(s.Vel.X, s.Vel.Y)
+	localplayer.Object.SetAngularVelocity(s.AVel)
+
+	return nil
+}
+
+func getServersState(req *network.Request) interface{} {
+	states, ok := req.Data.(game.ServersState)
+	if !ok {
+		log.Println("WARNING! recieve data is not correct")
+	}
+
+	for _, s := range states {
+
+		//skip update for localplayer
+		if s.Name == localplayer.Name {
+			continue
+		}
+
+		p, ok := game.LookupPlayer(s.Name)
+		if ok {
+			p.UpdateFromServerState(s)
+		} else {
+			conn.SendMessage("getPlayer", "loadPlayer", s.Name)
+		}
+
+		//update other players
+		// for _, p := range game.Players {
+		// 	if p.Name == s.Name {
+		// 		p.UpdateFromServerState(s)
+		// 	}
+		// }
+	}
 
 	return nil
 }
