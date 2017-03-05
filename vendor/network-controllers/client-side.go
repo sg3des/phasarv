@@ -14,7 +14,7 @@ import (
 
 var (
 	c           Client
-	localplayer = &game.Player{}
+	localplayer *player
 	pshadow     *engine.Object
 )
 
@@ -36,7 +36,7 @@ func sendLocalPlayerState(dt float32) {
 	conn.SendMessage(
 		Server.PlayerState,
 		Client.LocalPlayerServerState,
-		GetClientState(localplayer),
+		localplayer.GetClientState(),
 	)
 }
 
@@ -46,9 +46,16 @@ func sendLocalPlayerState(dt float32) {
 type Client struct{}
 
 func (Client) LoadLocalPlayer(req *network.Request) interface{} {
-	*localplayer = req.Data.(game.Player)
-	game.CreateLocalPlayer(localplayer)
-	localplayer.Object.AddCallback(sendLocalPlayerState)
+	p := &game.Player{}
+	*p = req.Data.(game.Player)
+	game.CreateLocalPlayer(p)
+	p.Object.AddCallback(sendLocalPlayerState)
+
+	localplayer = addPlayer(p)
+
+	// localplayer = &player{p, req.RemoteAddr, time.Time{}}
+	// *localplayer =
+	// game.CreateLocalPlayer(localplayer)
 
 	pshadow = &engine.Object{
 		Name: "shadow",
@@ -72,6 +79,22 @@ func (Client) LoadPlayer(req *network.Request) interface{} {
 	}
 
 	game.CreatePlayer(&p)
+	addPlayer(&p)
+
+	return nil
+}
+
+func (Client) RemovePlayer(req *network.Request) interface{} {
+	name, ok := req.Data.(string)
+	if !ok {
+		log.Println("WARNING! recieve data is not correct")
+		return nil
+	}
+
+	log.Println(name)
+
+	game.RemovePlayer(name)
+	delPlayer(name)
 
 	return nil
 }
@@ -84,6 +107,7 @@ func (Client) Enemy(req *network.Request) interface{} {
 }
 
 func (Client) LocalPlayerServerState(req *network.Request) interface{} {
+	return nil
 	s, ok := req.Data.(ServerState)
 	if !ok {
 		log.Println("WARNING! recieve data is not correct")
@@ -119,10 +143,15 @@ func (Client) PlayersServerState(req *network.Request) interface{} {
 
 		//skip update for localplayer
 		if s.Name == localplayer.Name {
-			continue
+			// 	continue
+			pshadow.SetPosition(s.Pos.X, s.Pos.Y)
+			pshadow.SetRotation(s.Rot)
+
 		}
 
-		p, ok := game.LookupPlayer(s.Name)
+		p, ok := lookupPlayer(s.Name, nil)
+		// log.Println(s.Name, p, ok)
+		// p, ok := game.LookupPlayer(s.Name)
 		if ok {
 			s.UpdatePlayer(p)
 		} else {

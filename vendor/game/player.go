@@ -15,37 +15,6 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-func CreateLocalPlayer(p *Player) {
-	log.Println("CreateLocalPlayer")
-	p.Local = true
-	// p := &Player{Param: paramPlayer}
-	p.CreateCursor(mgl32.Vec4{0.3, 0.3, 0.9, 0.7})
-	p.CreatePlayer()
-
-	p.Object.SetDestroyFunc(p.Destroy)
-
-	Players = append(Players, p)
-	// p.Object.Shape.Body.CallBackCollision = p.Collision
-
-	p.Object.AddCallback(p.Movement, p.PlayerRotation, p.CameraMovement, p.Attack)
-	engine.SetMouseCallback(p.MouseControl)
-}
-
-func CreatePlayer(p *Player) {
-	log.Println("CreatePlayer", p.Name)
-
-	// p := &Player{Param: paramPlayer}
-	p.CreateCursor(mgl32.Vec4{0.3, 0.3, 0.9, 0.7})
-	p.CreatePlayer()
-
-	p.Object.SetDestroyFunc(p.Destroy)
-
-	Players = append(Players, p)
-	// p.Object.Shape.Body.CallBackCollision = p.Collision
-
-	p.Object.AddCallback(p.Movement, p.PlayerRotation, p.Attack)
-}
-
 type PlayerParam struct {
 	Health, Shield                float32
 	Energy, Metal                 float32

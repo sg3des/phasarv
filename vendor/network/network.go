@@ -18,16 +18,14 @@ const (
 	client
 )
 
-const disconnect = 0x04
+const soh = 0x01
+const eot = 0x04
 
 //Connection type
 type Connection struct {
 	Type int
 
 	Conn *net.UDPConn
-
-	// HandlersServer reflect.Value
-	// HandlersClient reflect.Value
 
 	Handlers map[string]Handler
 
@@ -37,22 +35,9 @@ type Connection struct {
 //Handler type of function
 type Handler func(*Request) interface{}
 
-//NewHandlers create connection width handlers from map
-// func NewHandlers(h map[string]Handler) *Connection {
-// 	c := &Connection{
-// 		Handlers: h,
-// 	}
-// 	return c
-// }
-
 //NewConnection register handlers to connection from type, example: type Handlers struct{} and then func (Handlers) Funcname...
 func NewConnection(h interface{}) *Connection {
 	var handlers = make(map[string]Handler)
-
-	// return &Connection{
-	// 	HandlersServer: reflect.ValueOf(server),
-	// 	HandlersClient: reflect.ValueOf(client),
-	// }
 
 	v := reflect.ValueOf(h)
 	t := reflect.TypeOf(h)
@@ -100,13 +85,16 @@ func (c *Connection) Client(addr string) error {
 	c.Type = client
 	c.Conn = conn
 
+	conn.Write([]byte{soh})
+
 	go c.carrier()
 
 	return nil
 }
 
 func (c *Connection) Close() {
-	c.Conn.Write([]byte{disconnect})
+	log.Println("Connection.Close")
+	c.Conn.Write([]byte{eot})
 	// c.Conn.WriteToUDP([]byte{disconnect, '\n'}, client)
 	// }
 	c.Conn.Close()
@@ -114,12 +102,24 @@ func (c *Connection) Close() {
 	c = nil
 }
 
+func (c *Connection) LookupClient(addr string) (*net.UDPAddr, bool) {
+	for _, client := range c.Clients {
+		if client.String() == addr {
+			return client, true
+		}
+	}
+
+	return nil, false
+}
+
 func (c *Connection) DeleteClient(addr *net.UDPAddr) {
 	// log.Println("DeleteClient", addr, c.Clients)
 	// delete(c.Clients, addr.String())
 	// log.Println(c.Clients)
+
+	sa := addr.String()
 	for i, a := range c.Clients {
-		if a == addr {
+		if a.String() == sa {
 			c.DeleteClientN(i)
 			break
 		}
@@ -132,15 +132,20 @@ func (c *Connection) DeleteClientN(i int) {
 	c.Clients = c.Clients[:len(c.Clients)-1]
 }
 
-func (c *Connection) AddClient(addr *net.UDPAddr) {
-	// c.Clients[addr.String()] = addr
-	for _, a := range c.Clients {
-		if a.String() == addr.String() {
-			return
-		}
+func (c *Connection) addClient(b byte, addr *net.UDPAddr) {
+	if b != soh {
+		return
 	}
 
 	c.Clients = append(c.Clients, addr)
+}
+
+func (c *Connection) delClient(b byte, addr *net.UDPAddr) {
+	if b != eot {
+		return
+	}
+
+	c.DeleteClient(addr)
 }
 
 //carrier manage incoming messages
@@ -168,18 +173,11 @@ func (c *Connection) carrier() {
 			continue
 		}
 
-		if i == 1 && b[0] == disconnect {
-			log.Println("DISCONNECT", addr)
-
-			c.DeleteClient(addr)
-
-			if c.Type == client {
-				c.Close()
-			}
+		if i == 1 {
+			c.delClient(b[0], addr)
+			c.addClient(b[0], addr)
 			continue
 		}
-
-		c.AddClient(addr)
 		// c.Clients = append(c.Clients, addr)
 
 		m, err := c.decodeMessage(b)
@@ -207,30 +205,7 @@ func (c *Connection) carrier() {
 				log.Println("failed write to udp channel:", err)
 			}
 		}
-
-		// if data != nil {
-		// 	if err := req.SendResponse(data); err != nil {
-		// 		log.Println("failed send response:", err)
-		// 		continue
-		// 	}
-		// }
-
-		// log.Println("get new message, call function:", m.ResponseFunc)
-		// m.remoteAddr = c.Conn.RemoteAddr()
-
-		// if len(m.RequestFunc) > 0 {
-		// 	if f, ok := c.Handlers[m.RequestFunc]; ok {
-		// 		data := m.Response(f(m.Data))
-		// 		if data != nil {
-		// 			c.Conn.WriteToUDP(data, addr)
-		// 		}
-		// 	} else {
-		// 		log.Printf("called function `%s` is not found\n")
-		// 	}
-		// }
-		// c.Handler(m)
 	}
-	// log.Println(c.Type, "wtf? exit?")
 }
 
 func (c *Connection) decodeMessage(b []byte) (m *Message, err error) {
@@ -251,18 +226,6 @@ func (c *Connection) callHandler(req *Request) ([]byte, error) {
 		return req.NewResponse(data)
 	}
 	return nil, nil
-
-	// if handler, ok := c.Handlers[req.RequestFunc]; ok {
-	// 	data := handler(req)
-	// 	if data != nil {
-	// 		return req.NewResponse(data)
-	// 	}
-	// 	return nil, nil
-	// }
-
-	// log.Println(c.Handlers)
-
-	// return nil, fmt.Errorf("handler `%s` not found", req.RequestFunc)
 }
 
 type Request struct {
@@ -306,10 +269,11 @@ func (c *Connection) Broadcast(reqfunc, resfunc interface{}, data interface{}) e
 		return err
 	}
 
-	// log.Println("send broadcast to ", c.Clients)
+	log.Println(len(c.Clients))
+
 	for i, client := range c.Clients {
-		// log.Println("send to", client.String())
-		_, err := c.Conn.WriteToUDP(bMsg, client)
+
+		_, err := c.Conn.WriteTo(bMsg, client)
 		if err != nil {
 			c.DeleteClientN(i)
 			log.Printf("failed send broadcast message to `%s:%s`, reason: %s\n", client, err)

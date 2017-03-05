@@ -4,11 +4,16 @@ package controllers
 import (
 	"encoding/gob"
 	"game"
+	"net"
 	"network"
 	"phys/vect"
+	"time"
 )
 
-var conn *network.Connection
+var (
+	conn             *network.Connection
+	durationDeadline = time.Duration(1e9)
+)
 
 type ServersState []ServerState
 type ServerState struct {
@@ -19,6 +24,8 @@ type ServerState struct {
 
 	Pos vect.Vect
 	Rot float32
+
+	HP float32
 
 	ClientState
 }
@@ -37,7 +44,15 @@ func init() {
 	gob.Register(ServersState{})
 }
 
-func GetClientState(p *game.Player) ClientState {
+type player struct {
+	*game.Player
+
+	addr *net.UDPAddr
+
+	deadline time.Time
+}
+
+func (p *player) GetClientState() ClientState {
 	return ClientState{
 		CurPos: p.Cursor.PositionVect(),
 		LW:     p.LeftWeapon.ToShoot,
@@ -45,7 +60,7 @@ func GetClientState(p *game.Player) ClientState {
 	}
 }
 
-func GetServerState(p *game.Player) ServerState {
+func (p *player) GetServerState() ServerState {
 	return ServerState{
 		Name: p.Name,
 
@@ -55,11 +70,13 @@ func GetServerState(p *game.Player) ServerState {
 		Pos: p.Object.PositionVect(),
 		Rot: p.Object.Rotation(),
 
-		ClientState: GetClientState(p),
+		HP: p.CurrParam.Health,
+
+		ClientState: p.GetClientState(),
 	}
 }
 
-func (s ClientState) UpdatePlayer(p *game.Player) {
+func (s ClientState) UpdatePlayer(p *player) {
 	p.Cursor.SetPosition(s.CurPos.X, s.CurPos.Y)
 	p.CursorOffset = p.Cursor.PositionVect()
 	p.CursorOffset.Sub(p.Object.PositionVect())
@@ -68,11 +85,12 @@ func (s ClientState) UpdatePlayer(p *game.Player) {
 	p.RightWeapon.ToShoot = s.RW
 }
 
-func (s ServerState) UpdatePlayer(p *game.Player) {
+func (s ServerState) UpdatePlayer(p *player) {
 	p.Object.SetPosition(s.Pos.X, s.Pos.Y)
 	p.Object.SetRotation(s.Rot)
 	p.Object.SetVelocity(s.Vel.X, s.Vel.Y)
 	p.Object.SetAngularVelocity(s.AVel)
+	p.CurrParam.Health = s.HP
 	s.ClientState.UpdatePlayer(p)
 	// p.UpdateFromClientState(s.ClientState)
 }

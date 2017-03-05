@@ -124,6 +124,23 @@ func (o *Object) Destroy() {
 	// o = nil
 }
 
+func (o *Object) Remove() {
+	o.needDestroy = true
+
+	if o.shape != nil {
+		o.shape.Body.Enabled = false
+		phys.RemoveBody(o.shape.Body)
+		// space.RemoveShape(o.Shape) - crash need TODO
+	}
+
+	// Objects[o] = false
+
+	for child := range o.Childs {
+		child.Remove()
+	}
+
+}
+
 // func (o *Object) Clone() *Object {
 // 	newObject := &Object{
 // 		Name:         o.Name,
