@@ -2,14 +2,28 @@
 
 name=phasarv
 
-run:
+run: install
 	go build -o $(name) ./vendor/main && ./$(name) ${ARGS}
 
-client:
+
+client: install
 	go build -o $(name) ./vendor/main && ./$(name) client
+
+clients: install
+	go build -o $(name) ./vendor/main
+	./$(name) client & 
+	./$(name) client & 
+	sleep 1
+	./bspwm_place.sh phasarv-client
+
 
 server:
 	go build -o phServer ./vendor/server && ./phServer
+
+
+
+install:
+	go install ./vendor/...
 
 get:
 	go get -u github.com/go-gl/glfw/v3.1/glfw
@@ -34,9 +48,5 @@ network-bench:
 
 
 
-build:
-	# mkdir -p build
-	go build -o build/$(name) ./vendor/main
-	#GOOS=windows go build -o build/$(name).exe ./vendor/main
 
 .PHONY: build

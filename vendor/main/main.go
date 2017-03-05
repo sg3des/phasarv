@@ -16,6 +16,8 @@ import (
 	"github.com/tbogdala/fizzle/renderer/forward"
 
 	"engine"
+
+	controllers "network-controllers"
 )
 
 var (
@@ -74,8 +76,8 @@ func local() {
 }
 
 func networkPlay() {
-	Connect("127.0.0.1:9696")
-	Authorize(randomName())
+	controllers.Connect("127.0.0.1:9696")
+	controllers.SendAuthorize(randomName())
 }
 
 func localPlay() {

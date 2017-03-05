@@ -52,45 +52,6 @@ type PlayerParam struct {
 	MovSpeed, RotSpeed, RollAngle float32
 }
 
-func (p *Player) GetClientState() ClientState {
-	return ClientState{
-		CurPos: p.Cursor.PositionVect(),
-		LW:     p.LeftWeapon.ToShoot,
-		RW:     p.RightWeapon.ToShoot,
-	}
-}
-
-func (p *Player) GetServerState() ServerState {
-	return ServerState{
-		Name: p.Name,
-
-		Vel:  p.Object.Velocity(),
-		AVel: p.Object.AngularVelocity(),
-
-		Pos: p.Object.PositionVect(),
-		Rot: p.Object.Rotation(),
-
-		ClientState: p.GetClientState(),
-	}
-}
-
-func (p *Player) UpdateFromClientState(s ClientState) {
-	p.Cursor.SetPosition(s.CurPos.X, s.CurPos.Y)
-	p.CursorOffset = p.Cursor.PositionVect()
-	p.CursorOffset.Sub(p.Object.PositionVect())
-
-	p.LeftWeapon.ToShoot = s.LW
-	p.RightWeapon.ToShoot = s.RW
-}
-
-func (p *Player) UpdateFromServerState(s ServerState) {
-	p.Object.SetPosition(s.Pos.X, s.Pos.Y)
-	p.Object.SetRotation(s.Rot)
-	p.Object.SetVelocity(s.Vel.X, s.Vel.Y)
-	p.Object.SetAngularVelocity(s.AVel)
-	p.UpdateFromClientState(s.ClientState)
-}
-
 type Player struct {
 	Name   string
 	Local  bool

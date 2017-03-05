@@ -4,48 +4,79 @@ import (
 	"bytes"
 	"encoding/gob"
 	"errors"
-	"fmt"
 	"log"
 	"net"
+	"path/filepath"
+	"reflect"
+	"runtime"
+	"strings"
 	"time"
 )
 
 const (
-	Server = iota
-	Client
+	server = iota
+	client
 )
 
+const disconnect = 0x04
+
+//Connection type
 type Connection struct {
 	Type int
 
 	Conn *net.UDPConn
 
+	// HandlersServer reflect.Value
+	// HandlersClient reflect.Value
+
 	Handlers map[string]Handler
 
-	Clients []*net.UDPAddr
+	Clients map[string]*net.UDPAddr
 }
 
+//Handler type of function
 type Handler func(*Request) interface{}
 
-//udpAddr return resolved addr for udp connection
-func udpAddr(addr string) *net.UDPAddr {
-	raddr, err := net.ResolveUDPAddr("udp", addr)
-	if err != nil {
-		log.Fatalln("failed addr", err)
+//NewHandlers create connection width handlers from map
+// func NewHandlers(h map[string]Handler) *Connection {
+// 	c := &Connection{
+// 		Handlers: h,
+// 	}
+// 	return c
+// }
+
+//NewConnection register handlers to connection from type, example: type Handlers struct{} and then func (Handlers) Funcname...
+func NewConnection(h interface{}) *Connection {
+	var handlers = make(map[string]Handler)
+
+	// return &Connection{
+	// 	HandlersServer: reflect.ValueOf(server),
+	// 	HandlersClient: reflect.ValueOf(client),
+	// }
+
+	v := reflect.ValueOf(h)
+	t := reflect.TypeOf(h)
+	for i := 0; i < t.NumMethod(); i++ {
+
+		f, ok := v.Method(i).Interface().(func(*Request) interface{})
+		if ok {
+			handlers[t.Method(i).Name] = f
+		} else {
+			log.Fatalf("handler %s is not suitable", t.Method(i).Name)
+		}
+
 	}
-	return raddr
+
+	return &Connection{
+		Handlers: handlers,
+		Clients:  make(map[string]*net.UDPAddr),
+	}
 }
 
-func NewHandlers(h map[string]Handler) *Connection {
-	c := &Connection{
-		Handlers: h,
-	}
-	return c
-}
-
-func (c *Connection) SetHandler(name string, h Handler) {
-	c.Handlers[name] = h
-}
+// //SetHandler to exist connection by name
+// func (c *Connection) SetHandler(name string, h Handler) {
+// 	c.Handlers[name] = h
+// }
 
 //Server - start server listener
 func (c *Connection) Server(addr string) error {
@@ -54,7 +85,7 @@ func (c *Connection) Server(addr string) error {
 		return err
 	}
 
-	c.Type = Server
+	c.Type = server
 	c.Conn = conn
 
 	go c.carrier()
@@ -69,7 +100,7 @@ func (c *Connection) Client(addr string) error {
 		return err
 	}
 
-	c.Type = Client
+	c.Type = client
 	c.Conn = conn
 
 	go c.carrier()
@@ -78,48 +109,75 @@ func (c *Connection) Client(addr string) error {
 }
 
 func (c *Connection) Close() {
+	c.Conn.Write([]byte{disconnect})
+	// c.Conn.WriteToUDP([]byte{disconnect, '\n'}, client)
+	// }
 	c.Conn.Close()
 	c.Clients = nil
-	c.Handlers = nil
+	c = nil
 }
 
 func (c *Connection) DeleteClient(addr *net.UDPAddr) {
-	for i, a := range c.Clients {
-		if a == addr {
-			c.DeleteClientN(i)
-		}
-	}
+	// log.Println("DeleteClient", addr, c.Clients)
+	delete(c.Clients, addr.String())
+	// log.Println(c.Clients)
+	// for i, a := range c.Clients {
+	// 	if a == addr {
+	// 		c.DeleteClientN(i)
+	// 	}
+	// }
 }
 
-func (c *Connection) DeleteClientN(i int) {
-	c.Clients[i] = c.Clients[len(c.Clients)-1]
-	c.Clients[len(c.Clients)-1] = nil
-	c.Clients = c.Clients[:len(c.Clients)-1]
-}
+// func (c *Connection) DeleteClientN(i int) {
+// 	c.Clients[i] = c.Clients[len(c.Clients)-1]
+// 	c.Clients[len(c.Clients)-1] = nil
+// 	c.Clients = c.Clients[:len(c.Clients)-1]
+// }
 
 func (c *Connection) AddClient(addr *net.UDPAddr) {
-	for _, a := range c.Clients {
-		if a.String() == addr.String() {
-			return
-		}
-	}
+	c.Clients[addr.String()] = addr
+	// for _, a := range c.Clients {
+	// 	if a.String() == addr.String() {
+	// 		return
+	// 	}
+	// }
 
-	c.Clients = append(c.Clients, addr)
+	// c.Clients = append(c.Clients, addr)
 }
 
 //carrier manage incoming messages
 func (c *Connection) carrier() {
 	for {
+		if c == nil {
+			break
+		}
+
 		var b = make([]byte, 8192)
 		i, addr, err := c.Conn.ReadFromUDP(b)
 		if err != nil {
-			c.DeleteClient(addr)
+
+			// c.DeleteClient(addr)
+			// if c.Type == client {
+			// 	c.Close()
+			// }
 			log.Println(c.Type, "failed read udp package, error: ", err)
-			continue
+			c.Close()
+			break
 		}
 
 		b = b[:i]
 		if len(b) == 0 {
+			continue
+		}
+
+		if i == 1 && b[0] == disconnect {
+			log.Println("DISCONNECT", addr)
+
+			c.DeleteClient(addr)
+
+			if c.Type == client {
+				c.Close()
+			}
 			continue
 		}
 
@@ -174,7 +232,7 @@ func (c *Connection) carrier() {
 		// }
 		// c.Handler(m)
 	}
-	log.Println("wtf? exit?")
+	// log.Println(c.Type, "wtf? exit?")
 }
 
 func (c *Connection) decodeMessage(b []byte) (m *Message, err error) {
@@ -184,17 +242,29 @@ func (c *Connection) decodeMessage(b []byte) (m *Message, err error) {
 }
 
 func (c *Connection) callHandler(req *Request) ([]byte, error) {
-	if handler, ok := c.Handlers[req.RequestFunc]; ok {
-		data := handler(req)
-		if data != nil {
-			return req.NewResponse(data)
-		}
+	f, ok := c.Handlers[req.RequestFunc]
+	if !ok {
+		log.Println("request unknown function", req.RequestFunc)
 		return nil, nil
 	}
 
-	log.Println(c.Handlers)
+	data := f(req)
+	if data != nil {
+		return req.NewResponse(data)
+	}
+	return nil, nil
 
-	return nil, fmt.Errorf("handler `%s` not found", req.RequestFunc)
+	// if handler, ok := c.Handlers[req.RequestFunc]; ok {
+	// 	data := handler(req)
+	// 	if data != nil {
+	// 		return req.NewResponse(data)
+	// 	}
+	// 	return nil, nil
+	// }
+
+	// log.Println(c.Handlers)
+
+	// return nil, fmt.Errorf("handler `%s` not found", req.RequestFunc)
 }
 
 type Request struct {
@@ -211,7 +281,8 @@ type Message struct {
 	Data interface{}
 }
 
-func NewMessage(reqfunc, resfunc string, data interface{}) *Message {
+func newMessage(reqfunc, resfunc string, data interface{}) *Message {
+
 	m := &Message{
 		Sendtime:     time.Now(),
 		RequestFunc:  reqfunc,
@@ -228,19 +299,21 @@ func (m *Message) encode() ([]byte, error) {
 	return append(buf.Bytes(), '\n'), err
 }
 
-func (c *Connection) Broadcast(reqfunc, resfunc string, data interface{}) error {
+func (c *Connection) Broadcast(reqfunc, resfunc interface{}, data interface{}) error {
 
-	bMsg, err := NewMessage(reqfunc, resfunc, data).encode()
+	reqname, resname := getFuncsName(reqfunc, resfunc)
+
+	bMsg, err := newMessage(reqname, resname, data).encode()
 	if err != nil {
 		return err
 	}
 
 	// log.Println("send broadcast to ", c.Clients)
-	for i, client := range c.Clients {
+	for _, client := range c.Clients {
 		// log.Println("send to", client.String())
 		_, err := c.Conn.WriteToUDP(bMsg, client)
 		if err != nil {
-			c.DeleteClientN(i)
+			c.DeleteClient(client)
 			log.Printf("failed send broadcast message to `%s:%s`, reason: %s\n", client, err)
 		}
 	}
@@ -248,13 +321,35 @@ func (c *Connection) Broadcast(reqfunc, resfunc string, data interface{}) error 
 	return nil
 }
 
+func getFuncsName(reqfunc, resfunc interface{}) (string, string) {
+	reqName := getFuncName(reqfunc)
+
+	var resName string
+	if resfunc != nil {
+		resName = getFuncName(resfunc)
+	}
+
+	return reqName, resName
+}
+
+func getFuncName(f interface{}) string {
+	if _, ok := f.(string); ok {
+		log.Fatalln("incoming function is string not Handler")
+	}
+	name := runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()
+	name = strings.TrimPrefix(filepath.Ext(name), ".")
+	return strings.TrimSuffix(name, "-fm")
+}
+
 //SendMessage to server from clients
-func (c *Connection) SendMessage(reqfunc, resfunc string, data interface{}) error {
+func (c *Connection) SendMessage(reqfunc, resfunc interface{}, data interface{}) error {
 	if c.Conn == nil {
 		return errors.New("no connection")
 	}
 
-	bMsg, err := NewMessage(reqfunc, resfunc, data).encode()
+	reqname, resname := getFuncsName(reqfunc, resfunc)
+
+	bMsg, err := newMessage(reqname, resname, data).encode()
 	if err != nil {
 		return err
 	}
@@ -268,9 +363,18 @@ func (req *Request) NewResponse(data interface{}) ([]byte, error) {
 		return nil, errors.New("response function is empty")
 	}
 
-	message := NewMessage(req.ResponseFunc, "", data)
+	message := newMessage(req.ResponseFunc, "", data)
 
 	return message.encode()
+}
+
+//udpAddr return resolved addr for udp connection
+func udpAddr(addr string) *net.UDPAddr {
+	raddr, err := net.ResolveUDPAddr("udp", addr)
+	if err != nil {
+		log.Fatalln("failed addr", err)
+	}
+	return raddr
 }
 
 // func (req *Request) SendResponse(data interface{}) error {
