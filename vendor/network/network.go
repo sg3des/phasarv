@@ -31,7 +31,7 @@ type Connection struct {
 
 	Handlers map[string]Handler
 
-	Clients map[string]*net.UDPAddr
+	Clients []*net.UDPAddr
 }
 
 //Handler type of function
@@ -67,10 +67,7 @@ func NewConnection(h interface{}) *Connection {
 
 	}
 
-	return &Connection{
-		Handlers: handlers,
-		Clients:  make(map[string]*net.UDPAddr),
-	}
+	return &Connection{Handlers: handlers}
 }
 
 // //SetHandler to exist connection by name
@@ -119,30 +116,31 @@ func (c *Connection) Close() {
 
 func (c *Connection) DeleteClient(addr *net.UDPAddr) {
 	// log.Println("DeleteClient", addr, c.Clients)
-	delete(c.Clients, addr.String())
+	// delete(c.Clients, addr.String())
 	// log.Println(c.Clients)
-	// for i, a := range c.Clients {
-	// 	if a == addr {
-	// 		c.DeleteClientN(i)
-	// 	}
-	// }
+	for i, a := range c.Clients {
+		if a == addr {
+			c.DeleteClientN(i)
+			break
+		}
+	}
 }
 
-// func (c *Connection) DeleteClientN(i int) {
-// 	c.Clients[i] = c.Clients[len(c.Clients)-1]
-// 	c.Clients[len(c.Clients)-1] = nil
-// 	c.Clients = c.Clients[:len(c.Clients)-1]
-// }
+func (c *Connection) DeleteClientN(i int) {
+	c.Clients[i] = c.Clients[len(c.Clients)-1]
+	c.Clients[len(c.Clients)-1] = nil
+	c.Clients = c.Clients[:len(c.Clients)-1]
+}
 
 func (c *Connection) AddClient(addr *net.UDPAddr) {
-	c.Clients[addr.String()] = addr
-	// for _, a := range c.Clients {
-	// 	if a.String() == addr.String() {
-	// 		return
-	// 	}
-	// }
+	// c.Clients[addr.String()] = addr
+	for _, a := range c.Clients {
+		if a.String() == addr.String() {
+			return
+		}
+	}
 
-	// c.Clients = append(c.Clients, addr)
+	c.Clients = append(c.Clients, addr)
 }
 
 //carrier manage incoming messages
@@ -309,11 +307,11 @@ func (c *Connection) Broadcast(reqfunc, resfunc interface{}, data interface{}) e
 	}
 
 	// log.Println("send broadcast to ", c.Clients)
-	for _, client := range c.Clients {
+	for i, client := range c.Clients {
 		// log.Println("send to", client.String())
 		_, err := c.Conn.WriteToUDP(bMsg, client)
 		if err != nil {
-			c.DeleteClient(client)
+			c.DeleteClientN(i)
 			log.Printf("failed send broadcast message to `%s:%s`, reason: %s\n", client, err)
 		}
 	}

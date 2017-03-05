@@ -96,6 +96,8 @@ func (Client) LocalPlayerServerState(req *network.Request) interface{} {
 	dist := localplayer.Object.DistancePoint(s.Pos.X, s.Pos.Y)
 	if dist > 2 {
 		log.Println("WARNING! need correct position")
+		localplayer.Object.SetPosition(s.Pos.X, s.Pos.Y)
+		localplayer.Object.SetRotation(s.Rot)
 		s.UpdatePlayer(localplayer)
 		return nil
 	}
