@@ -22,6 +22,7 @@ var (
 )
 
 type texture struct {
+	Path     string
 	Diffuse  graphicsprovider.Texture
 	Normals  graphicsprovider.Texture
 	Specular graphicsprovider.Texture
@@ -86,7 +87,7 @@ func getTextureName(filename string) string {
 func LoadTexture(filename string) error {
 	texturename := getTextureName(filename)
 
-	t := &texture{}
+	t := &texture{Path: filename}
 	var err error
 	t.Diffuse, err = textureMan.LoadTexture(texturename, filename)
 	if err != nil {

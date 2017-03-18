@@ -248,14 +248,14 @@ func (p *Player) MouseControl(w *glfw.Window, button glfw.MouseButton, action gl
 }
 
 func (p *Player) CameraMovement(dt float32) {
-	engine.Camera.SetPosition(p.Object.Position())
+	render.SetCameraPosition(p.Object.Position())
 
 	// sun.Position = pp.Add(mgl32.Vec3{-30, 30, 100})
 
 	x, y := engine.CursorPosition()
 	w, h := engine.WindowSize()
 
-	p.Cursor.SetPosition(getCursorPos(x, y, w, h, engine.Camera.GetPosition()))
+	p.Cursor.SetPosition(getCursorPos(x, y, w, h, render.GetCameraPosition()))
 }
 
 // func keyboardControl(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {

@@ -3,11 +3,14 @@ package game
 import (
 	"engine"
 	"log"
+	"render"
 
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/tbogdala/fizzle"
 )
 
 var (
+	Camera *fizzle.YawPitchCamera
 	//Players its clients
 	Players []*Player
 
@@ -16,6 +19,9 @@ var (
 )
 
 func CreateLocalPlayer(p *Player) {
+	Camera = render.NewCamera(mgl32.Vec3{0, 0, 40})
+	Camera.LookAtDirect(mgl32.Vec3{0, 0, 0})
+
 	log.Println("CreateLocalPlayer", p.Name)
 	p.Local = true
 	// p := &Player{Param: paramPlayer}

@@ -39,7 +39,7 @@ func init() {
 
 func main() {
 	game.Render = true
-	engine.Init(local)
+	engine.Client(local)
 
 	// local()
 	// engine.SetKeyCallback(keyCallback)
@@ -116,9 +116,6 @@ func initEnvironment() {
 		Specular:   0.1,
 		ShadowSize: 2,
 	}).Create()
-
-	camera = engine.NewCamera(mgl32.Vec3{0, 0, 40})
-	camera.LookAtDirect(mgl32.Vec3{0, 0, 0})
 }
 
 func keyCallback(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {

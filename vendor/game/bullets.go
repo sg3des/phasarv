@@ -30,31 +30,12 @@ type Bullet struct {
 
 //CreateObject create bullet for gun and rocket
 func (b *Bullet) CreateObject() {
-	// vx, vy := b.Player.Object.VectorSide(1, -1.5704)
-	// x, y := b.Player.Object.Position()
-
-	// log.Println(ang, b.Weapon.Angle)
-	// if ang > b.Weapon.Angle {
-	// 	ang = b.Weapon.Angle
-	// } else if ang < -b.Weapon.Angle {
-	// 	ang = -b.Weapon.Angle
-	// }
-
-	// log.Println(ang)
-
-	// b.Object.P = point.Param{
-	// 	Pos:   point.P{x + b.Weapon.X*vx, y + b.Weapon.X*vy, 0},
-	// 	Angle: b.Player.Object.Rotation() + ang,
-	// 	// Angle: ang,
-	// }
-
 	b.Object.P = point.Param{
 		Pos:   point.PFromVect(b.Weapon.GetPosition()),
 		Angle: b.Weapon.GetAngle(),
 	}
 
 	b.Object.Create()
-	// log.Println(b.Object.Shape, b.Object.Param.Phys)
 
 	b.Object.SetCallbackCollision(b.Collision)
 	b.Object.SetUserData(b)
@@ -68,7 +49,6 @@ func (b *Bullet) CreateObject() {
 func (b *Bullet) Gun() {
 	b.CreateObject()
 	b.Object.AddCallback(b.GunCallback)
-	// b.Object.Callback = b.GunCallback
 	b.Object.SetVelocity(b.Player.Object.VectorForward(b.MovSpeed))
 
 	b.Shoot = true
@@ -84,19 +64,13 @@ func (b *Bullet) Rocket() {
 				b.Weapon.DelayTime = time.Time{}
 			}
 			b.TargetPlayer = target
-			// target := engine.Hit(b.Player.Cursor.Position())
-			// if target == nil || target.Name == "bullet" {
-			// 	b.Weapon.DelayTime = time.Time{}
-			// 	return
-			// }
-			// b.TargetObject = target
 		}
 
 	}
 
 	b.CreateObject()
 	b.Object.AddCallback(b.RocketCallback)
-	b.Object.SetVelocity(b.Player.Object.VectorSide(b.Object.PI.Mass*5*b.Weapon.Pos.X, -1.5704))
+	b.Object.SetVelocity(b.Player.Object.VectorSide(b.Object.PI.Mass*5*b.Weapon.Pos.Y, 1.5704))
 	// b.Target = b.Player.Cursor.PositionVec2()
 
 	createTrail(b.Object, 0.75, int(b.MovSpeed), mgl32.Vec2{-0.5})
@@ -123,23 +97,11 @@ func (b *Bullet) Laser() {
 		target.ApplyDamage(b.Damage)
 	}
 
-	// if hit := engine.Raycast(x, y, tx, ty, b.Player.Object.Shape.Body); hit != nil {
-	// 	h = hit.Distance
-
-	// 	if hit.Body.UserData != nil {
-
-	// 		// ApplyDamage(hit.Body.UserData.(*engine.Object), b.Damage)
-	// 		// // hit.Body.AddVelocity(b.Player.Object.VectorForward(b.Weapon.BulletObject.Phys.Mass * 10 / hit.Body.Mass()))
-	// 		// hit.Body.AddAngularVelocity((rand.Float32() - 0.5) * 10 / hit.Body.Mass())
-	// 	}
-	// }
-
 	b.Object.P.Size.Y = h
 	b.Object.P.Pos = point.P{x, y, 0}
 	b.Object.P.Angle = b.Player.Object.Rotation()
 	b.Object.Create()
 
-	// b.TimePoint = time.Now().Add(b.Lifetime)
 	b.TimePoint = time.Now().Add(time.Second)
 	b.Object.AddCallback(b.LaserCallback)
 
@@ -155,8 +117,6 @@ func (b *Bullet) Laser() {
 func (b *Bullet) GunCallback(dt float32) {
 	if b.TimePoint.Before(time.Now()) {
 		b.Destroy()
-		// b.Object.Destroy()
-		// b = nil
 		return
 	}
 
@@ -191,10 +151,6 @@ func (b *Bullet) RocketCallback(dt float32) {
 				tp = target.Object.PositionVec2()
 			}
 
-			// if target := engine.Hit(b.Player.Cursor.Position()); target != nil {
-			// 	b.TargetObject = target
-			// 	tp = target.PositionVec2()
-			// }
 		} else {
 			tp = b.TargetPlayer.Object.PositionVec2()
 		}
@@ -287,20 +243,3 @@ func resolveCollisionShapes(shapes ...*phys.Shape) (p *Player, b *Bullet) {
 	}
 	return
 }
-
-// //ApplyDamage to object
-// func ApplyDamage(target *engine.Object, damage float32) {
-// 	hp, ok := target.GetArt("health")
-// 	if !ok {
-// 		// log.Printf("WARINING: art by name: %s not found", "health")
-// 		return
-// 	}
-
-// 	hp.Value -= damage
-// 	if hp.Value <= 0 {
-// 		target.Destroy()
-// 		return
-// 	}
-// 	hp.Resize()
-
-// }
