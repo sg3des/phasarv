@@ -168,11 +168,11 @@ func (w *Weapon) NewAim() *engine.Art {
 		MaxValue: ar,
 		P: point.Param{
 			Pos:  point.PFromVect(w.Pos),
-			Size: point.P{0.2, ar, 0},
+			Size: point.P{0.1, ar, 0},
 		},
 		RI: &render.Instruction{
 			MeshName: "plane",
-			Material: &materials.Instruction{Name: "aim", Texture: "laser", Shader: "colortext2", DiffColor: mgl32.Vec4{0.6, 0.6, 0.6, 0.7}},
+			Material: &materials.Instruction{Name: "aim", Texture: "laser", Shader: "colortext2", DiffColor: mgl32.Vec4{0.9, 0.9, 0.9, 0.5}},
 		},
 	}
 }

@@ -10,22 +10,17 @@ import (
 )
 
 var (
-	window    *glfw.Window
-	callbacks []func(float32) bool
-	itsClient bool
+	window     *glfw.Window
+	callbacks  []func(float32) bool
+	NeedRender bool
 )
-
-// type engine struct {
-
-// 	render bool
-// }
 
 //Client main function create window and initialize opengl,render engine
 func Client(userfunc func()) {
-	itsClient = true
+	NeedRender = true
 
 	var err error
-	window, err = render.NewWindow(600, 400, "phasarv-client")
+	window, err = render.NewWindow(1200, 800, "phasarv-client")
 	if err != nil {
 		log.Panicln(err)
 	}

@@ -3,11 +3,10 @@ package render
 import (
 	"fmt"
 	"runtime"
+	"ui"
 
 	"github.com/go-gl/glfw/v3.1/glfw"
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/tbogdala/eweygewey"
-	"github.com/tbogdala/eweygewey/glfwinput"
 	"github.com/tbogdala/fizzle"
 	"github.com/tbogdala/fizzle/graphicsprovider"
 	"github.com/tbogdala/fizzle/graphicsprovider/opengl"
@@ -16,8 +15,6 @@ import (
 var (
 	window *glfw.Window
 	gfx    graphicsprovider.GraphicsProvider
-
-	ui *eweygewey.Manager
 )
 
 //NewWindow initialize all sub steps for creation window with renderable content
@@ -35,7 +32,7 @@ func NewWindow(width, height int, title string) (*glfw.Window, error) {
 	renderInit(gfx, int32(width), int32(height))
 	NewCamera(mgl32.Vec3{0, 0, 10})
 
-	if err := initUI(); err != nil {
+	if err := ui.Init(gfx, window); err != nil {
 		return nil, fmt.Errorf("failed initialize UI, reason: %s", err)
 	}
 
@@ -97,30 +94,6 @@ func initOpenGL() error {
 	// e.gfx.BlendFunc(graphicsprovider.ONE, graphicsprovider.ONE)
 
 	// glBlendFunc(GL_ONE_MINUS_DST_ALPHA, GL_DST_ALPHA)
-
-	return nil
-}
-
-func initUI() error {
-	fontScale := 14
-	fontFilepath := "assets/fonts/Roboto-Bold.ttf"
-	fontGlyphs := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890., :[]{}\\|<>;\"'~`?/-+_=()*&^%$#@!"
-
-	// create and initialize the gui Manager
-	ui = eweygewey.NewManager(gfx)
-	if err := ui.Initialize(eweygewey.VertShader330, eweygewey.FragShader330, 1024, 768, 768); err != nil {
-		return fmt.Errorf("Failed to initialize the user interface! reason %s", err)
-	}
-
-	glfwinput.SetInputHandlers(ui, window)
-
-	// load a font
-	_, err := ui.NewFont("Default", fontFilepath, fontScale, fontGlyphs)
-	if err != nil {
-		return fmt.Errorf("Failed to load the font file! reason: %s", err)
-	}
-
-	InitializeSystemUI()
 
 	return nil
 }

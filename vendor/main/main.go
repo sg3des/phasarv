@@ -38,7 +38,7 @@ func init() {
 }
 
 func main() {
-	game.Render = true
+	game.NeedRender = true
 	engine.Client(local)
 
 	// local()

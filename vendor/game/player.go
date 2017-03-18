@@ -45,7 +45,7 @@ func (p *Player) CreatePlayer() {
 	p.Object.PI.Group = 2
 
 	var hb *engine.Art
-	if Render {
+	if NeedRender {
 		hb = NewHealthBar(p.InitParam.Health)
 	}
 	p.Object.Create(hb)
@@ -60,7 +60,7 @@ func (p *Player) CreatePlayer() {
 		p.Cursor.Create()
 	}
 
-	if p.InitParam.MovSpeed > 5 && Render {
+	if p.InitParam.MovSpeed > 5 && NeedRender {
 		createTrail(p.Object, 0.5, int(p.InitParam.MovSpeed), mgl32.Vec2{1.4, 2.95})
 		createTrail(p.Object, 0.5, int(p.InitParam.MovSpeed), mgl32.Vec2{1.4, -2.95})
 	}

@@ -11,11 +11,12 @@ import (
 
 var (
 	Camera *fizzle.YawPitchCamera
+
 	//Players its clients
 	Players []*Player
 
-	//Render flag if it false, graphics elements(bars,aims,trails,etc...) should not be initialized.
-	Render bool
+	//itsClient flag if it false, graphics elements(bars,aims,trails,etc...) should not be initialized.
+	NeedRender bool
 )
 
 func CreateLocalPlayer(p *Player) {

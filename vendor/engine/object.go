@@ -40,7 +40,7 @@ func (o *Object) Create(arts ...*Art) {
 	// if !e.render {
 	// 	return
 	// }
-	if itsClient {
+	if NeedRender {
 		o.renderable = o.RI.Create(o.P)
 		for _, a := range arts {
 			if a != nil {
@@ -52,7 +52,7 @@ func (o *Object) Create(arts ...*Art) {
 	if o.PI != nil {
 		o.shape = o.PI.Create(o.P)
 		// o.Shape.Body.UserData = o
-		if itsClient {
+		if NeedRender {
 			o.renderable.AddShape(o.PI)
 		}
 	}

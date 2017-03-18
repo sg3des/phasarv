@@ -3,6 +3,7 @@ package render
 import (
 	"fmt"
 	"log"
+	"ui"
 
 	"github.com/go-gl/glfw/v3.1/glfw"
 	"github.com/go-gl/mathgl/mgl32"
@@ -56,8 +57,8 @@ func DrawFrame(dt float32, fps int) {
 	nextFrame(mgl32.DegToRad(50), float32(w)/float32(h))
 
 	//render ui
-	UI.RenderFrame.Text = []string{fmt.Sprintf("fps: %d dt: %f", fps, dt)}
-	uiConstruct(float64(dt))
+	ui.RenderFrame.Text = []string{fmt.Sprintf("fps: %d dt: %f", fps, dt)}
+	renderUI(float64(dt))
 
 	//end frame
 	window.SwapBuffers()
@@ -146,4 +147,14 @@ func DeleteRenderables(i int) {
 	Renderables[i] = nil
 	Renderables[i] = Renderables[len(Renderables)-1]
 	Renderables = Renderables[:len(Renderables)-1]
+}
+
+func renderUI(dt float64) {
+	gfx.Disable(graphicsprovider.DEPTH_TEST)
+	gfx.Enable(graphicsprovider.SCISSOR_TEST)
+
+	ui.Draw(dt)
+
+	gfx.Disable(graphicsprovider.SCISSOR_TEST)
+	gfx.Enable(graphicsprovider.DEPTH_TEST)
 }
