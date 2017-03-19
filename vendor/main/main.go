@@ -40,26 +40,6 @@ func init() {
 func main() {
 	game.NeedRender = true
 	engine.Client(local)
-
-	// local()
-	// engine.SetKeyCallback(keyCallback)
-	// initEnvironment()
-
-	// scene.Load("scene00")
-
-	// // // time.Sleep(300 * time.Millisecond)
-
-	// if mode == "client" {
-	// 	networkPlay()
-	// } else {
-	// 	localPlay()
-	// }
-
-	// initCursor()
-
-	// time.Sleep(10 * time.Second)
-
-	// engine.Loop()
 }
 
 func local() {

@@ -12,10 +12,10 @@ import (
 var (
 	Camera *fizzle.YawPitchCamera
 
-	//Players its clients
+	//Players contains only human playble ships
 	Players []*Player
 
-	//itsClient flag if it false, graphics elements(bars,aims,trails,etc...) should not be initialized.
+	//NeedRender flag if it false, graphics elements(bars,aims,trails,etc...) should not be initialized.
 	NeedRender bool
 )
 

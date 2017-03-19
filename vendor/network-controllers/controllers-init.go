@@ -44,39 +44,39 @@ func init() {
 	gob.Register(ServersState{})
 }
 
-type player struct {
-	*game.Player
+type cliPlayer struct {
+	p *game.Player
 
 	addr *net.UDPAddr
 
 	deadline time.Time
 }
 
-func (p *player) GetClientState() ClientState {
+func (c *cliPlayer) GetClientState() ClientState {
 	return ClientState{
-		CurPos: p.Cursor.PositionVect(),
-		LW:     p.LeftWeapon.ToShoot,
-		RW:     p.RightWeapon.ToShoot,
+		CurPos: c.p.Cursor.PositionVect(),
+		LW:     c.p.LeftWeapon.ToShoot,
+		RW:     c.p.RightWeapon.ToShoot,
 	}
 }
 
-func (p *player) GetServerState() ServerState {
+func (c *cliPlayer) GetServerState() ServerState {
 	return ServerState{
-		Name: p.Name,
+		Name: c.p.Name,
 
-		Vel:  p.Object.Velocity(),
-		AVel: p.Object.AngularVelocity(),
+		Vel:  c.p.Object.Velocity(),
+		AVel: c.p.Object.AngularVelocity(),
 
-		Pos: p.Object.PositionVect(),
-		Rot: p.Object.Rotation(),
+		Pos: c.p.Object.PositionVect(),
+		Rot: c.p.Object.Rotation(),
 
-		HP: p.CurrParam.Health,
+		HP: c.p.CurrParam.Health,
 
-		ClientState: p.GetClientState(),
+		ClientState: c.GetClientState(),
 	}
 }
 
-func (s ClientState) UpdatePlayer(p *player) {
+func (s ClientState) UpdatePlayer(p *game.Player) {
 	p.Cursor.SetPosition(s.CurPos.X, s.CurPos.Y)
 	p.CursorOffset = p.Cursor.PositionVect()
 	p.CursorOffset.Sub(p.Object.PositionVect())
@@ -85,7 +85,7 @@ func (s ClientState) UpdatePlayer(p *player) {
 	p.RightWeapon.ToShoot = s.RW
 }
 
-func (s ServerState) UpdatePlayer(p *player) {
+func (s ServerState) UpdatePlayer(p *game.Player) {
 	p.Object.SetPosition(s.Pos.X, s.Pos.Y)
 	p.Object.SetRotation(s.Rot)
 	p.Object.SetVelocity(s.Vel.X, s.Vel.Y)

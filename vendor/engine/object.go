@@ -8,11 +8,6 @@ import (
 	"phys"
 )
 
-// var Objects []*Object
-
-//Callback function type
-// type Callback func(float32)
-
 //Object is universal object type union 3d renderable object and 2d physic object
 type Object struct {
 	Name string
@@ -37,9 +32,6 @@ type Object struct {
 
 //Create object by instructons
 func (o *Object) Create(arts ...*Art) {
-	// if !e.render {
-	// 	return
-	// }
 	if NeedRender {
 		o.renderable = o.RI.Create(o.P)
 		for _, a := range arts {
@@ -51,20 +43,14 @@ func (o *Object) Create(arts ...*Art) {
 
 	if o.PI != nil {
 		o.shape = o.PI.Create(o.P)
-		// o.Shape.Body.UserData = o
 		if NeedRender {
 			o.renderable.AddShape(o.PI)
 		}
 	}
 
-	// if e.render {
 	if !o.P.Static {
-		// Objects = append(Objects, o)
 		Objects.Add(o)
-		// Objects[o] = true
 	}
-	// }
-	// log.Println("create", o.Name)
 }
 
 func (o *Object) SetUserData(i interface{}) {

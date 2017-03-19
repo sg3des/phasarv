@@ -20,7 +20,7 @@ func Client(userfunc func()) {
 	NeedRender = true
 
 	var err error
-	window, err = render.NewWindow(1200, 800, "phasarv-client")
+	window, err = render.NewWindow(600, 400, "phasarv-client")
 	if err != nil {
 		log.Panicln(err)
 	}
@@ -37,6 +37,7 @@ func Client(userfunc func()) {
 	LoopRender()
 }
 
+//Server mail function of network server part
 func Server(userfunc func()) {
 	phys.Init()
 

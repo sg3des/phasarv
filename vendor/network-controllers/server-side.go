@@ -13,7 +13,7 @@ import (
 
 var (
 	s       Server
-	players = make(map[string]*player)
+	clients = make(map[string]*cliPlayer)
 )
 
 func NewServer(addr string) {
@@ -26,23 +26,23 @@ func NewServer(addr string) {
 }
 
 func SendServersState(float32) bool {
-	if len(players) == 0 {
+	if len(clients) == 0 {
 		return true
 	}
 
 	timeNow := time.Now()
 
 	var states ServersState
-	for _, p := range players {
-		log.Println(p.Name, timeNow.After(p.deadline))
-		if timeNow.After(p.deadline) {
-			conn.DeleteClient(p.addr)
-			conn.Broadcast(Client.RemovePlayer, nil, p.Name)
-			delPlayer(p.Name)
-			p = nil
+	for _, c := range clients {
+		// log.Println(c.p.Name, c.p.CurrParam.Health, timeNow.After(c.deadline))
+		if timeNow.After(c.deadline) {
+			conn.DeleteClient(c.addr)
+			conn.Broadcast(Client.RemovePlayer, nil, c.p.Name)
+			delCliPlayer(c.p.Name)
+			c = nil
 			continue
 		}
-		states = append(states, p.GetServerState())
+		states = append(states, c.GetServerState())
 	}
 
 	err := conn.Broadcast(Client.PlayersServerState, nil, states)
@@ -66,55 +66,55 @@ func sendEnemy() {
 	}
 }
 
-func newPlayer(name string, req *network.Request) (p *player) {
+func newCliPlayer(name string, req *network.Request) (c *cliPlayer) {
 	var addr *net.UDPAddr
 	if req != nil {
 		addr = req.RemoteAddr
 	}
 
-	p = &player{db.GetPlayer(name), addr, resetDeadline()}
-	players[name] = p
+	c = &cliPlayer{db.GetPlayer(name), addr, resetDeadline()}
+	clients[name] = c
 
 	// p = db.GetPlayer(name)
 
 	// p := db.GetPlayer(name)
 
-	return p
+	return c
 }
 
-func addPlayer(p *game.Player) *player {
-	player := &player{p, nil, time.Time{}}
-	players[p.Name] = player
-	return player
+func addCliPlayer(p *game.Player) *cliPlayer {
+	c := &cliPlayer{p, nil, time.Time{}}
+	clients[p.Name] = c
+	return c
 }
 
-func delPlayer(name string) {
-	delete(players, name)
+func delCliPlayer(name string) {
+	delete(clients, name)
 }
 
 //delPlayerByString remove player by string key
-func delPlayerByReq(req *network.Request) {
+func delCliPlayerByReq(req *network.Request) {
 	addr := req.RemoteAddr.String()
-	for _, p := range players {
-		if p.addr.String() == addr {
-			delete(players, p.Name)
+	for _, c := range clients {
+		if c.addr.String() == addr {
+			delete(clients, c.p.Name)
 			return
 		}
 	}
 }
 
-func lookupPlayer(name string, req *network.Request) (p *player, ok bool) {
+func lookupCliPlayer(name string, req *network.Request) (c *cliPlayer, ok bool) {
 
 	if req != nil {
 		addr := req.RemoteAddr.String()
-		for _, p := range players {
-			if p.addr.String() == addr {
-				return p, true
+		for _, c := range clients {
+			if c.addr.String() == addr {
+				return c, true
 			}
 		}
 	}
 
-	p, ok = players[name]
+	c, ok = clients[name]
 
 	return
 }
@@ -131,9 +131,10 @@ func (Server) Authorize(req *network.Request) interface{} {
 	}
 	log.Println("auth", name)
 
-	p := newPlayer(name, req)
-	p.CreatePlayer()
-	p.Object.AddCallback(p.ClientCursor, p.Movement, p.PlayerRotation)
+	c := newCliPlayer(name, req)
+	game.CreatePlayer(c.p)
+	// p.CreatePlayer()
+	c.p.Object.AddCallback(c.p.ClientCursor, c.p.Movement, c.p.PlayerRotation)
 
 	return db.GetPlayer(name)
 }
@@ -154,22 +155,22 @@ func (Server) PlayerState(req *network.Request) interface{} {
 		return nil
 	}
 
-	p, ok := lookupPlayer("", req)
+	c, ok := lookupCliPlayer("", req)
 	// p, ok := players[req.RemoteAddr.String()]
 	if !ok {
-		log.Println("WARNING player is not connected", req.RemoteAddr.String(), players)
+		log.Println("WARNING player is not connected", req.RemoteAddr.String(), clients)
 		return nil
 	}
 
-	p.deadline = resetDeadline()
+	c.deadline = resetDeadline()
 
-	s.UpdatePlayer(p)
+	s.UpdatePlayer(c.p)
 
 	return ServerState{
-		Vel:  p.Object.Velocity(),
-		AVel: p.Object.AngularVelocity(),
-		Pos:  p.Object.PositionVect(),
-		Rot:  p.Object.Rotation(),
+		Vel:  c.p.Object.Velocity(),
+		AVel: c.p.Object.AngularVelocity(),
+		Pos:  c.p.Object.PositionVect(),
+		Rot:  c.p.Object.Rotation(),
 	}
 }
 

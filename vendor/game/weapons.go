@@ -99,6 +99,8 @@ func (w *Weapon) Fire() {
 
 //Shoot create new bullet
 func (w *Weapon) Shoot() Bullet {
+	// log.Println("Shoot", w.Player.Name)
+
 	b := w.Bullet
 	b.Object = &engine.Object{}
 	*b.Object = *w.Bullet.Object

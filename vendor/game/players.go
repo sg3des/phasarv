@@ -112,6 +112,8 @@ func (p *Player) Collision(arb *phys.Arbiter) bool {
 }
 
 func (p *Player) Destroy() {
+	// log.Println("Destroy", p.Name)
+
 	p.Object.SetPosition(GetRandomPoint(20, 20))
 	p.Object.SetVelocity(0, 0)
 	p.Object.SetRotation(0)
@@ -135,6 +137,8 @@ func GetRandomPoint(x, y float32) (float32, float32) {
 }
 
 func (p *Player) ApplyDamage(damage float32) {
+	// log.Println("ApplyDamage", p.Name, damage)
+
 	p.CurrParam.Health -= damage
 	p.updateArt("health", p.CurrParam.Health)
 	if p.CurrParam.Health <= 0 {

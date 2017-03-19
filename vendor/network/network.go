@@ -269,10 +269,7 @@ func (c *Connection) Broadcast(reqfunc, resfunc interface{}, data interface{}) e
 		return err
 	}
 
-	log.Println(len(c.Clients))
-
 	for i, client := range c.Clients {
-
 		_, err := c.Conn.WriteTo(bMsg, client)
 		if err != nil {
 			c.DeleteClientN(i)

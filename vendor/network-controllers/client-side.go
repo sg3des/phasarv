@@ -14,7 +14,7 @@ import (
 
 var (
 	c           Client
-	localplayer *player
+	localplayer *cliPlayer
 	pshadow     *engine.Object
 )
 
@@ -51,7 +51,7 @@ func (Client) LoadLocalPlayer(req *network.Request) interface{} {
 	game.CreateLocalPlayer(p)
 	p.Object.AddCallback(sendLocalPlayerState)
 
-	localplayer = addPlayer(p)
+	localplayer = addCliPlayer(p)
 
 	// localplayer = &player{p, req.RemoteAddr, time.Time{}}
 	// *localplayer =
@@ -79,7 +79,7 @@ func (Client) LoadPlayer(req *network.Request) interface{} {
 	}
 
 	game.CreatePlayer(&p)
-	addPlayer(&p)
+	addCliPlayer(&p)
 
 	return nil
 }
@@ -94,7 +94,7 @@ func (Client) RemovePlayer(req *network.Request) interface{} {
 	log.Println(name)
 
 	game.RemovePlayer(name)
-	delPlayer(name)
+	delCliPlayer(name)
 
 	return nil
 }
@@ -117,17 +117,17 @@ func (Client) LocalPlayerServerState(req *network.Request) interface{} {
 	pshadow.SetPosition(s.Pos.X, s.Pos.Y)
 	pshadow.SetRotation(s.Rot)
 
-	dist := localplayer.Object.DistancePoint(s.Pos.X, s.Pos.Y)
+	dist := localplayer.p.Object.DistancePoint(s.Pos.X, s.Pos.Y)
 	if dist > 2 {
 		log.Println("WARNING! need correct position")
-		localplayer.Object.SetPosition(s.Pos.X, s.Pos.Y)
-		localplayer.Object.SetRotation(s.Rot)
-		s.UpdatePlayer(localplayer)
+		localplayer.p.Object.SetPosition(s.Pos.X, s.Pos.Y)
+		localplayer.p.Object.SetRotation(s.Rot)
+		s.UpdatePlayer(localplayer.p)
 		return nil
 	}
 
-	localplayer.Object.SetVelocity(s.Vel.X, s.Vel.Y)
-	localplayer.Object.SetAngularVelocity(s.AVel)
+	localplayer.p.Object.SetVelocity(s.Vel.X, s.Vel.Y)
+	localplayer.p.Object.SetAngularVelocity(s.AVel)
 
 	return nil
 }
@@ -142,18 +142,18 @@ func (Client) PlayersServerState(req *network.Request) interface{} {
 	for _, s := range states {
 
 		//skip update for localplayer
-		if s.Name == localplayer.Name {
+		if localplayer != nil && s.Name == localplayer.p.Name {
 			// 	continue
 			pshadow.SetPosition(s.Pos.X, s.Pos.Y)
 			pshadow.SetRotation(s.Rot)
 
 		}
 
-		p, ok := lookupPlayer(s.Name, nil)
+		c, ok := lookupCliPlayer(s.Name, nil)
 		// log.Println(s.Name, p, ok)
 		// p, ok := game.LookupPlayer(s.Name)
 		if ok {
-			s.UpdatePlayer(p)
+			s.UpdatePlayer(c.p)
 		} else {
 			conn.SendMessage(Server.GetPlayer, Client.LoadPlayer, s.Name)
 		}
