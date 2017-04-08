@@ -20,8 +20,7 @@ var (
 	shadowmap   *fizzle.RenderShader
 
 	Renderables []*Renderable
-	// Renderables map[*Renderable]bool
-	Scene []*Renderable
+	Scene       []*Renderable
 )
 
 func renderInit(gfx graphicsprovider.GraphicsProvider, w, h int32) {
@@ -48,13 +47,17 @@ func renderInit(gfx graphicsprovider.GraphicsProvider, w, h int32) {
 func DrawFrame(dt float32, fps int) {
 	w, h := window.GetFramebufferSize()
 
+	// x, y, _ := camera.GetPosition().Elem()
+	// particlesUpdate(float64(dt), mgl32.Vec3{y, x, 0})
+
 	// clear the screen and reset our viewport
 	gfx.Viewport(0, 0, int32(w), int32(h))
 
-	// e.gfx.ClearColor(0.5, 0.5, 0.5, 1)
+	// gfx.ClearColor(0.5, 0.5, 0.5, 1)
 	gfx.Clear(graphicsprovider.COLOR_BUFFER_BIT | graphicsprovider.DEPTH_BUFFER_BIT)
 
-	nextFrame(mgl32.DegToRad(50), float32(w)/float32(h))
+	drawParticles(dt)
+	drawObjects(mgl32.DegToRad(50), float32(w)/float32(h))
 
 	//render ui
 	ui.RenderFrame.Text = []string{fmt.Sprintf("fps: %d dt: %f", fps, dt)}
@@ -65,19 +68,29 @@ func DrawFrame(dt float32, fps int) {
 	glfw.PollEvents()
 }
 
-func nextFrame(fov, aspect float32) {
+func drawObjects(fov, aspect float32) {
 	// make the projection and view matrixes
 	perspective = mgl32.Perspective(fov, aspect, 1.0, 100.0)
 	view = camera.GetViewMatrix()
 
-	for i, r := range Renderables {
-		if i >= len(Renderables) {
-			break
-		}
-		if r.needDestroy {
-			DeleteRenderables(i)
+	// log.Println(len(Renderables))
+
+	for i := 0; i < len(Renderables); i++ {
+		if Renderables[i].needDestroy {
+			DeleteRenderable(i)
+			// Renderables[i] = nil
+			i--
 		}
 	}
+
+	// for i, r := range Renderables {
+	// 	if i >= len(Renderables) {
+	// 		break
+	// 	}
+	// 	if r.needDestroy {
+	// 		DeleteRenderable(i)
+	// 	}
+	// }
 
 	// render not transparent bodies
 	for _, r := range Renderables {
@@ -88,30 +101,32 @@ func nextFrame(fov, aspect float32) {
 			// r = Renderables[i]
 		}
 		if !r.Transparent {
-			r.Render()
+			r.render()
 		}
 	}
 
 	// render not transparent scene objects
 	for _, r := range Scene {
 		if !r.Transparent {
-			r.Render()
+			r.render()
 		}
 	}
 
 	// render transparent bodies
 	for _, r := range Renderables {
 		if r.Transparent {
-			r.Render()
+			r.render()
 		}
 	}
 
 	// render transparent scene objects
 	for _, r := range Scene {
 		if r.Transparent {
-			r.Render()
+			r.render()
 		}
 	}
+
+	// particlesRender(perspective, view)
 
 	renderShadows()
 }
@@ -139,14 +154,21 @@ func renderShadows() {
 				render.DrawRenderableWithShader(r.Body, shadowmap, nil, lightToCast.ShadowMap.Projection, lightToCast.ShadowMap.View, camera)
 			}
 		}
+
 	}
+
 	render.EndShadowMapping()
 }
 
-func DeleteRenderables(i int) {
-	Renderables[i] = nil
-	Renderables[i] = Renderables[len(Renderables)-1]
+func DeleteRenderable(i int) {
+	copy(Renderables[i:], Renderables[i+1:])
+	Renderables[len(Renderables)-1] = nil // or the zero vRenderableslue of T
 	Renderables = Renderables[:len(Renderables)-1]
+
+	// Renderables[i] = nil
+	// Renderables[i] = Renderables[len(Renderables)-1]
+	// Renderables = Renderables[:len(Renderables)-1]
+
 }
 
 func renderUI(dt float64) {

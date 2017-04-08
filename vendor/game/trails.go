@@ -12,7 +12,12 @@ import (
 )
 
 func createTrail(p *engine.Object, piecelength float32, count int, offset mgl32.Vec2) {
+
+	p.AddTrail(offset.Vec3(0), count, point.P{0.2, piecelength, 1})
+	// p.NewTrail()
+
 	return
+
 	x, y := p.Position()
 	t := &Trail{
 		parent:    p,
@@ -38,7 +43,7 @@ func createTrail(p *engine.Object, piecelength float32, count int, offset mgl32.
 		// plane.AddCallback(trailFading)
 		p.AddChild(plane)
 		t.objects = append(t.objects, plane)
-		t.points = append(t.points, trialPoints{})
+		t.points = append(t.points, trailPoints{})
 		// plane.Node.Location[2] = -0.1
 	}
 
@@ -52,7 +57,7 @@ type Trail struct {
 	// prototype *engine.Object
 
 	objects []*engine.Object
-	points  []trialPoints
+	points  []trailPoints
 
 	maxLength float32
 	offset    mgl32.Vec2
@@ -61,22 +66,20 @@ type Trail struct {
 	y float32
 }
 
-type trialPoints struct {
+type trailPoints struct {
 	X, Y, Angle, Alpha float32
 }
 
-func (p *trialPoints) Vect() vect.Vect {
+func (p *trailPoints) Vect() vect.Vect {
 	return vect.Vect{p.X, p.Y}
 }
 
-func (p *trialPoints) Vec2() mgl32.Vec2 {
+func (p *trailPoints) Vec2() mgl32.Vec2 {
 	return mgl32.Vec2{p.X, p.Y}
 }
 
 func (t *Trail) trailCallback(dt float32) {
-
-	// return
-	//calculate alpha channel for trail pieces
+	// calculate alpha channel for trail pieces
 	// var sumAlpha float32
 	// for i, o := range t.objects {
 	// 	t.points[i].Alpha = t.points[i].Alpha - 1/float32(len(t.points)) - dt/2
@@ -118,8 +121,8 @@ func (t *Trail) trailCallback(dt float32) {
 	//if distance more then trail length, renew\shift trails
 	dist := vect.Dist(vect.Vect{px, py}, t.points[0].Vect())
 	if dist > t.maxLength {
-		point := trialPoints{px, py, t.parent.Rotation(), 1}
-		t.points = append([]trialPoints{point}, t.points[:len(t.points)]...)
+		point := trailPoints{px, py, t.parent.Rotation(), 1}
+		t.points = append([]trailPoints{point}, t.points[:len(t.points)]...)
 
 		for i, o := range t.objects {
 			o.SetPosition(t.points[i].X, t.points[i].Y)

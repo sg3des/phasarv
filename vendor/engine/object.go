@@ -5,6 +5,8 @@ import (
 	"point"
 	"render"
 
+	"github.com/go-gl/mathgl/mgl32"
+
 	"phys"
 )
 
@@ -81,6 +83,10 @@ func (o *Object) AddChild(child *Object) {
 	o.Childs[child] = true
 }
 
+func (o *Object) AddTrail(offset mgl32.Vec3, count int, size point.P) {
+	o.renderable.NewTrail(offset, count, size)
+}
+
 func (o *Object) SetDestroyFunc(f func()) {
 	o.destroyFunc = f
 }
@@ -91,13 +97,16 @@ func (o *Object) Destroy() {
 		return
 	}
 
-	o.needDestroy = true
+	// o.needDestroy = true
 
 	if o.shape != nil {
 		o.shape.Body.Enabled = false
 		phys.RemoveBody(o.shape.Body)
 		// space.RemoveShape(o.Shape) - crash need TODO
 	}
+
+	o.renderable.Destroy()
+	o.needDestroy = true
 
 	// Objects[o] = false
 
@@ -111,13 +120,16 @@ func (o *Object) Destroy() {
 }
 
 func (o *Object) Remove() {
-	o.needDestroy = true
+	// o.needDestroy = true
 
 	if o.shape != nil {
 		o.shape.Body.Enabled = false
 		phys.RemoveBody(o.shape.Body)
 		// space.RemoveShape(o.Shape) - crash need TODO
 	}
+
+	o.renderable.Destroy()
+	o.needDestroy = true
 
 	// Objects[o] = false
 

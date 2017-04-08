@@ -73,7 +73,7 @@ func (b *Bullet) Rocket() {
 	b.Object.SetVelocity(b.Player.Object.VectorSide(b.Object.PI.Mass*5*b.Weapon.Pos.Y, 1.5704))
 	// b.Target = b.Player.Cursor.PositionVec2()
 
-	createTrail(b.Object, 0.75, int(b.MovSpeed), mgl32.Vec2{-0.5})
+	createTrail(b.Object, 0.3, int(b.MovSpeed), mgl32.Vec2{-0.2, 0})
 
 	b.Shoot = true
 	return

@@ -16,8 +16,6 @@ import (
 type Renderable struct {
 	Body  *fizzle.Renderable
 	Shape *fizzle.Renderable
-	// ShapeParam
-	// physShape *phys.Shape
 
 	Shadow      bool
 	Transparent bool
@@ -31,11 +29,9 @@ type Renderable struct {
 	P  point.Param
 	RI *Instruction
 	PI *phys.Instruction
-}
 
-// type ShapeParam struct {
-// 	Angle
-// }
+	particles []*Particle
+}
 
 func (r *Renderable) AppendArt(a *Art) {
 	if a.Static {
@@ -79,6 +75,8 @@ func (r *Renderable) AddShape(pi *phys.Instruction) {
 
 func (i *Instruction) createBody(p point.Param) (body *fizzle.Renderable) {
 	switch i.MeshName {
+	case "trail":
+		body = fizzle.CreatePlaneV(mgl32.Vec3{-p.Size.Y / 2, -p.Size.X / 2, 0}, mgl32.Vec3{p.Size.Y / 2, p.Size.X / 2, 0})
 	case "plane":
 		body = fizzle.CreatePlaneV(mgl32.Vec3{0, -p.Size.X / 2, 0}, mgl32.Vec3{p.Size.Y, p.Size.X / 2, 0})
 	case "box":
@@ -142,7 +140,7 @@ func (i *Instruction) CreateArt(p point.Param) *Art {
 	return a
 }
 
-func (r *Renderable) Render() {
+func (r *Renderable) render() {
 	if r.Body == nil {
 		r.Body = r.RI.createBody(r.P)
 	}
@@ -236,6 +234,12 @@ func (r *Renderable) Angle() float32 {
 func (r *Renderable) Destroy() {
 	// r.needDestroy = true
 	r.needDestroy = true
+	for _, p := range r.particles {
+		p.Destroy()
+	}
+	r = nil
+
+	// r = nil
 
 	// delete(Renderables, r)
 	// delete(Renderables, r)

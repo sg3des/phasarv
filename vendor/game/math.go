@@ -87,6 +87,8 @@ func getCursorPos(x, y, w, h float32, campos mgl32.Vec3) (float32, float32) {
 
 	x = (x-w/2)/d*campos.Z() + campos.X()
 	y = (h/2-y)/d*campos.Z() + campos.Y()
+
+	// mgl32.ScreenToGLCoords(x, y, screenWidth, screenHeight)
 	// y = (y-float32(h)/2)/820*campos.Z() + campos.Y()
 
 	// log.Println(x, y)

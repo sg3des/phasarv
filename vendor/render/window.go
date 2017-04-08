@@ -76,9 +76,13 @@ func initOpenGL() error {
 
 	fizzle.SetGraphics(gfx)
 
+	gfx.Enable(graphicsprovider.CULL_FACE)
+	gfx.Enable(graphicsprovider.DEPTH_TEST)
 	gfx.Enable(graphicsprovider.TEXTURE_2D)
+	gfx.Enable(graphicsprovider.PROGRAM_POINT_SIZE)
 	gfx.Enable(graphicsprovider.BLEND)
-	// e.gfx.Enable(graphicsprovider.SCISSOR_TEST)
+
+	// gfx.Enable(graphicsprovider.SCISSOR_TEST)
 
 	// e.gfx.Enable(graphicsprovider.CULL_FACE)
 	// e.gfx.Enable(graphicsprovider.DEPTH_TEST)

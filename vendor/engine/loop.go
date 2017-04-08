@@ -4,6 +4,7 @@ import (
 	"engine/frames"
 	"phys"
 	"render"
+	"runtime"
 	"time"
 )
 
@@ -18,8 +19,14 @@ func LoopServer() {
 }
 
 func LoopRender() {
+	var mem runtime.MemStats
+
 	frame := frames.NewFrame()
 	for !window.ShouldClose() {
+		runtime.ReadMemStats(&mem)
+
+		// log.Println(mem.Alloc/1024, mem.TotalAlloc/1024, mem.HeapAlloc/1024, mem.HeapSys/1024)
+
 		dt, fps := frame.Next()
 
 		frameLogic(dt)

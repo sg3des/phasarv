@@ -61,8 +61,8 @@ func (p *Player) CreatePlayer() {
 	}
 
 	if p.InitParam.MovSpeed > 5 && NeedRender {
-		createTrail(p.Object, 0.5, int(p.InitParam.MovSpeed), mgl32.Vec2{1.4, 2.95})
-		createTrail(p.Object, 0.5, int(p.InitParam.MovSpeed), mgl32.Vec2{1.4, -2.95})
+		// createTrail(p.Object, 0.5, int(p.InitParam.MovSpeed), mgl32.Vec2{1.2, 2.8})
+		// createTrail(p.Object, 0.5, int(p.InitParam.MovSpeed), mgl32.Vec2{1.2, -2.8})
 	}
 
 	p.Object.SetUserData(p)

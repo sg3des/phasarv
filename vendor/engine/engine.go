@@ -20,7 +20,7 @@ func Client(userfunc func()) {
 	NeedRender = true
 
 	var err error
-	window, err = render.NewWindow(600, 400, "phasarv-client")
+	window, err = render.NewWindow(1200, 800, "phasarv-client")
 	if err != nil {
 		log.Panicln(err)
 	}
