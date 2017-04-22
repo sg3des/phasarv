@@ -1,7 +1,5 @@
 package engine
 
-import "phys"
-
 // type PhysInstruction struct {
 // 	W, H, Mass float32
 
@@ -19,21 +17,21 @@ import "phys"
 // group 2 is players group
 
 //Hit return object under point
-func Hit(x, y float32) interface{} {
-	shape := phys.Hit(x, y, 2)
+// func Hit(x, y float32, group int) interface{} {
+// 	shape := phys.Hit(x, y, 1)
 
-	if shape != nil && shape.UserData != nil && shape.Group == 2 {
-		return shape.UserData
-		// switch shape.UserData.(type) {
-		// 	case
-		// }
-		// objects = append(objects, shape.Body.UserData.(*Object))
-		// object = shape.Body.UserData.(*Object)
-		// if
-	}
+// 	if shape != nil && shape.UserData != nil && shape.Group == 1 {
+// 		return shape.UserData
+// 		// switch shape.UserData.(type) {
+// 		// 	case
+// 		// }
+// 		// objects = append(objects, shape.Body.UserData.(*Object))
+// 		// object = shape.Body.UserData.(*Object)
+// 		// if
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 // //Raycast
 // func Raycast(x0, y0, x1, y1 float32, ignoreBody *phys.Body) (players []interface{}) {

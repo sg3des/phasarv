@@ -160,19 +160,6 @@ func (p *Particle) calculate(dt float32) {
 		}
 
 		o.Body.Material.DiffuseColor[3] = p.points[i].Alpha
-
-		// if i == 0 {
-		// 	o.Body.Material.DiffuseColor[0] = 1
-		// 	o.Body.Material.DiffuseColor[1] = 0.3
-		// 	o.Body.Material.DiffuseColor[2] = 0
-		// 	// o.Body.Scale = mgl32.Vec3{1.1, 2, 1}
-		// }
-		// if i == 1 {
-		// 	o.Body.Material.DiffuseColor[0] = 1
-		// 	o.Body.Material.DiffuseColor[1] = 0.6
-		// 	o.Body.Material.DiffuseColor[2] = 0.1
-		// 	o.Body.Scale = mgl32.Vec3{1.1, 1.5, 1}
-		// }
 	}
 
 	p.objects[0].Body.Material.DiffuseColor[0] = 1
@@ -185,7 +172,7 @@ func (p *Particle) calculate(dt float32) {
 	p.objects[1].Body.Scale = mgl32.Vec3{1.1, 1.5, 1}
 
 	// log.Println(summAlpha, p.parent == nil, p.parent.needDestroy)
-	if summAlpha == 0 && (p.parent == nil || p.parent.needDestroy) {
+	if summAlpha <= 1 && (p.parent == nil || p.parent.needDestroy) {
 		p.objects = nil
 	}
 }

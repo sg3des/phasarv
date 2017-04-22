@@ -182,6 +182,9 @@ func (space *Space) Step(dt float32) {
 	space.stamp++
 
 	for _, body := range space.Bodies {
+		// for _, s := range body.Shapes {
+		// 	log.Println(s.Group, body.Mass())
+		// }
 		if body.Enabled {
 			body.UpdatePosition(dt)
 			body.UpdateShapes()
@@ -939,6 +942,7 @@ func (space *Space) RayCastAll(begin vect.Vect, direction vect.Vect, group int, 
 		}
 
 		for _, shape := range body.Shapes {
+
 			if shape.Group != group {
 				continue
 			}

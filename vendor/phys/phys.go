@@ -6,6 +6,10 @@ import (
 	"point"
 )
 
+const GROUP_BULLET = 0
+const GROUP_PLAYER = 1
+const GROUP_STATIC = 2
+
 var space *Space
 
 func Init() {

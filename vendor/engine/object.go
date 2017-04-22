@@ -30,6 +30,8 @@ type Object struct {
 	P  point.Param
 	RI *render.Instruction
 	PI *phys.Instruction
+
+	UserData interface{}
 }
 
 //Create object by instructons
@@ -45,6 +47,7 @@ func (o *Object) Create(arts ...*Art) {
 
 	if o.PI != nil {
 		o.shape = o.PI.Create(o.P)
+		o.shape.UserData = o
 		if NeedRender {
 			o.renderable.AddShape(o.PI)
 		}
@@ -56,10 +59,11 @@ func (o *Object) Create(arts ...*Art) {
 }
 
 func (o *Object) SetUserData(i interface{}) {
-	if o.shape == nil {
-		log.Fatalln("shape not created, name:", o.Name)
-	}
-	o.shape.UserData = i
+	// if o.shape == nil {
+	// 	log.Fatalln("shape not created, name:", o.Name)
+	// }
+	// o.shape.UserData = i
+	o.UserData = i
 }
 
 func (o *Object) AddCallback(fs ...func(float32)) {

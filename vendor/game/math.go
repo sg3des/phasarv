@@ -3,6 +3,7 @@ package game
 import (
 	"engine"
 	"math"
+	"phys"
 
 	"phys/vect"
 
@@ -20,22 +21,30 @@ import (
 // }
 
 func GetPlayerInPoint(x, y float32) *Player {
-	if userData := engine.Hit(x, y); userData != nil {
-		return userData.(*Player)
+	shape := phys.Hit(x, y, phys.GROUP_PLAYER)
+	if shape == nil {
+		return nil
 	}
-	return nil
+
+	return shape.UserData.(*engine.Object).UserData.(*Player)
+
+	// if userData := engine.Hit(x, y); userData != nil {
+	// 	return userData.(*engine.Object)
+	// }
+	// return nil
 }
 
-func GetNearPlayerByRay(x0, y0, x1, y1 float32, ignorePlayer *Player) (p *Player) {
+func GetNearObjectByRay(x0, y0, x1, y1 float32, ignoreObject *engine.Object) (o *engine.Object, shortDist float32) {
 
-	userdatas := ignorePlayer.Object.Raycast(x0, y0, x1, y1)
+	objects := ignoreObject.Raycast(x0, y0, x1, y1)
 
-	var shortDistance float32 = 999
-	for _, userdata := range userdatas {
-		if userdata != nil {
-			if dist := userdata.(*Player).Object.DistancePoint(x0, y0); dist < shortDistance {
-				shortDistance = dist
-				p = userdata.(*Player)
+	shortDist = 999
+	for _, obj := range objects {
+
+		if obj != nil {
+			if dist := obj.DistancePoint(x0, y0); dist < shortDist {
+				shortDist = dist
+				o = obj
 			}
 		}
 	}

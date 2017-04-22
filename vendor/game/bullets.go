@@ -59,11 +59,10 @@ func (b *Bullet) Rocket() {
 	if b.Weapon.SubType == Weapons.RocketType.Homing {
 
 		if b.TargetPlayer == nil {
-			target := GetPlayerInPoint(b.Player.Cursor.Position())
-			if target == nil {
+			b.TargetPlayer = GetPlayerInPoint(b.Player.Cursor.Position())
+			if b.TargetPlayer == nil {
 				b.Weapon.DelayTime = time.Time{}
 			}
-			b.TargetPlayer = target
 		}
 
 	}
@@ -93,8 +92,12 @@ func (b *Bullet) Laser() {
 	tx += x
 	ty += y
 
-	if target := GetNearPlayerByRay(x, y, tx, ty, b.Player); target != nil {
-		target.ApplyDamage(b.Damage)
+	o, dist := GetNearObjectByRay(x, y, tx, ty, b.Player.Object)
+	if o != nil {
+		if o.UserData != nil {
+			o.UserData.(*Player).ApplyDamage(b.Damage)
+		}
+		h = dist
 	}
 
 	b.Object.P.Size.Y = h
@@ -204,41 +207,59 @@ func (b *Bullet) Destroy() {
 
 //Collision event bullet collision
 func (b *Bullet) Collision(arb *phys.Arbiter) bool {
-	if arb.ShapeA.UserData == nil || arb.ShapeB.UserData == nil {
-		//then one of objects is scene object
-		b.Destroy()
-		return true
-	}
+	// if arb.ShapeA.UserData == nil || arb.ShapeB.UserData == nil {
+	// 	//then one of objects is scene object
+	// 	b.Destroy()
+	// 	return true
+	// }
 
-	p, b := resolveCollisionShapes(arb.ShapeA, arb.ShapeB)
-	if p == nil {
-		//then both shapes is bullets
-		return false
-	}
-	if p == b.Player {
-		//then player is parent of bullet
-		return false
-	}
+	b, target := resolveCollisionShapes(arb.ShapeA, arb.ShapeB)
+	// log.Println(b, p)
 	if b == nil {
-		log.Fatalln("WTF?!? bullet not found")
+		log.Fatalln("WTF?!? bullet in collision not found")
 	}
 
-	p.ApplyDamage(b.Damage)
-
+	if p, ok := target.UserData.(*Player); ok {
+		if p == b.Player {
+			return false
+		}
+		p.ApplyDamage(b.Damage)
+	}
 	b.Destroy()
 	return true
+
+	// if p == nil {
+	// 	//then both shapes is bullets
+	// 	return false
+	// }
+	// if p == b.Player {
+	// 	//then player is parent of bullet
+	// 	return false
+	// }
+	// if b == nil {
+	// 	log.Fatalln("WTF?!? bullet not found")
+	// }
+
+	// p.ApplyDamage(b.Damage)
+
+	// b.Destroy()
+	// return true
 }
 
-func resolveCollisionShapes(shapes ...*phys.Shape) (p *Player, b *Bullet) {
+func resolveCollisionShapes(shapes ...*phys.Shape) (b *Bullet, target *engine.Object) {
 	for _, shape := range shapes {
-		if shape.UserData == nil {
-			continue
-		}
-		switch shape.UserData.(type) {
+		// if shape.UserData == nil {
+		// 	continue
+		// }
+		o := shape.UserData.(*engine.Object)
+		switch o.UserData.(type) {
 		case *Bullet:
-			b = shape.UserData.(*Bullet)
-		case *Player:
-			p = shape.UserData.(*Player)
+
+			b = o.UserData.(*Bullet)
+		// case *Player:
+		// 	p = o.UserData.(*Player)
+		default:
+			target = o
 		}
 	}
 	return

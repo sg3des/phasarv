@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"path"
+	"phys"
 
 	"gopkg.in/yaml.v2"
 )
@@ -41,7 +42,7 @@ func Load(name string) {
 	for _, o := range s.Objects {
 		o.P.Static = true
 		if o.PI != nil {
-			o.PI.Group = 1
+			o.PI.Group = phys.GROUP_STATIC
 		}
 		o.Create()
 	}

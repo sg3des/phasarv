@@ -42,7 +42,7 @@ type Player struct {
 
 func (p *Player) CreatePlayer() {
 	p.CurrParam = p.InitParam
-	p.Object.PI.Group = 2
+	// p.Object.PI.Group = 2
 
 	var hb *engine.Art
 	if NeedRender {

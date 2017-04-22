@@ -312,19 +312,25 @@ func (o *Object) AngularVelocity() float32 {
 	return o.shape.Body.AngularVelocity()
 }
 
-func (o *Object) Raycast(x0, y0, x1, y1 float32) (players []interface{}) {
+func (o *Object) Raycast(x0, y0, x1, y1 float32) (objects []*Object) {
 	if o.shape == nil || o.shape.Body == nil {
 		log.Println("failed raycast for non phys object", o.Name)
 		return
 	}
-	hits := phys.Hits(x0, y0, x1, y1, 2, o.shape.Body)
+
+	hits := phys.Hits(x0, y0, x1, y1, phys.GROUP_STATIC, o.shape.Body)
+	hits = append(hits, phys.Hits(x0, y0, x1, y1, phys.GROUP_PLAYER, o.shape.Body)...)
+
+	// log.Println(hits)
 
 	for _, hit := range hits {
-		if hit.Shape.Group != 2 || hit.Shape.UserData == nil {
-			continue
-		}
+		// log.Println(hit.Shape.Group, hit.Shape.UserData != nil)
+		// if hit.Shape.UserData == nil {
+		// 	log.
+		// 	continue
+		// }
 
-		players = append(players, hit.Shape.UserData)
+		objects = append(objects, hit.Shape.UserData.(*Object))
 		// if hit.Body.UserData.(*Object).Name == "bullet" {
 		// 	continue
 		// }
@@ -338,5 +344,7 @@ func (o *Object) Raycast(x0, y0, x1, y1 float32) (players []interface{}) {
 		// }
 		// log.Println(hit.MinT, x0, y0, hit.Body.Position(), hit.Body.UserData)
 	}
+
+	// log.Println(objects)
 	return
 }
