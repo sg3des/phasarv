@@ -85,7 +85,7 @@ func (p *Player) createWeapon(w *Weapon) {
 func (p *Player) CreateCursor(color mgl32.Vec4) {
 	cursor := &engine.Object{
 		Name: "cursor",
-		P:    point.Param{Size: point.P{1, 1, 0}},
+		P:    &point.Param{Size: point.P{1, 1, 0}},
 		RI: &render.Instruction{
 			MeshName: "plane",
 			Material: &materials.Instruction{Name: "cursor", Shader: "colortext2", DiffColor: color},
@@ -271,13 +271,13 @@ func NewHealthBar(value float32) *engine.Art {
 		Name:     "health",
 		Value:    value,
 		MaxValue: value,
-		P: point.Param{
+		P: &point.Param{
 			Pos:    point.P{-1, 1, 1.1},
-			Size:   point.P{0.2, 2, 0},
+			Size:   point.P{2, 0.2, 0},
 			Static: true,
 		},
 		RI: &render.Instruction{
-			MeshName: "plane",
+			MeshName: "vector",
 			Material: &materials.Instruction{Name: "healthBar", DiffColor: mgl32.Vec4{0, 0.6, 0, 0.7}},
 		},
 	}

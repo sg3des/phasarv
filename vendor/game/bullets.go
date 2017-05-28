@@ -30,10 +30,14 @@ type Bullet struct {
 
 //CreateObject create bullet for gun and rocket
 func (b *Bullet) CreateObject() {
-	b.Object.P = point.Param{
-		Pos:   point.PFromVect(b.Weapon.GetPosition()),
-		Angle: b.Weapon.GetAngle(),
-	}
+	b.Object.P.Pos = point.PFromVect(b.Weapon.GetPosition())
+	b.Object.P.Angle = b.Weapon.GetAngle()
+
+	// b.Object.P = &point.Param{
+
+	// 	Pos:   point.PFromVect(b.Weapon.GetPosition()),
+	// 	Angle: b.Weapon.GetAngle(),
+	// }
 
 	b.Object.Create()
 
@@ -69,7 +73,7 @@ func (b *Bullet) Rocket() {
 
 	b.CreateObject()
 	b.Object.AddCallback(b.RocketCallback)
-	b.Object.SetVelocity(b.Player.Object.VectorSide(b.Object.PI.Mass*5*b.Weapon.Pos.Y, 1.5704))
+	b.Object.SetVelocity(b.Player.Object.VectorSide(b.Object.PI.Mass*5*b.Weapon.Pos.X, -1.5704))
 	// b.Target = b.Player.Cursor.PositionVec2()
 
 	createTrail(b.Object, 0.3, int(b.MovSpeed), mgl32.Vec2{-0.2, 0})
@@ -100,9 +104,12 @@ func (b *Bullet) Laser() {
 		h = dist
 	}
 
-	b.Object.P.Size.Y = h
-	b.Object.P.Pos = point.P{x, y, 0}
-	b.Object.P.Angle = b.Player.Object.Rotation()
+	b.Object.P = &point.Param{
+		Size:  point.P{h, b.Object.P.Size.Y, b.Object.P.Size.Z},
+		Pos:   point.P{x, y, 0},
+		Angle: b.Player.Object.Rotation(),
+	}
+
 	b.Object.Create()
 
 	b.TimePoint = time.Now().Add(time.Second)

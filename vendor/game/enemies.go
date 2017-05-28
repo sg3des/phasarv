@@ -20,7 +20,7 @@ func CreateEnemy() {
 		Name: "enemy0",
 		Object: &engine.Object{
 			Name: "enemy",
-			P: point.Param{
+			P: &point.Param{
 				Pos: point.P{x, y, 0},
 			},
 			RI: &render.Instruction{
@@ -29,7 +29,7 @@ func CreateEnemy() {
 
 				Shadow: true,
 			},
-			PI: &phys.Instruction{W: 1, H: 1, Mass: 12, Group: 1, ShapeType: phys.ShapeType_Box},
+			PI: &phys.Instruction{Mass: 12, Group: 1, ShapeType: phys.ShapeType_Box},
 		},
 
 		InitParam: PlayerParam{
@@ -53,7 +53,8 @@ func CreateEnemy() {
 						MeshName: "rocket",
 						Material: &materials.Instruction{Name: "color", Texture: "gray", Shader: "color"},
 					},
-					PI: &phys.Instruction{W: 0.1, H: 0.1, Mass: 1},
+					P:  &point.Param{Size: point.P{0.1, 0.1, 0.1}},
+					PI: &phys.Instruction{Mass: 1},
 				},
 			},
 			AttackRate: 1000 * time.Millisecond,

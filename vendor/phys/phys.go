@@ -19,21 +19,24 @@ func Init() {
 }
 
 func NextFrame(dt float32) {
+	if space == nil {
+		return
+	}
 	space.Step(dt)
 }
 
 type Instruction struct {
-	W, H, Mass float32
-
-	ShapeType
-	Group int
+	Mass      float32
+	ShapeType ShapeType
+	Group     int
 }
 
-func (i *Instruction) Create(p point.Param) *Shape {
-	shape := i.createShape()
+func (i *Instruction) Create(p *point.Param) *Shape {
+	shape := i.createShape(p.Size)
 
 	var body *Body
 	if i.Mass > 0 {
+		log.Println(shape.Moment(i.Mass))
 		body = NewBody(i.Mass, shape.Moment(i.Mass))
 		body.SetMass(i.Mass)
 	} else {
@@ -50,21 +53,21 @@ func (i *Instruction) Create(p point.Param) *Shape {
 	return shape
 }
 
-func (i *Instruction) createShape() (shape *Shape) {
+func (i *Instruction) createShape(p point.P) (shape *Shape) {
 	switch i.ShapeType {
 	case ShapeType_Polygon:
 		verts := Vertices{
-			vect.Vect{0, i.H / 2},
-			vect.Vect{i.W / 2, -i.H / 2},
-			vect.Vect{-i.W / 2, -i.H / 2},
+			vect.Vect{0, p.X / 2},
+			vect.Vect{p.X / 2, -p.Y / 2},
+			vect.Vect{-p.X / 2, -p.Y / 2},
 		}
 		shape = NewPolygon(verts, vect.Vector_Zero)
 	case ShapeType_Box:
-		shape = NewBox(vect.Vector_Zero, i.W, i.H)
+		shape = NewBox(vect.Vector_Zero, p.X, p.Y)
 	case ShapeType_Circle:
-		shape = NewCircle(vect.Vector_Zero, i.W)
+		shape = NewCircle(vect.Vector_Zero, p.X)
 	default:
-		log.Fatalf("WARNING: shape type `%s` not yet!", i.ShapeType)
+		log.Fatalf("WARNING: shape type `%s` not yet!", i.ShapeType.ToString())
 	}
 	shape.Group = i.Group
 	// shape.SetElasticity(1.1)

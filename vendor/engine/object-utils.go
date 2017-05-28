@@ -11,15 +11,15 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-func (o *Object) Angle() float32 {
-	if o.shape != nil {
-		return o.shape.Body.Angle()
-	}
+// func (o *Object) Angle() float32 {
+// 	if o.shape != nil {
+// 		return o.shape.Body.Angle()
+// 	}
 
-	return o.P.Angle
-	// x, y := o.Position()
-	// return (&vect.Vect{x, y}).Angle()
-}
+// 	return o.P.Angle
+// 	// x, y := o.Position()
+// 	// return (&vect.Vect{x, y}).Angle()
+// }
 
 // func (o *Object) Length(x, y float32) float32 {
 // 	ox, oy := o.Position()
@@ -264,7 +264,7 @@ func (o *Object) SubAngleToPoint(b mgl32.Vec2, off mgl32.Vec2) float32 {
 
 	// log.Println(off.Len(), v)
 	a := o.PositionVec2().Add(v)
-	oAngleVec := vect.FromAngle(o.Angle())
+	oAngleVec := vect.FromAngle(o.Rotation())
 
 	abAngle := float32(math.Atan2(float64(b.Y()-a.Y()), float64(b.X()-a.X())))
 	abAngleVec := vect.FromAngle(abAngle)

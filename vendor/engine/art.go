@@ -15,7 +15,7 @@ type Art struct {
 
 	Art *render.Art
 
-	P  point.Param
+	P  *point.Param
 	RI *render.Instruction
 }
 

@@ -122,18 +122,18 @@ func (w *Weapon) Shoot() Bullet {
 
 func (w *Weapon) GetPosition() vect.Vect {
 	v1 := w.Player.Object.PositionVect()
-	angle := w.Player.Object.Angle()
+	angle := w.Player.Object.Rotation()
 
 	return v1.SubPoint(angle, w.Pos)
 }
 
 func (w *Weapon) GetAngle() (ang float32) {
-	return w.GetSubAngle() + w.Player.Object.Angle()
+	return w.GetSubAngle() + w.Player.Object.Rotation()
 }
 
 func (w *Weapon) GetSubAngle() (ang float32) {
 	v1 := w.GetPosition()
-	angle := w.Player.Object.Angle()
+	angle := w.Player.Object.Rotation()
 
 	ang = v1.SubAngle(angle, w.Player.Cursor.PositionVect())
 
@@ -168,12 +168,12 @@ func (w *Weapon) NewAim() *engine.Art {
 		Name:     "aim",
 		Value:    ar,
 		MaxValue: ar,
-		P: point.Param{
+		P: &point.Param{
 			Pos:  point.PFromVect(w.Pos),
-			Size: point.P{0.1, ar, 0},
+			Size: point.P{ar, 0.1, 0},
 		},
 		RI: &render.Instruction{
-			MeshName: "plane",
+			MeshName: "vector",
 			Material: &materials.Instruction{Name: "aim", Texture: "laser", Shader: "colortext2", DiffColor: mgl32.Vec4{0.9, 0.9, 0.9, 0.5}},
 		},
 	}

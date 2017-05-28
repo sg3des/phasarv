@@ -1,0 +1,22 @@
+name: "room_index"
+
+_ground: &ground
+  name: "background"
+  p:
+    size: 
+      x: 65
+      y: 65
+      z: 65
+
+    pos:
+      z: -5
+  ri:
+    meshname: "plane"
+    material:
+      name: "background"
+      texture: "back"
+      shader: "basic"
+   
+
+objects:
+  - <<: *ground

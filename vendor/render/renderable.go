@@ -26,7 +26,7 @@ type Renderable struct {
 
 	arts []*Art
 
-	P  point.Param
+	P  *point.Param
 	RI *Instruction
 	PI *phys.Instruction
 
@@ -51,7 +51,7 @@ type Instruction struct {
 	Transparent bool
 }
 
-func (i *Instruction) Create(p point.Param) *Renderable {
+func (i *Instruction) Create(p *point.Param) *Renderable {
 	r := &Renderable{
 		Shadow:      i.Shadow,
 		Transparent: i.Transparent,
@@ -73,15 +73,15 @@ func (r *Renderable) AddShape(pi *phys.Instruction) {
 	r.PI = pi
 }
 
-func (i *Instruction) createBody(p point.Param) (body *fizzle.Renderable) {
+func (i *Instruction) createBody(p *point.Param) (body *fizzle.Renderable) {
 	switch i.MeshName {
-	case "trail":
-		body = fizzle.CreatePlaneV(mgl32.Vec3{-p.Size.Y / 2, -p.Size.X / 2, 0}, mgl32.Vec3{p.Size.Y / 2, p.Size.X / 2, 0})
 	case "plane":
-		body = fizzle.CreatePlaneV(mgl32.Vec3{0, -p.Size.X / 2, 0}, mgl32.Vec3{p.Size.Y, p.Size.X / 2, 0})
+		body = fizzle.CreatePlaneV(mgl32.Vec3{-p.Size.X / 2, -p.Size.Y / 2, 0}, mgl32.Vec3{p.Size.X / 2, p.Size.Y / 2, 0})
+	case "vector":
+		body = fizzle.CreatePlaneV(mgl32.Vec3{0, -p.Size.Y / 2, 0}, mgl32.Vec3{p.Size.X, p.Size.Y / 2, 0})
 	case "box":
 		log.Println("warning: fixed size")
-		body = fizzle.CreateCube(-2, -2, -2, 2, 2, 2)
+		body = fizzle.CreateCube(-1, -1, -0.5, 1, 1, 0.5)
 	default:
 		body = assets.GetModel(i.MeshName)
 	}
@@ -93,21 +93,22 @@ func (i *Instruction) createBody(p point.Param) (body *fizzle.Renderable) {
 	return body
 }
 
-func (r *Renderable) createRenderableShape(i *phys.Instruction) (renderShape *fizzle.Renderable) {
-	switch i.ShapeType {
+func (r *Renderable) createRenderableShape() (renderShape *fizzle.Renderable) {
+	switch r.PI.ShapeType {
 	case phys.ShapeType_Box:
 		// shape := physShape.GetAsBox()
 		// w := shape.Width
 		// h := shape.Height
-		renderShape = fizzle.CreateWireframeCube(-i.H, -i.W, -0.1, i.H, i.W, 0.1)
+		// log.Println(p.Size)
+		renderShape = fizzle.CreateWireframeCube(-0.5, -0.5, -0.1, 0.5, 0.5, 0.1)
 	case phys.ShapeType_Circle:
-		renderShape = fizzle.CreateWireframeCircle(0, 0, 0, i.W, 32, fizzle.X|fizzle.Y)
+		renderShape = fizzle.CreateWireframeCircle(0, 0, 0.1, r.P.Size.X, 32, fizzle.X|fizzle.Y)
 	case phys.ShapeType_Polygon:
 		log.Println("shapetype polygon not yet ready")
 		// renderShape = createTriangle(o.Param.Phys.W, o.Param.Phys.H, 1)
 	default:
 
-		log.Fatalf("WARNING: shape type `%s` not yet!", i.ShapeType)
+		log.Fatalf("WARNING: shape type `%s` not yet!", r.PI.ShapeType)
 	}
 
 	renderShape.Material = (&materials.Instruction{Name: "shape", Shader: "color", DiffColor: mgl32.Vec4{1, 0.1, 0.1, 0.75}}).Create()
@@ -123,11 +124,11 @@ type Art struct {
 	Pos   mgl32.Vec3
 	Angle float32
 
-	P  point.Param
+	P  *point.Param
 	RI *Instruction
 }
 
-func (i *Instruction) CreateArt(p point.Param) *Art {
+func (i *Instruction) CreateArt(p *point.Param) *Art {
 	a := &Art{
 		// Body:   i.createBody(p),
 		Line:   i.Line,
@@ -152,6 +153,7 @@ func (r *Renderable) render() {
 
 	render.DrawRenderable(r.Body, nil, perspective, view, camera)
 
+	// log.Println(r.shapeType)
 	if r.PI != nil {
 		r.renderShape()
 	}
@@ -161,8 +163,8 @@ func (r *Renderable) render() {
 
 func (r *Renderable) renderShape() {
 	//create shape if need
-	if r.Shape == nil && r.PI != nil {
-		r.Shape = r.createRenderableShape(r.PI)
+	if r.Shape == nil {
+		r.Shape = r.createRenderableShape()
 	}
 
 	// if r.physShape == nil || r.physShape.Body == nil {

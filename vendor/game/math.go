@@ -157,7 +157,7 @@ func SubAngleObjectPoint(o *engine.Object, b mgl32.Vec2) (angle float32) {
 
 	// var oAngleVec float32
 	// if o.Shape != nil {
-	oAngleVec := vect.FromAngle(o.Angle())
+	oAngleVec := vect.FromAngle(o.Rotation())
 	// }else{
 	// 	oAngleVec =
 	// }

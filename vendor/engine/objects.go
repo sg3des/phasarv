@@ -1,6 +1,8 @@
 package engine
 
-import "github.com/go-gl/mathgl/mgl32"
+import (
+	"github.com/go-gl/mathgl/mgl32"
+)
 
 var Objects objects
 
@@ -43,23 +45,30 @@ func (objects) loopPhysToRender() {
 
 		// update rotation
 		ang := o.Rotation()
+		// log.Println(o.Name, ang)
+
 		if o.renderable.Shape != nil {
-			o.renderable.Shape.LocalRotation = mgl32.AnglesToQuat(0, 0, ang, 1)
+			o.renderable.Shape.LocalRotation = mgl32.AnglesToQuat(0, 0, ang, mgl32.XYZ)
 		}
 
 		//if rollAngle exist then need roll renderable object
 		if o.RollAngle != 0 {
-			q := mgl32.AnglesToQuat(0, 0, ang, 1).Mul(mgl32.AnglesToQuat(o.RollAngle, 0, 0, 1))
+			q := mgl32.AnglesToQuat(0, 0, ang, mgl32.XYZ).Mul(mgl32.AnglesToQuat(o.RollAngle, 0, 0, mgl32.XYZ))
 			o.renderable.Body.LocalRotation = q
 
 			shape := o.shape.GetAsBox()
-			shape.Width = o.PI.W - o.PI.W*o.ShapeWidthPercent()
+			// log.Println(shape.Width, shape.Height)
+			shape.Width = o.P.Size.X - o.P.Size.X*o.ShapeWidthPercent()
+			// log.Println(shape.Width)
 			if o.renderable.Shape != nil {
-				o.renderable.Shape.Scale = mgl32.Vec3{o.PI.H, shape.Width, 1}
+
+				o.renderable.Shape.Scale = mgl32.Vec3{o.P.Size.Y, shape.Width, 1}
+				// log.Println(o.renderable.Shape.Scale)
+
 			}
 			shape.UpdatePoly()
 		} else {
-			o.renderable.Body.LocalRotation = mgl32.AnglesToQuat(0, 0, ang, 1)
+			o.renderable.Body.LocalRotation = mgl32.AnglesToQuat(0, 0, ang, mgl32.XYZ)
 		}
 
 		// for _, art := range o.Arts {

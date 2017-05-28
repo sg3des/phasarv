@@ -15,8 +15,33 @@ var (
 	NeedRender bool
 )
 
+func NewWindow(name string, w, h int) error {
+	NeedRender = true
+
+	var err error
+	window, err = render.NewWindow(w, h, name)
+	if err != nil {
+		return err
+	}
+
+	window.SetSizeCallback(onWindowResize)
+	window.MakeContextCurrent()
+
+	return nil
+}
+
+//SetKeyCallback set function  callback each frame
+func SetKeyCallback(f func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey)) {
+	window.SetKeyCallback(f)
+}
+
+// onWindowResize is called when the window changes size
+func onWindowResize(wnd *glfw.Window, w int, h int) {
+	// ui.UIManager.AdviseResolution(int32(w), int32(h))
+}
+
 //Client main function create window and initialize opengl,render engine
-func Client(userfunc func()) {
+func Client(userfunc func(), keys glfw.KeyCallback) {
 	NeedRender = true
 
 	var err error
@@ -25,9 +50,18 @@ func Client(userfunc func()) {
 		log.Panicln(err)
 	}
 
-	err = assets.LoadAssets("assets/textures", "assets/shaders", "assets/models")
+	window.SetKeyCallback(keys)
+	window.SetSizeCallback(onWindowResize)
+	window.MakeContextCurrent()
+
+	err = assets.LoadAssets("assets/textures", "assets/shaders", "assets/models", "assets/fonts")
 	if err != nil {
 		log.Panicln("failed load assets, reason: %s", err)
+	}
+
+	err = render.InitUI("assets/ui")
+	if err != nil {
+		log.Panicln(err)
 	}
 
 	phys.Init()
@@ -59,10 +93,10 @@ func SetMouseCallback(f func(*glfw.Window, glfw.MouseButton, glfw.Action, glfw.M
 	window.SetMouseButtonCallback(f)
 }
 
-//SetKeyCallback set function  callback each frame
-func SetKeyCallback(f func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey)) {
-	window.SetKeyCallback(f)
-}
+// //SetKeyCallback set function  callback each frame
+// func SetKeyCallback(f func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey)) {
+// 	window.SetKeyCallback(f)
+// }
 
 //CursorPosition returned cursor position
 func CursorPosition() (float32, float32) {
@@ -74,4 +108,9 @@ func CursorPosition() (float32, float32) {
 func WindowSize() (float32, float32) {
 	w, h := window.GetSize()
 	return float32(w), float32(h)
+}
+
+func Close() {
+	window.SetShouldClose(true)
+	log.Println("Close")
 }

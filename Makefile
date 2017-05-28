@@ -3,14 +3,14 @@
 name=phasarv
 
 run: install
-	go build -o $(name) ./vendor/main && ./$(name) ${ARGS}
+	go build -o $(name) ./vendor/ && ./$(name) ${a}
 
 
 client: install
-	go build -o $(name) ./vendor/main && ./$(name) client
+	go build -o $(name) ./vendor/ && ./$(name) client
 
 clients: install
-	go build -o $(name) ./vendor/main
+	go build -o $(name) ./vendor/
 	./$(name) client & 
 	./$(name) client & 
 	sleep 1
@@ -37,10 +37,10 @@ get:
 	go get -u github.com/tbogdala/fizzle
 
 test:
-	go test -v vendor/main
+	go test -v vendor/
 
 network:
-	cd vendor/network && go test -v ${ARGS} ./ 
+	cd vendor/network && go test -v ${a} ./ 
 
 network-bench:
 	go run ./vendor/network/test-server/server.go &

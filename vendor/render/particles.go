@@ -188,9 +188,9 @@ func (parent *Renderable) NewTrail(offset mgl32.Vec3, count int, size point.P) {
 	for i := 0; i < count; i++ {
 		plane := &Renderable{
 			Transparent: true,
-			P:           point.Param{Size: size},
+			P:           &point.Param{Size: size},
 			RI: &Instruction{
-				MeshName:    "trail",
+				MeshName:    "plane",
 				Material:    &materials.Instruction{Name: "laser", Texture: "laser", Shader: "colorblend", DiffColor: mgl32.Vec4{1, 1, 1, 1}},
 				Transparent: true,
 			},

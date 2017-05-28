@@ -3,10 +3,11 @@ name: "scene00"
 _tree: &tree
   name: "tree"
   p:
-    z: -5
+    size: 
+      x: 3
+      z: -5
   pi:
-    h: 3
-    w: 3
+    ShapeType: 0
   ri:
     meshname: "tree"
     material:
@@ -19,11 +20,15 @@ _tree: &tree
 _ground: &ground
   name: "ground"
   p:
-    size: {10,10,10}
+    size: 
+      x: 60
+      y: 60
+      z: 60
+
     pos:
       z: -5
   ri:
-    meshname: "ground"
+    meshname: "plane"
     material:
       name: "ground"
       texture: "grass"

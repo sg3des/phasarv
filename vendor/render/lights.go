@@ -24,12 +24,18 @@ func (l *Light) Create() {
 	}
 
 	if l.Direct {
-		l.LightNode = render.NewDirectionalLight(l.Dir)
+		l.LightNode = render.NewDirectionalLight(l.Pos)
 	} else {
 		l.LightNode = render.NewPointLight(l.Pos)
 	}
 	if l.ShadowSize > 0 {
-		l.LightNode.CreateShadowMap(l.ShadowSize, 1, 400, l.Dir)
+		l.LightNode.CreateShadowMap(l.ShadowSize, 1, 100, l.Dir)
+		if l.Direct {
+			view := mgl32.Ortho(-100, 100, -100, 100, 1, 100)
+			l.LightNode.ShadowMap.BiasedMatrix = view
+			l.LightNode.ShadowMap.Projection = view
+			l.LightNode.ShadowMap.View = view
+		}
 	}
 
 	l.LightNode.Direction = l.Dir

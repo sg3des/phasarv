@@ -13,7 +13,7 @@ import (
 
 func createTrail(p *engine.Object, piecelength float32, count int, offset mgl32.Vec2) {
 
-	p.AddTrail(offset.Vec3(0), count, point.P{0.2, piecelength, 1})
+	p.AddTrail(offset.Vec3(0), count, point.P{piecelength, 0.2, 1})
 	// p.NewTrail()
 
 	return
@@ -30,8 +30,8 @@ func createTrail(p *engine.Object, piecelength float32, count int, offset mgl32.
 	for i := 0; i < count; i++ {
 		plane := &engine.Object{
 			Name: "trail",
-			P: point.Param{
-				Size: point.P{0.2, piecelength, 1},
+			P: &point.Param{
+				Size: point.P{piecelength, 0.2, 1},
 			},
 			RI: &render.Instruction{
 				MeshName:    "plane",

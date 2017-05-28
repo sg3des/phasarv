@@ -4,8 +4,9 @@ import (
 	"engine/frames"
 	"phys"
 	"render"
-	"runtime"
 	"time"
+
+	"github.com/go-gl/glfw/v3.1/glfw"
 )
 
 func LoopServer() {
@@ -19,11 +20,11 @@ func LoopServer() {
 }
 
 func LoopRender() {
-	var mem runtime.MemStats
+	// var mem runtime.MemStats
 
 	frame := frames.NewFrame()
 	for !window.ShouldClose() {
-		runtime.ReadMemStats(&mem)
+		// runtime.ReadMemStats(&mem)
 
 		// log.Println(mem.Alloc/1024, mem.TotalAlloc/1024, mem.HeapAlloc/1024, mem.HeapSys/1024)
 
@@ -31,6 +32,7 @@ func LoopRender() {
 
 		frameLogic(dt)
 		frameRender(dt, fps)
+		glfw.PollEvents()
 	}
 }
 

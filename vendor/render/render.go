@@ -1,12 +1,11 @@
 package render
 
 import (
-	"fmt"
+	"assets"
 	"log"
-	"ui"
 
-	"github.com/go-gl/glfw/v3.1/glfw"
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/sg3des/fizzgui"
 	"github.com/tbogdala/fizzle"
 	"github.com/tbogdala/fizzle/graphicsprovider"
 	"github.com/tbogdala/fizzle/renderer/forward"
@@ -23,7 +22,9 @@ var (
 	Scene       []*Renderable
 )
 
-func renderInit(gfx graphicsprovider.GraphicsProvider, w, h int32) {
+func renderInit(w, h int32) {
+	fizzle.SetGraphics(gfx)
+
 	render = forward.NewForwardRenderer(gfx)
 	render.ChangeResolution(w, h)
 
@@ -35,37 +36,24 @@ func renderInit(gfx graphicsprovider.GraphicsProvider, w, h int32) {
 	if err != nil {
 		log.Fatalln("failed init shadowmap", err)
 	}
-
-	// Renderables = make(map[*Renderable]bool)
-	// Scene = make(map[*Body]bool)
 }
-
-// func SetCamera(c *fizzle.YawPitchCamera) {
-// 	camera = c
-// }
 
 func DrawFrame(dt float32, fps int) {
 	w, h := window.GetFramebufferSize()
 
-	// x, y, _ := camera.GetPosition().Elem()
-	// particlesUpdate(float64(dt), mgl32.Vec3{y, x, 0})
-
 	// clear the screen and reset our viewport
 	gfx.Viewport(0, 0, int32(w), int32(h))
-
-	// gfx.ClearColor(0.5, 0.5, 0.5, 1)
+	// gfx.ClearColor(0.4, 0.4, 0.4, 1)
+	// gfx.ClearColor(0, 0, 0, 0.1)
 	gfx.Clear(graphicsprovider.COLOR_BUFFER_BIT | graphicsprovider.DEPTH_BUFFER_BIT)
 
 	drawParticles(dt)
 	drawObjects(mgl32.DegToRad(50), float32(w)/float32(h))
 
-	//render ui
-	ui.RenderFrame.Text = []string{fmt.Sprintf("fps: %d dt: %f", fps, dt)}
-	renderUI(float64(dt))
+	renderUI()
 
 	//end frame
 	window.SwapBuffers()
-	glfw.PollEvents()
 }
 
 func drawObjects(fov, aspect float32) {
@@ -73,32 +61,17 @@ func drawObjects(fov, aspect float32) {
 	perspective = mgl32.Perspective(fov, aspect, 1.0, 100.0)
 	view = camera.GetViewMatrix()
 
-	// log.Println(len(Renderables))
-
 	for i := 0; i < len(Renderables); i++ {
 		if Renderables[i].needDestroy {
 			DeleteRenderable(i)
-			// Renderables[i] = nil
 			i--
 		}
 	}
 
-	// for i, r := range Renderables {
-	// 	if i >= len(Renderables) {
-	// 		break
-	// 	}
-	// 	if r.needDestroy {
-	// 		DeleteRenderable(i)
-	// 	}
-	// }
-
 	// render not transparent bodies
 	for _, r := range Renderables {
 		if r == nil || r.needDestroy {
-			// log.Println("DELETEED!!!")
-			// DeleteRenderables(i)
 			continue
-			// r = Renderables[i]
 		}
 		if !r.Transparent {
 			r.render()
@@ -125,8 +98,6 @@ func drawObjects(fov, aspect float32) {
 			r.render()
 		}
 	}
-
-	// particlesRender(perspective, view)
 
 	renderShadows()
 }
@@ -164,19 +135,48 @@ func DeleteRenderable(i int) {
 	copy(Renderables[i:], Renderables[i+1:])
 	Renderables[len(Renderables)-1] = nil // or the zero vRenderableslue of T
 	Renderables = Renderables[:len(Renderables)-1]
-
-	// Renderables[i] = nil
-	// Renderables[i] = Renderables[len(Renderables)-1]
-	// Renderables = Renderables[:len(Renderables)-1]
-
 }
 
-func renderUI(dt float64) {
-	gfx.Disable(graphicsprovider.DEPTH_TEST)
-	gfx.Enable(graphicsprovider.SCISSOR_TEST)
+//
+// UI
+//
 
-	ui.Draw(dt)
+func InitUI(uiDir string) error {
+	fizzgui.DefaultPadding = fizzgui.Offset{10, 10, 10, 10}
+	fizzgui.BorderColor = fizzgui.Color(70, 130, 220, 50)
+	fizzgui.BorderColorHiglight = fizzgui.Color(140, 200, 200, 250)
 
-	gfx.Disable(graphicsprovider.SCISSOR_TEST)
-	gfx.Enable(graphicsprovider.DEPTH_TEST)
+	fizzgui.BGColorBtn = fizzgui.Color(15, 45, 55, 255)
+	fizzgui.BGColorBtnHover = fizzgui.Color(25, 55, 65, 255)
+	fizzgui.BGColorHighlight = fizzgui.Color(35, 65, 75, 255)
+
+	err := fizzgui.Init(window, gfx)
+	if err != nil {
+		return err
+	}
+
+	fizzgui.DefaultContainerStyle = fizzgui.NewStyle(mgl32.Vec4{}, fizzgui.Color(60, 70, 90, 225), fizzgui.BorderColor, 2)
+
+	return loadFonts()
+}
+
+func loadFonts() error {
+	for _, name := range []string{"Default", "Mono"} {
+		font := assets.GetFont(name)
+		_, err := fizzgui.NewFont(font.Name, font.Path, font.Size, fizzgui.FontGlyphs)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func renderUI() {
+	// gfx.Disable(graphicsprovider.DEPTH_TEST)
+	// gfx.Enable(graphicsprovider.SCISSOR_TEST)
+
+	fizzgui.Construct()
+
+	// gfx.Disable(graphicsprovider.SCISSOR_TEST)
+	// gfx.Enable(graphicsprovider.DEPTH_TEST)
 }

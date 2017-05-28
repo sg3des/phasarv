@@ -8,11 +8,11 @@ import (
 type ShapeType int
 
 const (
-	ShapeType_Circle  = 0
-	ShapeType_Segment = 1
-	ShapeType_Polygon = 2
-	ShapeType_Box     = 3
-	numShapes         = iota
+	ShapeType_Circle = iota
+	ShapeType_Segment
+	ShapeType_Polygon
+	ShapeType_Box
+	numShapes
 )
 
 func (st ShapeType) ToString() string {

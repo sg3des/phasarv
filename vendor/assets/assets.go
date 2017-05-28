@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/tbogdala/fizzle"
@@ -17,6 +18,7 @@ var (
 	Textures = make(map[string]*texture)
 	Shaders  = make(map[string]*fizzle.RenderShader)
 	Models   = make(map[string]*fizzle.Renderable)
+	Fonts    = make(map[string]*font)
 
 	textureMan = fizzle.NewTextureManager()
 )
@@ -28,8 +30,14 @@ type texture struct {
 	Specular graphicsprovider.Texture
 }
 
-func LoadAssets(texpath, shaderspath, modelspath string) error {
-	textures, err := filepath.Glob(filepath.Join(texpath, "*_D.png"))
+type font struct {
+	Path string
+	Name string
+	Size int
+}
+
+func LoadAssets(texDir, shadersDir, modelsDir, fontsDir string) error {
+	textures, err := filepath.Glob(filepath.Join(texDir, "*_D.png"))
 	if err != nil {
 		return err
 	}
@@ -40,7 +48,7 @@ func LoadAssets(texpath, shaderspath, modelspath string) error {
 		}
 	}
 
-	shaders, err := filepath.Glob(filepath.Join(shaderspath, "*.vs"))
+	shaders, err := filepath.Glob(filepath.Join(shadersDir, "*.vs"))
 	if err != nil {
 		return err
 	}
@@ -52,11 +60,11 @@ func LoadAssets(texpath, shaderspath, modelspath string) error {
 	}
 	Shaders["basic"], err = forward.CreateBasicShader()
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalln("error with basic shader:", err)
 	}
 	// Shaders["basic"] = Shaders[""]
 
-	models, err := filepath.Glob(filepath.Join(modelspath, "*.gombz"))
+	models, err := filepath.Glob(filepath.Join(modelsDir, "*.gombz"))
 	if err != nil {
 		return err
 	}
@@ -68,6 +76,35 @@ func LoadAssets(texpath, shaderspath, modelspath string) error {
 			return errors.New("failed to load model `" + model + "` reason: " + err.Error())
 		}
 		Models[modelname] = mesh
+	}
+
+	fonts, err := filepath.Glob(filepath.Join(fontsDir, "*.ttf"))
+	if err != nil {
+		return err
+	}
+	if len(fonts) == 0 {
+		return fmt.Errorf("fonts by path %s not found", fontsDir)
+	}
+
+	var size int
+	var name string
+	for _, fontpath := range fonts {
+		name = strings.TrimSuffix(filepath.Base(fontpath), filepath.Ext(fontpath))
+		ss := strings.Split(name, "-")
+		if len(ss) != 2 {
+			return errors.New("invalid font name: " + fontpath)
+		}
+		name = ss[0]
+		size, err = strconv.Atoi(ss[1])
+		if err != nil {
+			return err
+		}
+
+		Fonts[name] = &font{Path: fontpath, Name: name, Size: size}
+		// _, err = fizzgui.NewFont(name, font, size, fizzgui.FontGlyphs)
+		// if err != nil {
+		// 	return err
+		// }
 	}
 
 	return nil
@@ -151,4 +188,12 @@ func GetModel(name string) *fizzle.Renderable {
 	}
 
 	return mesh.Clone()
+}
+
+func GetFont(name string) *font {
+	font, ok := Fonts[name]
+	if !ok {
+		log.Panicln("ERROR: font not found!", name)
+	}
+	return font
 }

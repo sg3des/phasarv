@@ -27,7 +27,7 @@ type Object struct {
 	callbacks   []func(float32)
 	destroyFunc func()
 
-	P  point.Param
+	P  *point.Param
 	RI *render.Instruction
 	PI *phys.Instruction
 
@@ -49,6 +49,7 @@ func (o *Object) Create(arts ...*Art) {
 		o.shape = o.PI.Create(o.P)
 		o.shape.UserData = o
 		if NeedRender {
+			// log.Println(o.Name, o.PI.ShapeType)
 			o.renderable.AddShape(o.PI)
 		}
 	}
