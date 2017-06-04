@@ -1,8 +1,7 @@
 *.sublime-workspace
 *.sublime-project
-models
-models/*
-*.blend*
+*.blend
+*.blend1
 *.obj
 *.mtl
 backup
