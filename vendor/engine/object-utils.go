@@ -11,36 +11,12 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-// func (o *Object) Angle() float32 {
-// 	if o.shape != nil {
-// 		return o.shape.Body.Angle()
-// 	}
-
-// 	return o.P.Angle
-// 	// x, y := o.Position()
-// 	// return (&vect.Vect{x, y}).Angle()
-// }
-
-// func (o *Object) Length(x, y float32) float32 {
-// 	ox, oy := o.Position()
-// 	return vect.Dist(vect.Vect{ox, oy}, vect.Vect{x, y})
-// }
-
 func (o *Object) Position() (x, y float32) {
-	// if o.shape != nil && o.Node != nil {
-	// 	log.Println(o.shape.Body.Position(), o.Node.Location)
-	// }
-
 	if o.shape != nil {
 		v := o.shape.Body.Position()
 		return v.X, v.Y
 	}
-	// if o.Body != nil {
-	// 	return o.Body.Location.X(), o.Body.Location.Y()
-	// }
 
-	// log.Println("warning object", o.Name, "is not yet initialize")
-	// return 0, 0
 	return o.P.Pos.X, o.P.Pos.Y
 }
 
@@ -58,13 +34,7 @@ func (o *Object) PositionVec2() mgl32.Vec2 {
 		return mgl32.Vec2{v.X, v.Y}
 	}
 
-	// if o.Body != nil {
-	// 	return mgl32.Vec2{o.Body.Location.X(), o.Body.Location.Y()}
-	// }
-
-	// log.Println("failed object", o.Name, "not yet created")
 	return o.P.Pos.Vec2()
-	// return mgl32.Vec2{}
 }
 
 func (o *Object) PositionVec3() mgl32.Vec3 {
@@ -74,7 +44,6 @@ func (o *Object) PositionVec3() mgl32.Vec3 {
 	}
 
 	return o.P.Pos.Vec3()
-	// return mgl32.Vec3{o.Body.Location.X(), o.Body.Location.Y(), o.Body.Location.Z()}
 }
 
 func (o *Object) SetPosition(x, y float32) {
@@ -83,49 +52,31 @@ func (o *Object) SetPosition(x, y float32) {
 	} else {
 		o.P.Pos.X = x
 		o.P.Pos.Y = y
-		// e.Body.Location = mgl32.Vec3{x, y, e.Body.Location.Z()}
 	}
 }
 
 func (o *Object) VectorForward(scale float32) (float32, float32) {
 	var v vect.Vect
 	if o.shape != nil && o.shape.Body != nil {
-		// v = vect.FromAngle(e.shape.Body.Angle())
 		v = o.shape.Body.RotVec()
 	} else {
-		// v = vect.Vect{e.Node.LocalRotation.X(), e.Node.LocalRotation.Y()}
-
 		v = vect.FromAngle(o.P.Angle)
-		// v = vect.FromAngle(float32(2 * math.Acos(float64(e.Body.Rotation.W))))
 	}
 
 	v.Mult(scale)
 
-	// pvx, pvy := e.shape.Body.Rot()
 	return v.X, v.Y
 }
 
 func (o *Object) VectorSide(scale, angle float32) (float32, float32) {
-	// ang := e.shape.Body.Angle() - 1.5708 // ~90 deg
-	// if scale < 0 {
-	// 	ang = e.shape.Body.Angle() + 1.5708 // ~90 deg
-	// }
+
 	var v vect.Vect
 	if o.shape != nil && o.shape.Body != nil {
 		v = o.shape.Body.RotVec()
-		// log.Println(o.Name)
-		// return 0, 0
 		v = vect.FromAngle(v.Angle() + angle)
 	} else {
 		v = vect.FromAngle(o.P.Angle + angle)
 	}
-
-	// rotvec := o.shape.Body.RotVec()
-	// rotvec.Mult(scale)
-
-	// log.Println(o.shape.Body.Angle() == rotvec.Angle())
-
-	// v := vect.FromAngle(rotvec.Angle() + angle)
 	v.Mult(scale)
 
 	return v.X, v.Y
@@ -135,8 +86,6 @@ func (o *Object) Rotation() float32 {
 	if o.shape != nil {
 		return o.shape.Body.Angle()
 	}
-	// log.Println("need check get rotation fron fizzle node, it`s may be not correct!")
-	// return float32(2 * math.Acos(float64(o.Body.Rotation.W)))
 	return o.P.Angle
 }
 
@@ -144,8 +93,6 @@ func (o *Object) SetRotation(ang float32) {
 	if o.shape != nil {
 		o.shape.Body.SetAngle(ang)
 	} else {
-		// e.Node.LocalRotation = mgl32.AnglesToQuat(0, 0, vect.Vect{x, y}.Angle(), 1)
-		// o.Body.LocalRotation = mgl32.AnglesToQuat(0, 0, ang, 1)
 		o.P.Angle = ang
 	}
 }

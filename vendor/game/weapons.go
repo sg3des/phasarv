@@ -2,6 +2,7 @@ package game
 
 import (
 	"engine"
+	"log"
 	"materials"
 	"phys/vect"
 	"point"
@@ -50,7 +51,7 @@ type Weapon struct {
 	Delay     time.Duration
 	DelayTime time.Time
 
-	Bullet
+	Bullet *Bullet
 
 	Pos   vect.Vect
 	Angle float32
@@ -98,15 +99,17 @@ func (w *Weapon) Fire() {
 }
 
 //Shoot create new bullet
-func (w *Weapon) Shoot() Bullet {
-	// log.Println("Shoot", w.Player.Name)
-
-	b := w.Bullet
-	b.Object = &engine.Object{}
+func (w *Weapon) Shoot() *Bullet {
+	b := new(Bullet)
+	b.Object = new(engine.Object)
 	*b.Object = *w.Bullet.Object
 	b.Weapon = w
 	b.Player = w.Player
 	b.TargetPoint = w.Player.Cursor.PositionVec2()
+	b.RotSpeed = w.Bullet.RotSpeed
+	b.MovSpeed = w.Bullet.MovSpeed
+	b.Lifetime = w.Bullet.Lifetime
+	b.Damage = w.Bullet.Damage
 
 	switch w.Type {
 	case Weapons.Gun:
@@ -124,7 +127,7 @@ func (w *Weapon) GetPosition() vect.Vect {
 	v1 := w.Player.Object.PositionVect()
 	angle := w.Player.Object.Rotation()
 
-	return v1.SubPoint(angle, w.Pos)
+	return v1.SubPoint(angle-1.5704, w.Pos)
 }
 
 func (w *Weapon) GetAngle() (ang float32) {
@@ -161,15 +164,22 @@ func (w *Weapon) GetSubAngle() (ang float32) {
 
 func (w *Weapon) NewAim() *engine.Art {
 	ar := w.GetAttackRange()
+
 	// switch w.Type {
 	// case "rocket":
 	// }
+
+	// x, y := w.Player.Object.Position()
+	log.Println(ar)
+	wX, wY := w.Player.Object.VectorSide(w.Pos.X, -1.5704)
+	log.Println(wX, wY)
+
 	return &engine.Art{
 		Name:     "aim",
 		Value:    ar,
 		MaxValue: ar,
 		P: &point.Param{
-			Pos:  point.PFromVect(w.Pos),
+			Pos:  point.P{wX, wY, 0},
 			Size: point.P{ar, 0.1, 0},
 		},
 		RI: &render.Instruction{
@@ -179,6 +189,10 @@ func (w *Weapon) NewAim() *engine.Art {
 	}
 }
 
-func (w *Weapon) GetAttackRange() float32 {
-	return float32(w.Bullet.Lifetime.Seconds()) * w.Bullet.MovSpeed
+func (w *Weapon) GetAttackRange() (ar float32) {
+	ar = float32(w.Bullet.Lifetime.Seconds())
+	if w.Bullet.MovSpeed > 0 {
+		ar *= w.Bullet.MovSpeed
+	}
+	return
 }

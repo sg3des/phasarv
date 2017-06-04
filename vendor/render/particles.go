@@ -42,11 +42,12 @@ func drawParticles(dt float32) {
 
 type Particle struct {
 	parent *Renderable
+	Scale  float32
 
 	i       int
 	objects []*Renderable
 	points  []trailPoint
-	offset  mgl32.Vec3
+	Offset  mgl32.Vec3
 
 	dist            float32
 	prevParentPoint mgl32.Vec3
@@ -117,17 +118,15 @@ func (p *Particle) calculate(dt float32) {
 	// q = q.Normalize()
 	// angle := 2 * math32.Acos(q.W) //+ p.offset.Y()
 
-	// log.Println(x, y, z, angle)
+	v2 := vect.FromAngle(z + p.Offset.Y())
 
-	v2 := vect.FromAngle(z + p.offset.Y())
-
-	v2.Mult(p.offset.X())
+	v2.Mult(p.Offset.X())
 
 	pos := p.parent.Body.Location
 	pos = pos.Add(v2.Vec3())
 
 	p.objects[0].Body.Location = pos
-	p.objects[0].Body.Scale = mgl32.Vec3{1.1 + rand.Float32(), 2.2 + rand.Float32(), 1}
+	p.objects[0].Body.Scale = mgl32.Vec3{p.Scale + 0.5 + rand.Float32()*0.1, 2.2 + rand.Float32()*0.1, 1}
 
 	dist := pos.Sub(p.prevParentPoint).Len()
 	if dist > p.dist {
@@ -139,9 +138,12 @@ func (p *Particle) calculate(dt float32) {
 		for i, o := range p.objects {
 			o.Body.Location = p.points[i].pos
 			if i == 0 {
-				o.Body.LocalRotation = p.parent.Body.LocalRotation
+				angle := AngleBetweenPoints(p.points[i+1].pos, o.Body.Location)
+				q2 := mgl32.AnglesToQuat(0, 0, angle, 1)
+				// o.Body.LocalRotation = p.parent.Body.LocalRotation.Add(q2)
+				o.Body.LocalRotation = q2
 			} else {
-				angle := AngleBetweenPoints(o.Body.Location, p.points[i-1].pos)
+				angle := AngleBetweenPoints(p.points[i-1].pos, o.Body.Location)
 				o.Body.LocalRotation = mgl32.AnglesToQuat(0, 0, angle, 1)
 			}
 		}
@@ -159,6 +161,7 @@ func (p *Particle) calculate(dt float32) {
 			return
 		}
 
+		o.Body.Scale[0] *= -1
 		o.Body.Material.DiffuseColor[3] = p.points[i].Alpha
 	}
 
@@ -169,7 +172,7 @@ func (p *Particle) calculate(dt float32) {
 	p.objects[1].Body.Material.DiffuseColor[0] = 1
 	p.objects[1].Body.Material.DiffuseColor[1] = 0.6
 	p.objects[1].Body.Material.DiffuseColor[2] = 0.1
-	p.objects[1].Body.Scale = mgl32.Vec3{1.1, 1.5, 1}
+	p.objects[1].Body.Scale = mgl32.Vec3{0.5 + p.Scale, 1.5, 1}
 
 	// log.Println(summAlpha, p.parent == nil, p.parent.needDestroy)
 	if summAlpha <= 1 && (p.parent == nil || p.parent.needDestroy) {
@@ -177,12 +180,13 @@ func (p *Particle) calculate(dt float32) {
 	}
 }
 
-func (parent *Renderable) NewTrail(offset mgl32.Vec3, count int, size point.P) {
+func (parent *Renderable) NewTrail(offset mgl32.Vec3, count int, size point.P, scale float32) *Particle {
 
 	p := &Particle{
 		parent: parent,
-		offset: offset,
-		dist:   size.Y * 0.7,
+		Scale:  scale,
+		Offset: offset,
+		dist:   size.X * 0.5,
 	}
 
 	for i := 0; i < count; i++ {
@@ -190,7 +194,7 @@ func (parent *Renderable) NewTrail(offset mgl32.Vec3, count int, size point.P) {
 			Transparent: true,
 			P:           &point.Param{Size: size},
 			RI: &Instruction{
-				MeshName:    "plane",
+				MeshName:    "vector",
 				Material:    &materials.Instruction{Name: "laser", Texture: "laser", Shader: "colorblend", DiffColor: mgl32.Vec4{1, 1, 1, 1}},
 				Transparent: true,
 			},
@@ -201,6 +205,8 @@ func (parent *Renderable) NewTrail(offset mgl32.Vec3, count int, size point.P) {
 
 	Particles = append(Particles, p)
 	parent.particles = append(Particles, p)
+
+	return p
 }
 
 func (p *Particle) Destroy() {

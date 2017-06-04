@@ -38,6 +38,8 @@ type Player struct {
 
 	Cursor       *engine.Object
 	CursorOffset vect.Vect //only for network
+
+	trails []*render.Particle
 }
 
 func (p *Player) CreatePlayer() {
@@ -61,8 +63,10 @@ func (p *Player) CreatePlayer() {
 	}
 
 	if p.InitParam.MovSpeed > 5 && NeedRender {
-		// createTrail(p.Object, 0.5, int(p.InitParam.MovSpeed), mgl32.Vec2{1.2, 2.8})
-		// createTrail(p.Object, 0.5, int(p.InitParam.MovSpeed), mgl32.Vec2{1.2, -2.8})
+		lt := p.Object.AddTrail(mgl32.Vec3{1.2, 2.8, 0}, int(p.InitParam.MovSpeed), point.P{1, 0.2, 1}, 1)
+		rt := p.Object.AddTrail(mgl32.Vec3{1.2, -2.8, 0}, int(p.InitParam.MovSpeed), point.P{1, 0.2, 1}, 1)
+
+		p.trails = []*render.Particle{lt, rt}
 	}
 
 	p.Object.SetUserData(p)
@@ -158,6 +162,22 @@ func (p *Player) Movement(dt float32) {
 	// log.Println(p.Object.Velocity().Length())
 	if p.Object.Velocity().Length() < p.CurrParam.MovSpeed {
 		dist := p.Object.Distance(p.Cursor)
+
+		// log.Println(dist, p.Object.Velocity().Length())
+
+		scale := dist - p.Object.Velocity().Length()
+		log.Println(scale)
+		if scale < 0 {
+			scale = 0
+		} else if scale > p.CurrParam.MovSpeed {
+			scale = p.CurrParam.MovSpeed
+		}
+
+		if NeedRender {
+			for _, trail := range p.trails {
+				trail.Scale = scale / 16
+			}
+		}
 		// log.Println(dist)
 		// if dist > p.Param.MovSpeed {
 		// 	dist = p.Param.MovSpeed

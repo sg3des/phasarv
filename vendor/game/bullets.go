@@ -31,6 +31,7 @@ type Bullet struct {
 //CreateObject create bullet for gun and rocket
 func (b *Bullet) CreateObject() {
 	b.Object.P.Pos = point.PFromVect(b.Weapon.GetPosition())
+	// b.Object.P.Pos = point.P{wX, wY, 0}
 	b.Object.P.Angle = b.Weapon.GetAngle()
 
 	// b.Object.P = &point.Param{
@@ -76,7 +77,8 @@ func (b *Bullet) Rocket() {
 	b.Object.SetVelocity(b.Player.Object.VectorSide(b.Object.PI.Mass*5*b.Weapon.Pos.X, -1.5704))
 	// b.Target = b.Player.Cursor.PositionVec2()
 
-	createTrail(b.Object, 0.3, int(b.MovSpeed), mgl32.Vec2{-0.2, 0})
+	b.Object.AddTrail(mgl32.Vec3{-0.2, 0, 0}, int(b.MovSpeed), point.P{0.3, 0.2, 1}, 1)
+	// createTrail(b.Object, 0.3, int(b.MovSpeed), mgl32.Vec2{-0.2, 0})
 
 	b.Shoot = true
 	return
@@ -91,7 +93,7 @@ func (b *Bullet) Laser() {
 	y += wY
 
 	//length from lifetime
-	h := float32(b.Lifetime.Seconds() * 10)
+	h := float32(b.Lifetime.Seconds())
 	tx, ty := b.Player.Object.VectorForward(h)
 	tx += x
 	ty += y

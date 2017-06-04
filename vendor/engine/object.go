@@ -88,8 +88,8 @@ func (o *Object) AddChild(child *Object) {
 	o.Childs[child] = true
 }
 
-func (o *Object) AddTrail(offset mgl32.Vec3, count int, size point.P) {
-	o.renderable.NewTrail(offset, count, size)
+func (o *Object) AddTrail(offset mgl32.Vec3, count int, size point.P, scale float32) *render.Particle {
+	return o.renderable.NewTrail(offset, count, size, scale)
 }
 
 func (o *Object) SetDestroyFunc(f func()) {

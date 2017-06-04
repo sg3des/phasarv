@@ -20,7 +20,7 @@ func GetPlayer(name string) *game.Player {
 		Name: name,
 		Object: &engine.Object{
 			Name: "player",
-			P:    &point.Param{Size: point.P{X: 6, Y: 2}},
+			P:    &point.Param{Size: point.P{X: 2, Y: 2}},
 			PI:   &phys.Instruction{Mass: 12, Group: phys.GROUP_PLAYER, ShapeType: phys.ShapeType_Box},
 			RI: &render.Instruction{
 				MeshName:    "trapeze",
@@ -32,8 +32,8 @@ func GetPlayer(name string) *game.Player {
 
 		InitParam: game.PlayerParam{
 			Health:    100,
-			MovSpeed:  6,
-			RotSpeed:  30,
+			MovSpeed:  15,
+			RotSpeed:  50,
 			RollAngle: 1.5,
 		},
 
@@ -58,8 +58,8 @@ func GetPlayer(name string) *game.Player {
 		// },
 		LeftWeapon: &game.Weapon{
 			Type: game.Weapons.Laser,
-			Bullet: game.Bullet{
-				Lifetime: 2500 * time.Millisecond,
+			Bullet: &game.Bullet{
+				Lifetime: 25 * time.Second,
 				Damage:   50,
 				Object: &engine.Object{
 					Name: "bullet",
@@ -71,7 +71,8 @@ func GetPlayer(name string) *game.Player {
 					},
 				},
 			},
-			Pos: vect.Vect{-1, 0},
+			Pos:   vect.Vect{-1, 0},
+			Angle: 0.3,
 			// Delay:      500 * time.Millisecond,
 			AttackRate: 100 * time.Millisecond,
 		},
@@ -79,10 +80,10 @@ func GetPlayer(name string) *game.Player {
 		RightWeapon: &game.Weapon{
 			Type:    game.Weapons.Rocket,
 			SubType: game.Weapons.RocketType.Aimed,
-			Bullet: game.Bullet{
+			Bullet: &game.Bullet{
 				MovSpeed: 25,
 				RotSpeed: 100,
-				Lifetime: 20000 * time.Millisecond,
+				Lifetime: 20 * time.Second,
 				Damage:   50,
 
 				Object: &engine.Object{
@@ -97,7 +98,7 @@ func GetPlayer(name string) *game.Player {
 				},
 			},
 			Pos:   vect.Vect{1, 0},
-			Angle: 6.28,
+			Angle: 0.28,
 			// Delay:      500 * time.Millisecond,
 			AttackRate: 1000 * time.Millisecond,
 		},
