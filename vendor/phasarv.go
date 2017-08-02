@@ -5,14 +5,15 @@ import (
 	"game/db"
 	controllers "game/network-controllers"
 	"game/rooms"
+	"strings"
+	// "game/rooms"
 	"scenes"
 
 	"log"
 	"math/rand"
-	"strings"
 	"time"
 
-	"github.com/go-gl/glfw/v3.1/glfw"
+	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/sg3des/argum"
 
 	"engine"
@@ -93,7 +94,7 @@ func keyCallback(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action,
 	// }
 	if key == glfw.KeySpace && action == glfw.Press {
 		for _, p := range game.Players {
-			p.Destroy()
+			p.Ship.Destroy()
 		}
 	}
 }

@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"math/rand"
 	"phys"
+	"time"
 
 	"phys/vect"
 
@@ -268,30 +270,64 @@ func (o *Object) Raycast(x0, y0, x1, y1 float32) (objects []*Object) {
 	hits := phys.Hits(x0, y0, x1, y1, phys.GROUP_STATIC, o.shape.Body)
 	hits = append(hits, phys.Hits(x0, y0, x1, y1, phys.GROUP_PLAYER, o.shape.Body)...)
 
-	// log.Println(hits)
-
 	for _, hit := range hits {
-		// log.Println(hit.Shape.Group, hit.Shape.UserData != nil)
-		// if hit.Shape.UserData == nil {
-		// 	log.
-		// 	continue
-		// }
-
 		objects = append(objects, hit.Shape.UserData.(*Object))
-		// if hit.Body.UserData.(*Object).Name == "bullet" {
-		// 	continue
-		// }
-
-		// firstpos := vect.Vect{x0, y0}
-		// if firstpos == hit.Body.Position() {
-		// 	continue
-		// }
-
-		// 	return hit
-		// }
-		// log.Println(hit.MinT, x0, y0, hit.Body.Position(), hit.Body.UserData)
 	}
 
-	// log.Println(objects)
 	return
+}
+
+//GetNearObjectByRay get nearest object by ray betwean 2 points, ignore source object
+func (o *Object) GetNearObjectByRay(x0, y0, x1, y1 float32) (near *Object, shortDist float32) {
+
+	objects := o.Raycast(x0, y0, x1, y1)
+
+	shortDist = 999
+	for _, obj := range objects {
+
+		if obj != nil {
+			if dist := obj.DistancePoint(x0, y0); dist < shortDist {
+				shortDist = dist
+				near = obj
+			}
+		}
+	}
+
+	return
+}
+
+//SubAngleObjectPoint calculate angle(rad) between object(o) angle and 2d point(b)
+func (o *Object) SubAngleObjectPoint(b mgl32.Vec2) (angle float32) {
+	a := o.PositionVec2()
+
+	// var oAngleVec float32
+	// if o.Shape != nil {
+	oAngleVec := vect.FromAngle(o.Rotation())
+	// }else{
+	// 	oAngleVec =
+	// }
+
+	//angle between points
+	abAngle := float32(math.Atan2(float64(b.Y()-a.Y()), float64(b.X()-a.X())))
+	abAngleVec := vect.FromAngle(abAngle)
+
+	sin := oAngleVec.X*abAngleVec.Y - abAngleVec.X*oAngleVec.Y
+	cos := oAngleVec.X*abAngleVec.X + oAngleVec.Y*abAngleVec.Y
+
+	return float32(math.Atan2(float64(sin), float64(cos)))
+}
+
+func GetObjectInPoint(a mgl32.Vec2) *Object {
+	shape := phys.Hit(a[0], a[1], phys.GROUP_PLAYER)
+	if shape == nil {
+		return nil
+	}
+
+	return shape.UserData.(*Object)
+}
+
+func GetRandomPoint(x, y float32) (float32, float32) {
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	return x/2 - r.Float32()*x, y/2 - r.Float32()*y
 }

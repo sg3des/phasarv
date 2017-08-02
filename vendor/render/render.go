@@ -38,7 +38,7 @@ func renderInit(w, h int32) {
 	}
 }
 
-func DrawFrame(dt float32, fps int) {
+func DrawFrame(dt float32) {
 	w, h := window.GetFramebufferSize()
 
 	// clear the screen and reset our viewport

@@ -54,9 +54,9 @@ type cliPlayer struct {
 
 func (c *cliPlayer) GetClientState() ClientState {
 	return ClientState{
-		CurPos: c.p.Cursor.PositionVect(),
-		LW:     c.p.LeftWeapon.ToShoot,
-		RW:     c.p.RightWeapon.ToShoot,
+		CurPos: c.p.Ship.Cursor.PositionVect(),
+		LW:     c.p.Ship.LeftWeapon.ToShoot,
+		RW:     c.p.Ship.RightWeapon.ToShoot,
 	}
 }
 
@@ -64,33 +64,33 @@ func (c *cliPlayer) GetServerState() ServerState {
 	return ServerState{
 		Name: c.p.Name,
 
-		Vel:  c.p.Object.Velocity(),
-		AVel: c.p.Object.AngularVelocity(),
+		Vel:  c.p.Ship.Object.Velocity(),
+		AVel: c.p.Ship.Object.AngularVelocity(),
 
-		Pos: c.p.Object.PositionVect(),
-		Rot: c.p.Object.Rotation(),
+		Pos: c.p.Ship.Object.PositionVect(),
+		Rot: c.p.Ship.Object.Rotation(),
 
-		HP: c.p.CurrParam.Health,
+		HP: c.p.Ship.CurrParam.Health,
 
 		ClientState: c.GetClientState(),
 	}
 }
 
 func (s ClientState) UpdatePlayer(p *game.Player) {
-	p.Cursor.SetPosition(s.CurPos.X, s.CurPos.Y)
-	p.CursorOffset = p.Cursor.PositionVect()
-	p.CursorOffset.Sub(p.Object.PositionVect())
+	p.Ship.Cursor.SetPosition(s.CurPos.X, s.CurPos.Y)
+	p.Ship.CursorOffset = p.Ship.Cursor.PositionVect()
+	p.Ship.CursorOffset.Sub(p.Ship.Object.PositionVect())
 
-	p.LeftWeapon.ToShoot = s.LW
-	p.RightWeapon.ToShoot = s.RW
+	p.Ship.LeftWeapon.ToShoot = s.LW
+	p.Ship.RightWeapon.ToShoot = s.RW
 }
 
 func (s ServerState) UpdatePlayer(p *game.Player) {
-	p.Object.SetPosition(s.Pos.X, s.Pos.Y)
-	p.Object.SetRotation(s.Rot)
-	p.Object.SetVelocity(s.Vel.X, s.Vel.Y)
-	p.Object.SetAngularVelocity(s.AVel)
-	p.CurrParam.Health = s.HP
+	p.Ship.Object.SetPosition(s.Pos.X, s.Pos.Y)
+	p.Ship.Object.SetRotation(s.Rot)
+	p.Ship.Object.SetVelocity(s.Vel.X, s.Vel.Y)
+	p.Ship.Object.SetAngularVelocity(s.AVel)
+	p.Ship.CurrParam.Health = s.HP
 	s.ClientState.UpdatePlayer(p)
 	// p.UpdateFromClientState(s.ClientState)
 }

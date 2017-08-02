@@ -2,22 +2,22 @@ package game
 
 import (
 	"engine"
-	"log"
+	"game/equip"
+	"game/ships"
+	"game/weapons"
 	"materials"
 	"phys"
 	"phys/vect"
 	"point"
 	"render"
-	"time"
 
 	"github.com/go-gl/mathgl/mgl32"
 )
 
 func CreateEnemy() {
-	x, y := GetRandomPoint(50, 50)
-	log.Println("createEnemy", x, y)
-	var p = &Player{
-		Name: "enemy0",
+	x, y := engine.GetRandomPoint(50, 50)
+
+	s := &ships.Ship{
 		Object: &engine.Object{
 			Name: "enemy",
 			P: &point.Param{
@@ -32,40 +32,50 @@ func CreateEnemy() {
 			PI: &phys.Instruction{Mass: 12, Group: 1, ShapeType: phys.ShapeType_Box},
 		},
 
-		InitParam: PlayerParam{
-			Health:   100,
-			MovSpeed: 0,
-			RotSpeed: 50,
-		},
-
-		LeftWeapon: &Weapon{
-			Type:    Weapons.Rocket,
-			SubType: Weapons.RocketType.Homing,
-
-			Bullet: &Bullet{
-				MovSpeed: 20,
+		InitParam: ships.Param{
+			Size: mgl32.Vec3{1, 1, 1},
+			Param: equip.Param{
+				Health:   100,
+				MovSpeed: 0,
 				RotSpeed: 50,
-				Lifetime: 10000 * time.Millisecond,
-				Damage:   20,
-				Object: &engine.Object{
-					Name: "bullet",
-					RI: &render.Instruction{
-						MeshName: "rocket",
-						Material: &materials.Instruction{Name: "color", Texture: "gray", Shader: "color"},
-					},
-					P:  &point.Param{Size: point.P{0.1, 0.1, 0.1}},
-					PI: &phys.Instruction{Mass: 1},
-				},
 			},
-			AttackRate: 1000 * time.Millisecond,
 		},
-		respawnPoint: mgl32.Vec2{x, y},
+
+		LeftWeapon: &weapons.Weapon{
+			Type:    weapons.Rocket,
+			SubType: weapons.TypeHoming,
+
+			InitParam: weapons.Param{
+				Rate:           1e9,
+				BulletMovSpeed: 20,
+				BulletRotSpeed: 50,
+				Range:          10e9,
+				Damage:         20,
+			},
+
+			BulletObj: &engine.Object{
+				Name: "bullet",
+				RI: &render.Instruction{
+					MeshName: "rocket",
+					Material: &materials.Instruction{Name: "color", Texture: "gray", Shader: "color"},
+				},
+				P:  &point.Param{Size: point.P{0.1, 0.1, 0.1}},
+				PI: &phys.Instruction{Mass: 1},
+			},
+		},
 	}
 
-	p.CreateCursor(mgl32.Vec4{1, 0.1, 0.1, 0.7})
-	p.CreatePlayer()
+	s.Create()
 
-	p.Object.AddCallback(p.EnemyRotation, p.EnemyAttack)
+	p := &Player{
+		Name: "enemy",
+		Ship: s,
+	}
+
+	p.Ship.CreateCursor(mgl32.Vec4{1, 0.1, 0.1, 0.7})
+	// p.CreatePlayer()
+
+	p.Ship.Object.AddCallback(p.EnemyRotation, p.EnemyAttack)
 	// engine.AddCallback(p.EnemyRotation, p.EnemyAttack)
 }
 
@@ -74,18 +84,17 @@ func (p *Player) EnemyRotation(dt float32) {
 		return
 	}
 
-	if p.Target == nil || p.Object.Distance(p.Target.Object) > 20 {
+	if p.Target == nil || p.Ship.Object.Distance(p.Target.Ship.Object) > 20 {
 		p.Target = p.FindClosestPlayer(Players, 20)
-
 	}
 
 	if p.Target == nil {
 		return
 	}
 
-	p.Cursor.SetPosition(p.Target.Object.Position())
+	p.Ship.Cursor.SetPosition(p.Target.Ship.Object.Position())
 
-	p.targetAngle = p.rotation(dt, p.Target.Object.PositionVec2())
+	p.targetAngle = p.Ship.Rotate(dt, p.Target.Ship.Object.PositionVec2())
 }
 
 func (p *Player) EnemyAttack(dt float32) {
@@ -94,19 +103,19 @@ func (p *Player) EnemyAttack(dt float32) {
 	}
 
 	if p.Target == nil {
-		p.LeftWeapon.ToShoot = false
+		p.Ship.LeftWeapon.ToShoot = false
 		return
 	}
 
-	p.LeftWeapon.Bullet.TargetPlayer = p.Target
+	p.Ship.LeftWeapon.Target = p.Target.Ship.Object
 
-	if p.LeftWeapon.Type != Weapons.Rocket && vect.FAbs(p.targetAngle) > 0.2 {
-		p.LeftWeapon.ToShoot = false
+	if p.Ship.LeftWeapon.Type != weapons.Rocket && vect.FAbs(p.targetAngle) > 0.2 {
+		p.Ship.LeftWeapon.ToShoot = false
 		return
 	}
 
-	p.LeftWeapon.ToShoot = true
-	p.LeftWeapon.Fire()
+	p.Ship.LeftWeapon.ToShoot = true
+	p.Ship.LeftWeapon.Fire()
 
 	return
 }
@@ -126,7 +135,7 @@ func (p *Player) FindClosestPlayer(players []*Player, length float32) *Player {
 	var closest *Player
 
 	for _, player := range players {
-		dist := p.Object.Distance(player.Object)
+		dist := p.Ship.Object.Distance(player.Ship.Object)
 		if dist < length && dist < mindist {
 			mindist = dist
 			closest = player

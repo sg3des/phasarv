@@ -73,6 +73,10 @@ func (r *Renderable) AddShape(pi *phys.Instruction) {
 	r.PI = pi
 }
 
+const MESH_PLANE = "plane"
+const MESH_VECTOR = "vector"
+const MESH_BOX = "box"
+
 func (i *Instruction) createBody(p *point.Param) (body *fizzle.Renderable) {
 	switch i.MeshName {
 	case "plane":

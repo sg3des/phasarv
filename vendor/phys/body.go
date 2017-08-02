@@ -359,6 +359,7 @@ func (body *Body) UpdateVelocity(gravity vect.Vect, ldamping, adamping, dt float
 		body.UpdateVelocityFunc(body, gravity, ldamping, dt)
 		return
 	}
+
 	body.v = vect.Add(vect.Mult(body.v, ldamping), vect.Mult(vect.Add(gravity, vect.Mult(body.f, body.m_inv)), dt))
 
 	body.w = (body.w * adamping) + (body.t * body.i_inv * dt)

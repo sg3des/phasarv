@@ -2,7 +2,7 @@ package game
 
 import (
 	"engine"
-	"log"
+	"game/ships"
 	"render"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -19,38 +19,67 @@ var (
 	NeedRender bool
 )
 
+type Player struct {
+	Name string
+	Ship *ships.Ship
+
+	Target *Player
+
+	targetAngle  float32
+	respawnPoint mgl32.Vec2
+}
+
 func CreateLocalPlayer(p *Player) {
 	Camera = render.NewCamera(mgl32.Vec3{0, 0, 40})
 	Camera.LookAtDirect(mgl32.Vec3{0, 0, 0})
 
-	log.Println("CreateLocalPlayer", p.Name)
-	p.Local = true
+	p.Ship.Local = true
 	// p := &Player{Param: paramPlayer}
-	p.CreateCursor(mgl32.Vec4{0.3, 0.3, 0.9, 0.7})
-	p.CreatePlayer()
+	p.Ship.CreateCursor(mgl32.Vec4{0.3, 0.3, 0.9, 0.7})
+	p.Ship.Create()
 
-	p.Object.SetDestroyFunc(p.Destroy)
+	p.Ship.Object.SetDestroyFunc(p.Ship.Destroy)
 
 	Players = append(Players, p)
 	// p.Object.Shape.Body.CallBackCollision = p.Collision
 
-	p.Object.AddCallback(p.Movement, p.PlayerRotation, p.CameraMovement, p.Attack)
-	engine.SetMouseCallback(p.MouseControl)
+	p.Ship.Object.AddCallback(p.Ship.Movement, p.Ship.Rotation, p.CameraMovement, p.Ship.Attack)
+	engine.SetMouseCallback(p.Ship.MouseControl)
+}
+
+func NewLocalPlayer(s *ships.Ship, name string) *Player {
+	p := &Player{
+		Name: name,
+		Ship: s,
+	}
+
+	CreateLocalPlayer(p)
+
+	return p
+}
+
+func NewPlayer(name string, s *ships.Ship, a mgl32.Vec2) *Player {
+	p := &Player{
+		Name: name,
+		Ship: s,
+	}
+
+	CreatePlayer(p)
+
+	return p
 }
 
 func CreatePlayer(p *Player) {
-	log.Println("CreatePlayer", p.Name)
+	p.Ship.CreateCursor(mgl32.Vec4{0.3, 0.3, 0.9, 0.7})
+	p.Ship.Create()
 
-	// p := &Player{Param: paramPlayer}
-	p.CreateCursor(mgl32.Vec4{0.3, 0.3, 0.9, 0.7})
-	p.CreatePlayer()
-
-	p.Object.SetDestroyFunc(p.Destroy)
+	p.Ship.Object.SetDestroyFunc(p.Ship.Destroy)
 
 	Players = append(Players, p)
-	// p.Object.Shape.Body.CallBackCollision = p.Collision
 
-	p.Object.AddCallback(p.Movement, p.PlayerRotation, p.Attack)
+	p.Ship.Object.AddCallback(p.Ship.Movement, p.Ship.Rotation, p.Ship.Attack)
+
+	return
 }
 
 func LookupPlayer(name string) (*Player, bool) {
@@ -66,7 +95,7 @@ func LookupPlayer(name string) (*Player, bool) {
 func RemovePlayer(name string) {
 	for i, p := range Players {
 		if p.Name == name {
-			p.Object.Remove()
+			p.Ship.Object.Remove()
 			RemovePlayerN(i)
 			return
 		}

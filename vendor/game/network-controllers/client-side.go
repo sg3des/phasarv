@@ -3,6 +3,7 @@ package controllers
 import (
 	"engine"
 	"game"
+	"game/ships"
 	"log"
 	"materials"
 	"network"
@@ -13,6 +14,7 @@ import (
 )
 
 var (
+	name        string
 	c           Client
 	localplayer *cliPlayer
 	pshadow     *engine.Object
@@ -32,12 +34,13 @@ func SendAuthorize(name string) {
 	}
 }
 
-func sendLocalPlayerState(dt float32) {
+func sendLocalPlayerState(_ float32) bool {
 	conn.SendMessage(
 		Server.PlayerState,
 		Client.LocalPlayerServerState,
 		localplayer.GetClientState(),
 	)
+	return true
 }
 
 //
@@ -46,10 +49,13 @@ func sendLocalPlayerState(dt float32) {
 type Client struct{}
 
 func (Client) LoadLocalPlayer(req *network.Request) interface{} {
-	p := &game.Player{}
-	*p = req.Data.(game.Player)
-	game.CreateLocalPlayer(p)
-	p.Object.AddCallback(sendLocalPlayerState)
+	s := new(ships.Ship)
+	*s = req.Data.(ships.Ship)
+
+	p := game.NewLocalPlayer(s, name)
+
+	engine.AddCallback(sendLocalPlayerState)
+	// p.Ship.Object.AddCallback(sendLocalPlayerState)
 
 	localplayer = addCliPlayer(p)
 
@@ -117,17 +123,17 @@ func (Client) LocalPlayerServerState(req *network.Request) interface{} {
 	pshadow.SetPosition(s.Pos.X, s.Pos.Y)
 	pshadow.SetRotation(s.Rot)
 
-	dist := localplayer.p.Object.DistancePoint(s.Pos.X, s.Pos.Y)
+	dist := localplayer.p.Ship.Object.DistancePoint(s.Pos.X, s.Pos.Y)
 	if dist > 2 {
 		log.Println("WARNING! need correct position")
-		localplayer.p.Object.SetPosition(s.Pos.X, s.Pos.Y)
-		localplayer.p.Object.SetRotation(s.Rot)
+		localplayer.p.Ship.Object.SetPosition(s.Pos.X, s.Pos.Y)
+		localplayer.p.Ship.Object.SetRotation(s.Rot)
 		s.UpdatePlayer(localplayer.p)
 		return nil
 	}
 
-	localplayer.p.Object.SetVelocity(s.Vel.X, s.Vel.Y)
-	localplayer.p.Object.SetAngularVelocity(s.AVel)
+	localplayer.p.Ship.Object.SetVelocity(s.Vel.X, s.Vel.Y)
+	localplayer.p.Ship.Object.SetAngularVelocity(s.AVel)
 
 	return nil
 }

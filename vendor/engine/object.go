@@ -34,7 +34,36 @@ type Object struct {
 	UserData interface{}
 }
 
-//Create object by instructons
+//NewObject create new object
+func NewObject(Name string, PI *phys.Instruction, RI *render.Instruction, P *point.Param) *Object {
+
+	o := &Object{
+		PI: PI,
+		RI: RI,
+		P:  P,
+	}
+
+	if NeedRender && RI != nil {
+		o.renderable = o.RI.Create(o.P)
+	}
+
+	if PI != nil {
+		o.shape = o.PI.Create(o.P)
+		o.shape.UserData = o
+
+		if NeedRender && o.renderable != nil {
+			o.renderable.AddShape(o.PI)
+		}
+	}
+
+	if !o.P.Static {
+		Objects.Add(o)
+	}
+
+	return o
+}
+
+//Create new object by instructons
 func (o *Object) Create(arts ...*Art) {
 	if NeedRender {
 		o.renderable = o.RI.Create(o.P)

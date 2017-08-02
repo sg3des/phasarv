@@ -6,7 +6,7 @@ import (
 	"render"
 	"time"
 
-	"github.com/go-gl/glfw/v3.1/glfw"
+	"github.com/go-gl/glfw/v3.2/glfw"
 )
 
 func LoopServer() {
@@ -21,17 +21,18 @@ func LoopServer() {
 
 func LoopRender() {
 	// var mem runtime.MemStats
-
+	var dt float32
+	// var fps int
 	frame := frames.NewFrame()
 	for !window.ShouldClose() {
 		// runtime.ReadMemStats(&mem)
 
 		// log.Println(mem.Alloc/1024, mem.TotalAlloc/1024, mem.HeapAlloc/1024, mem.HeapSys/1024)
 
-		dt, fps := frame.Next()
+		dt, _ = frame.Next()
 
 		frameLogic(dt)
-		frameRender(dt, fps)
+		frameRender(dt)
 		glfw.PollEvents()
 	}
 }
@@ -49,7 +50,7 @@ func frameLogic(dt float32) {
 	Objects.loopCallbacks(dt)
 }
 
-func frameRender(dt float32, fps int) {
+func frameRender(dt float32) {
 	Objects.loopPhysToRender()
-	render.DrawFrame(dt, fps)
+	render.DrawFrame(dt)
 }

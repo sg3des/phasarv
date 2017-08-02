@@ -313,3 +313,7 @@ func (v1 Vect) SubAngle(angle float32, v2 Vect) float32 {
 	return float32(math.Atan2(float64(sin), float64(cos)))
 
 }
+
+func (v1 Vect) Elem() (x, y float32) {
+	return v1.X, v1.Y
+}

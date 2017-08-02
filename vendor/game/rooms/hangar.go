@@ -3,8 +3,9 @@ package rooms
 import (
 	"fmt"
 	"game/db"
-	"game/ent"
+	"game/ships"
 	"log"
+	"path/filepath"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/sg3des/fizzgui"
@@ -25,7 +26,7 @@ type hangar struct {
 	slotHover  fizzgui.Style
 	slotActive fizzgui.Style
 
-	ship *ent.Ship
+	ship *ships.Ship
 }
 
 //Hangar room
@@ -63,10 +64,24 @@ func Hangar() {
 	h.fill()
 }
 
-func (h *hangar) fill() {
-	h.ship = db.GetShip("red-171014")
+func LoadImage(dir, imgname string) *fizzgui.Texture {
+	filename := ImgPath(dir, imgname)
+	tex, err := fizzgui.NewTextureImg(filename)
+	if err != nil {
+		log.Fatalln("texture '%s' not found", filename)
+		return nil
+	}
+	return tex
+}
 
-	h.cShip.Style.Texture = h.ship.LoadImgUI()
+func ImgPath(dir, imgname string) string {
+	return filepath.Join("assets", dir, imgname+".png")
+}
+
+func (h *hangar) fill() {
+	h.ship = db.GetHangarShip("red-171014")
+
+	h.cShip.Style.Texture = LoadImage("ships", h.ship.Img)
 	for _, s := range h.ship.Slots {
 		slot := h.cShip.NewSlot(h.dad, string(s.ET), s.X, s.Y, s.W, s.H, h.putOn)
 		slot.SetStyles(h.slotNormal, h.slotHover, h.slotActive, nil)
@@ -76,14 +91,14 @@ func (h *hangar) fill() {
 	weapons := []string{"gun-104", "laser-89"}
 	for i, model := range weapons {
 		w := db.GetWeapon(model)
-		item := h.dad.NewItem(w.ET.Str(), w.ImgPath(), w)
+		item := h.dad.NewItem(w.EquipType.Str(), ImgPath("items", w.Img), w)
 		h.dad.Slots[i].PlaceItem(item)
 	}
 
 	items := []string{"engine-22"}
 	for i, model := range items {
 		e := db.GetEquipment(model)
-		item := h.dad.NewItem(e.ET.Str(), e.ImgPath(), e)
+		item := h.dad.NewItem(e.Type.Str(), ImgPath("items", e.Img), e)
 		h.dad.Slots[i+len(weapons)].PlaceItem(item)
 	}
 
@@ -111,50 +126,50 @@ func (h *hangar) takeOff(item *fizzgui.DADItem, slot *fizzgui.DADSlot, value int
 }
 
 func (h *hangar) recalculate() {
-	h.ship.Equipment = nil
-	h.ship.Weapons = nil
+	// h.ship.Equipment = nil
+	// h.ship.Weapons = nil
 
-	h.ship.Spec = h.ship.ShipSpec
+	// h.ship.Spec = h.ship.ShipSpec
 
-	for _, slot := range h.dad.Slots {
-		if slot.Item == nil {
-			continue
-		}
+	// for _, slot := range h.dad.Slots {
+	// 	if slot.Item == nil {
+	// 		continue
+	// 	}
 
-		switch slot.ID {
-		case string(ent.ETweapon):
-			h.ship.Weapons = append(h.ship.Weapons, slot.Item.Value.(*ent.Weapon))
-		case string(ent.ETengine):
-			h.ship.Equipment = append(h.ship.Equipment, slot.Item.Value.(*ent.Equipment))
-		}
-	}
+	// 	switch slot.ID {
+	// 	case string(ent.ETweapon):
+	// 		h.ship.Weapons = append(h.ship.Weapons, slot.Item.Value.(*ent.Weapon))
+	// 	case string(ent.ETengine):
+	// 		h.ship.Equipment = append(h.ship.Equipment, slot.Item.Value.(*ent.Equipment))
+	// 	}
+	// }
 
-	for _, e := range h.ship.Equipment {
-		h.ship.Spec = h.ship.Spec.Summ(e.Spec)
-	}
+	// for _, e := range h.ship.Equipment {
+	// 	h.ship.Spec = h.ship.Spec.Summ(e.Spec)
+	// }
 
-	for _, w := range h.ship.Weapons {
-		h.ship.Spec.Weight += w.Weight
-	}
+	// for _, w := range h.ship.Weapons {
+	// 	h.ship.Spec.Weight += w.Weight
+	// }
 
-	h.infoTable.Class.update(h.ship.Class, h.ship.Model)
-	h.infoTable.Weight.update(h.ship.Spec.Weight)
-	h.infoTable.Durability.update(h.ship.Spec.Durability)
-	h.infoTable.Shield.update(h.ship.Spec.Shield)
-	h.infoTable.Speed.update(h.ship.Spec.Speed)
-	h.infoTable.Contollability.update(h.ship.Spec.Controllability)
-	h.infoTable.Energy.update(h.ship.Spec.Energy, h.ship.Spec.EnergyAcc)
-	h.infoTable.Metal.update(h.ship.Spec.Metal, h.ship.Spec.MetalAcc)
+	// h.infoTable.Class.update(h.ship.Class, h.ship.Model)
+	// h.infoTable.Weight.update(h.ship.Spec.Weight)
+	// h.infoTable.Durability.update(h.ship.Spec.Durability)
+	// h.infoTable.Shield.update(h.ship.Spec.Shield)
+	// h.infoTable.Speed.update(h.ship.Spec.Speed)
+	// h.infoTable.Contollability.update(h.ship.Spec.Controllability)
+	// h.infoTable.Energy.update(h.ship.Spec.Energy, h.ship.Spec.EnergyAcc)
+	// h.infoTable.Metal.update(h.ship.Spec.Metal, h.ship.Spec.MetalAcc)
 
-	for i, w := range h.ship.Weapons {
-		h.infoTable.newInfoWeapon(i, w)
-	}
+	// for i, w := range h.ship.Weapons {
+	// 	h.infoTable.newInfoWeapon(i, w)
+	// }
 
-	for i := len(h.ship.Weapons); i < len(h.infoTable.Weapons); i++ {
-		h.infoTable.Weapons[i].SetHidden(true)
-	}
+	// for i := len(h.ship.Weapons); i < len(h.infoTable.Weapons); i++ {
+	// 	h.infoTable.Weapons[i].SetHidden(true)
+	// }
 
-	log.Println(db.Ship.Weapons)
+	// log.Println(db.Ship.Weapons)
 }
 
 func (h *hangar) startBattle(wgt *fizzgui.Widget) {
@@ -218,32 +233,32 @@ type infoWeapon struct {
 	Ammo  *fizzgui.Widget
 }
 
-func (info *informationTable) newInfoWeapon(i int, w *ent.Weapon) {
-	dps := fmt.Sprintf("  DPS: %.1f", w.Damage/float32(w.AttackRate.Seconds()))
-	rang := fmt.Sprintf("  Range: %.1f", w.AttackRange)
-	ammo := fmt.Sprintf("  Ammo: %d", w.Ammunition)
+// func (info *informationTable) newInfoWeapon(i int, w *ent.Weapon) {
+// 	dps := fmt.Sprintf("  DPS: %.1f", w.Damage/float32(w.AttackRate.Seconds()))
+// 	rang := fmt.Sprintf("  Range: %.1f", w.AttackRange)
+// 	ammo := fmt.Sprintf("  Ammo: %d", w.Ammunition)
 
-	if i < len(info.Weapons) {
-		iw := info.Weapons[i]
-		iw.SetHidden(false)
-		iw.Name.Text = w.Model
-		iw.DPS.Text = dps
-		iw.Range.Text = rang
-		iw.Ammo.Text = ammo
-	} else {
-		iw := &infoWeapon{
-			Name:  info.newText(w.Model),
-			DPS:   info.newText(dps),
-			Range: info.newText(rang),
-			Ammo:  info.newText(ammo),
-		}
-		info.Weapons = append(info.Weapons, iw)
-	}
+// 	if i < len(info.Weapons) {
+// 		iw := info.Weapons[i]
+// 		iw.SetHidden(false)
+// 		iw.Name.Text = w.Model
+// 		iw.DPS.Text = dps
+// 		iw.Range.Text = rang
+// 		iw.Ammo.Text = ammo
+// 	} else {
+// 		iw := &infoWeapon{
+// 			Name:  info.newText(w.Model),
+// 			DPS:   info.newText(dps),
+// 			Range: info.newText(rang),
+// 			Ammo:  info.newText(ammo),
+// 		}
+// 		info.Weapons = append(info.Weapons, iw)
+// 	}
 
-	//name string, damage, rate, rang float32, ammo int
+// 	//name string, damage, rate, rang float32, ammo int
 
-	// info.Weapons = append(info.Weapons, w)
-}
+// 	// info.Weapons = append(info.Weapons, w)
+// }
 
 func (iw *infoWeapon) SetHidden(b bool) {
 	iw.Name.Hidden = b

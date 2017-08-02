@@ -24,7 +24,6 @@ var (
 )
 
 type texture struct {
-	Path     string
 	Diffuse  graphicsprovider.Texture
 	Normals  graphicsprovider.Texture
 	Specular graphicsprovider.Texture
@@ -37,7 +36,7 @@ type font struct {
 }
 
 func LoadAssets(texDir, shadersDir, modelsDir, fontsDir string) error {
-	textures, err := filepath.Glob(filepath.Join(texDir, "*_D.png"))
+	textures, err := filepath.Glob(filepath.Join(texDir, "*.png"))
 	if err != nil {
 		return err
 	}
@@ -111,31 +110,33 @@ func LoadAssets(texDir, shadersDir, modelsDir, fontsDir string) error {
 }
 
 var (
-	textureTypeD = "_D.png"
-	textureTypeN = "_N.png"
-	textureTypeS = "_S.png"
+	texNorm = "_N"
+	texSpec = "_S"
 )
 
-func getTextureName(filename string) string {
-	return strings.TrimSuffix(filepath.Base(filename), textureTypeD)
-	// return textureNameCrop.ReplaceAllString(filename, "")
-}
+func LoadTexture(filename string) (err error) {
+	name := filepath.Base(filename)
+	name = strings.TrimSuffix(name, ".png")
+	name = strings.TrimSuffix(name, texNorm)
+	name = strings.TrimSuffix(name, texSpec)
 
-func LoadTexture(filename string) error {
-	texturename := getTextureName(filename)
+	var t *texture
+	var ok bool
 
-	t := &texture{Path: filename}
-	var err error
-	t.Diffuse, err = textureMan.LoadTexture(texturename, filename)
-	if err != nil {
-		return err
+	if t, ok = Textures[name]; !ok {
+		t = new(texture)
+		Textures[name] = t
 	}
 
-	t.Specular, _ = textureMan.LoadTexture(texturename, strings.Replace(filename, textureTypeD, textureTypeS, 1))
-	t.Normals, _ = textureMan.LoadTexture(texturename, strings.Replace(filename, textureTypeD, textureTypeN, 1))
+	if strings.HasSuffix(filename, texNorm+".png") {
+		t.Normals, err = textureMan.LoadTexture(name+texNorm, filename)
+	} else if strings.HasSuffix(filename, texSpec+".png") {
+		t.Specular, err = textureMan.LoadTexture(name+texSpec, filename)
+	} else {
+		t.Diffuse, err = textureMan.LoadTexture(name, filename)
+	}
 
-	Textures[texturename] = t
-	return nil
+	return
 }
 
 func LoadShader(filename string) error {

@@ -134,7 +134,7 @@ func (Server) Authorize(req *network.Request) interface{} {
 	c := newCliPlayer(name, req)
 	game.CreatePlayer(c.p)
 	// p.CreatePlayer()
-	c.p.Object.AddCallback(c.p.ClientCursor, c.p.Movement, c.p.PlayerRotation)
+	c.p.Ship.Object.AddCallback(c.p.Ship.ClientCursor, c.p.Ship.Movement, c.p.Ship.Rotation)
 
 	return db.GetPlayer(name)
 }
@@ -167,10 +167,10 @@ func (Server) PlayerState(req *network.Request) interface{} {
 	s.UpdatePlayer(c.p)
 
 	return ServerState{
-		Vel:  c.p.Object.Velocity(),
-		AVel: c.p.Object.AngularVelocity(),
-		Pos:  c.p.Object.PositionVect(),
-		Rot:  c.p.Object.Rotation(),
+		Vel:  c.p.Ship.Object.Velocity(),
+		AVel: c.p.Ship.Object.AngularVelocity(),
+		Pos:  c.p.Ship.Object.PositionVect(),
+		Rot:  c.p.Ship.Object.Rotation(),
 	}
 }
 
