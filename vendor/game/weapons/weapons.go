@@ -100,7 +100,7 @@ func (w *Weapon) update() {
 
 	cPos.Sub(w.CurrParam.Pos)
 	dist := cPos.Length()
-	if ar := w.GetAttackRange(); dist > ar {
+	if ar := w.GetAttackRange(w.CurrParam); dist > ar {
 		dist = ar
 	}
 
@@ -188,7 +188,7 @@ func (w *Weapon) Shoot() *Bullet {
 // }
 
 func (w *Weapon) NewAim() *engine.Art {
-	ar := w.GetAttackRange()
+	ar := w.GetAttackRange(w.InitParam)
 
 	wX, wY := w.ShipObj.VectorSide(w.InitParam.Pos.X, -1.5704)
 
@@ -212,13 +212,13 @@ func (w *Weapon) NewAim() *engine.Art {
 	}
 }
 
-func (w *Weapon) GetAttackRange() (ar float32) {
-	ar = float32(w.CurrParam.Range.Seconds())
-	if w.CurrParam.BulletMovSpeed > 0 {
+func (w *Weapon) GetAttackRange(p Param) (ar float32) {
+	ar = float32(p.Range.Seconds())
+	if p.BulletMovSpeed > 0 {
 		if w.Type == Rocket {
 			ar--
 		}
-		ar *= w.CurrParam.BulletMovSpeed
+		ar *= p.BulletMovSpeed
 	}
 
 	return

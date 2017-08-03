@@ -29,9 +29,9 @@ func GetHangarShip(name string) *ships.Ship {
 		},
 
 		Slots: []equip.Slot{
-			equip.Slot{"41%", "70%", "18%", "18%", equip.TypeEngine},
-			equip.Slot{"10%", "35%", "15%", "15%", equip.TypeWeapon},
-			equip.Slot{"75%", "35%", "15%", "15%", equip.TypeWeapon},
+			equip.Slot{"41%", "70%", "18%", "18%", equip.TypeEngine, 0, 0},
+			equip.Slot{"10%", "35%", "15%", "15%", equip.TypeWeapon, equip.Left, 0},
+			equip.Slot{"75%", "35%", "15%", "15%", equip.TypeWeapon, equip.Right, 0},
 		},
 	}
 }
@@ -47,7 +47,7 @@ func GetWeapon(name string) (w *weapons.Weapon) {
 			InitParam: weapons.Param{
 				Damage:         8,
 				Rate:           3e8, //300ms
-				Range:          30,
+				Range:          7e8,
 				Angle:          0.3,
 				Ammunition:     20,
 				ReloadTime:     2e9, //2sec

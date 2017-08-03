@@ -64,20 +64,69 @@ func (e Equip) ImgPath() string {
 //Slot equipment slot on ships
 type Slot struct {
 	X, Y, W, H string
-	ET         Type
+	Type       Type
+	Side       Side
+	Size       Size
 }
 
 //Type of equipment
-type Type string
+type Type byte
 
-func (et Type) Str() string {
-	return string(et)
+func (t Type) Str() string {
+	switch t {
+	case TypeWeapon:
+		return "weapon"
+	case TypeEngine:
+		return "engine"
+	case TypeGenerator:
+		return "generator"
+	case TypeShield:
+		return "shield"
+	case TypeRadar:
+		return "radar"
+	}
+
+	log.Println("WARNING! unknown type: '%s'", t)
+	return "unknown"
 }
 
 const (
-	TypeWeapon    Type = "weapon"
-	TypeEngine    Type = "engine"
-	TypeGenerator Type = "generator"
-	TypeShield    Type = "shield"
-	TypeRadar     Type = "radar"
+	TypeWeapon    Type = 'w'
+	TypeEngine    Type = 'e'
+	TypeGenerator Type = 'g'
+	TypeShield    Type = 's'
+	TypeRadar     Type = 'r'
+)
+
+type Side byte
+
+const (
+	Front Side = 'f'
+	Back  Side = 'b'
+	Left  Side = 'l'
+	Right Side = 'r'
+)
+
+func (s Side) String() string {
+	switch s {
+	case Front:
+		return "front"
+	case Back:
+		return "back"
+	case Left:
+		return "left"
+	case Right:
+		return "right"
+	}
+
+	return ""
+}
+
+type Size uint8
+
+const (
+	SizeAny    Size = 0
+	SizeSmall  Size = 1
+	SizeMedium Size = 2
+	SizeBig    Size = 3
 )

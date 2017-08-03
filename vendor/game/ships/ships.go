@@ -30,9 +30,10 @@ type Param struct {
 type Ship struct {
 	Object *engine.Object
 
-	Name string
-	Img  string
-	Type Type
+	Name  string
+	Class string
+	Img   string
+	Type  Type
 
 	InitParam Param
 	CurrParam Param

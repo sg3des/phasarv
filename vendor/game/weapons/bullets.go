@@ -76,7 +76,7 @@ func (b *Bullet) Rocket() {
 
 //Laser create laser line
 func (b *Bullet) Laser() {
-	h := b.Weapon.GetAttackRange()
+	h := b.Weapon.GetAttackRange(b.Weapon.CurrParam)
 	x, y := b.Weapon.CurrParam.Pos.Elem()
 	tx, ty := b.Weapon.CursorPos.Elem()
 
