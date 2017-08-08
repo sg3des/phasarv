@@ -9,11 +9,15 @@ import (
 	"render"
 
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/tbogdala/fizzle"
 
 	"gopkg.in/yaml.v2"
 )
 
-var Dir = "assets/scenes"
+var (
+	Dir    = "assets/scenes"
+	Camera *fizzle.YawPitchCamera
+)
 
 //Scene structure
 type Scene struct {
@@ -22,21 +26,21 @@ type Scene struct {
 }
 
 //read yaml file and parse to Scene structure
-func read(name string) (Scene, error) {
-	var s Scene
+func read(name string) (*Scene, error) {
+	s := &Scene{Name: name}
 
 	data, err := ioutil.ReadFile(path.Join(Dir, name+".yaml"))
 	if err != nil {
 		return s, err
 	}
 
-	err = yaml.Unmarshal(data, &s)
+	err = yaml.Unmarshal(data, s)
 
 	return s, err
 }
 
 //Load scene from file
-func Load(name string) {
+func Load(name string) *Scene {
 	s, err := read(name)
 	if err != nil {
 		log.Fatalln("failed load scene:", err)
@@ -49,6 +53,14 @@ func Load(name string) {
 			o.PI.Group = phys.GROUP_STATIC
 		}
 		o.Create()
+	}
+
+	return s
+}
+
+func (s *Scene) Close() {
+	for _, o := range s.Objects {
+		o.Destroy()
 	}
 }
 
@@ -74,6 +86,6 @@ func InitEnvironment() {
 	}
 	backlight.Create()
 
-	camera := render.NewCamera(mgl32.Vec3{0, 0, 40})
-	camera.LookAtDirect(mgl32.Vec3{0, 0, 0})
+	Camera = render.NewCamera(mgl32.Vec3{0, 0, 40})
+	Camera.LookAtDirect(mgl32.Vec3{0, 0, 0})
 }

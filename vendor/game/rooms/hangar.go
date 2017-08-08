@@ -2,9 +2,9 @@ package rooms
 
 import (
 	"fmt"
+	"game"
 	"game/db"
 	"game/equip"
-	"game/ships"
 	"game/weapons"
 	"log"
 	"path/filepath"
@@ -12,6 +12,8 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/sg3des/fizzgui"
 )
+
+var player *game.Player
 
 type hangar struct {
 	cMenu *fizzgui.Container
@@ -27,12 +29,10 @@ type hangar struct {
 	slotNormal fizzgui.Style
 	slotHover  fizzgui.Style
 	slotActive fizzgui.Style
-
-	ship *ships.Ship
 }
 
 //Hangar room
-func Hangar() {
+func Hangar(playerName string) {
 	h := new(hangar)
 
 	h.cMenu = fizzgui.NewContainer("menu", "0", "0", "100%", "10%")
@@ -63,6 +63,9 @@ func Hangar() {
 		slot.SetStyles(h.slotNormal, fizzgui.Style{}, h.slotActive, nil)
 	}
 
+	player = db.GetPlayer(playerName)
+	// ship = db.GetHangarShip("red-171014")
+
 	h.fill()
 }
 
@@ -81,31 +84,48 @@ func ImgPath(dir, imgname string) string {
 }
 
 func (h *hangar) fill() {
-	h.ship = db.GetHangarShip("red-171014")
-
-	h.cShip.Style.Texture = LoadImage("ships", h.ship.Img)
-	for _, s := range h.ship.Slots {
+	h.cShip.Style.Texture = LoadImage("ships", player.Ship.Img)
+	for _, s := range player.Ship.Slots {
 		slot := h.cShip.NewSlot(h.dad, s.Type.Str(), s.X, s.Y, s.W, s.H, h.putOn)
 		slot.UserData = s
 		slot.SetStyles(h.slotNormal, h.slotHover, h.slotActive, nil)
 		h.shipSlots = append(h.shipSlots, slot)
 	}
 
-	weapons := []string{"gun-104", "laser-89"}
-	for i, model := range weapons {
-		w := db.GetWeapon(model)
+	var placed int
+	for i, w := range db.GetPlayerWeapons(player.WeaponsIDs) {
 		item := h.dad.NewItem(w.EquipType.Str(), ImgPath("items", w.Img), w)
-		h.dad.Slots[i].PlaceItem(item)
+
+		if slot, ok := h.lookupShipSlotByName(w.SlotName); ok {
+			slot.PlaceItem(item)
+		} else {
+			h.dad.Slots[i].PlaceItem(item)
+			placed++
+		}
 	}
 
-	items := []string{"engine-22"}
-	for i, model := range items {
-		e := db.GetEquipment(model)
+	for i, e := range db.GetPlayerEquip(player.EquipIDs) {
 		item := h.dad.NewItem(e.Type.Str(), ImgPath("items", e.Img), e)
-		h.dad.Slots[i+len(weapons)].PlaceItem(item)
+
+		if slot, ok := h.lookupShipSlotByName(e.SlotName); ok {
+			slot.PlaceItem(item)
+		} else {
+			h.dad.Slots[i+placed].PlaceItem(item)
+			placed++
+		}
 	}
 
 	h.recalculate()
+}
+
+func (h *hangar) lookupShipSlotByName(name string) (*fizzgui.DADSlot, bool) {
+	for _, slot := range h.shipSlots {
+		s := slot.UserData.(equip.Slot)
+		if s.Name == name {
+			return slot, true
+		}
+	}
+	return nil, false
 }
 
 func (h *hangar) putOn(item *fizzgui.DADItem, slot *fizzgui.DADSlot, prevSlot *fizzgui.DADSlot) bool {
@@ -129,11 +149,11 @@ func (h *hangar) takeOff(item *fizzgui.DADItem, slot *fizzgui.DADSlot, prevSlot 
 }
 
 func (h *hangar) recalculate() {
-	p := h.ship.InitParam.Param
+	p := player.Ship.InitParam.Param
 
-	h.ship.Equipment = nil
-	h.ship.LeftWeapon = nil
-	h.ship.RightWeapon = nil
+	player.Ship.Equipment = nil
+	player.Ship.LeftWeapon = nil
+	player.Ship.RightWeapon = nil
 
 	// h.ship.CurrParam = h.ship.InitParam
 
@@ -151,20 +171,20 @@ func (h *hangar) recalculate() {
 
 			switch s.Side {
 			case equip.Left:
-				h.ship.LeftWeapon = w
+				player.Ship.LeftWeapon = w
 			case equip.Right:
-				h.ship.RightWeapon = w
+				player.Ship.RightWeapon = w
 			}
 
 		default:
 			e := slot.Item.UserData.(*equip.Equip)
 			p = p.Summ(e.Param)
 
-			h.ship.Equipment = append(h.ship.Equipment, e)
+			player.Ship.Equipment = append(player.Ship.Equipment, e)
 		}
 	}
 
-	h.infoTable.Class.update(h.ship.Name, h.ship.Class)
+	h.infoTable.Class.update(player.Ship.Name, player.Ship.Class)
 	h.infoTable.Weight.update(p.Weight)
 	h.infoTable.Durability.update(p.Health)
 	h.infoTable.Shield.update(p.Shield)
@@ -173,25 +193,23 @@ func (h *hangar) recalculate() {
 	h.infoTable.Energy.update(p.Energy, p.EnergyAcc)
 	h.infoTable.Metal.update(p.Metal, p.MetalAcc)
 
-	h.infoTable.LeftWeapon.SetWeapon(equip.Left, h.ship.LeftWeapon)
-	h.infoTable.RightWeapon.SetWeapon(equip.Right, h.ship.RightWeapon)
-	// if h.ship.LeftWeapon != nil {
-	// 	h.infoTable.newInfoWeapon(h.ship.LeftWeapon)
-	// }
-
-	// for i, w := range h.ship.Weapons {
-	// 	h.infoTable.newInfoWeapon(i, w)
-	// }
-
-	// for i := len(h.ship.Weapons); i < len(h.infoTable.Weapons); i++ {
-	// 	h.infoTable.Weapons[i].SetHidden(true)
-	// }
-
-	// log.Println(db.Ship.Weapons)
+	h.infoTable.LeftWeapon.SetWeapon(equip.Left, player.Ship.LeftWeapon)
+	h.infoTable.RightWeapon.SetWeapon(equip.Right, player.Ship.RightWeapon)
 }
 
 func (h *hangar) startBattle(wgt *fizzgui.Widget) {
+	h.cMenu.Close()
+	h.cShip.Close()
+	h.cItems.Close()
+	h.infoTable.C.Close()
 
+	h.dad.Close()
+
+	sceneIndex.Close()
+
+	game.StartBattle(player)
+
+	// Index()
 }
 
 type informationTable struct {
@@ -262,32 +280,6 @@ func (info *informationTable) newInfoWeapon(side string) *infoWeapon {
 		Range: info.newText(""),
 		Ammo:  info.newText(""),
 	}
-
-	// dps := fmt.Sprintf("  DPS: %.1f", w.InitParam.Damage/float32(w.InitParam.Rate.Seconds()))
-	// rang := fmt.Sprintf("  Range: %.1f", w.InitParam.Range)
-	// ammo := fmt.Sprintf("  Ammo: %d", w.InitParam.Ammunition)
-
-	// if i < len(info.Weapons) {
-	// 	iw := info.Weapons[i]
-	// 	iw.SetHidden(false)
-	// 	iw.Name.Text = w.Model
-	// 	iw.DPS.Text = dps
-	// 	iw.Range.Text = rang
-	// 	iw.Ammo.Text = ammo
-	// } else {
-	// 	iw := &infoWeapon{
-	// 		Side:  info.newText(side),
-	// 		Name:  info.newText(w.Name),
-	// 		DPS:   info.newText(dps),
-	// 		Range: info.newText(rang),
-	// 		Ammo:  info.newText(ammo),
-	// 	}
-	// 	info.Weapons = append(info.Weapons, iw)
-	// }
-
-	//name string, damage, rate, rang float32, ammo int
-
-	// info.Weapons = append(info.Weapons, w)
 }
 
 func (iw *infoWeapon) SetWeapon(side equip.Side, w *weapons.Weapon) {
@@ -295,18 +287,12 @@ func (iw *infoWeapon) SetWeapon(side equip.Side, w *weapons.Weapon) {
 		iw.SetHidden(true)
 		return
 	}
-
-	dps := fmt.Sprintf("  DPS: %.1f", w.InitParam.Damage/float32(w.InitParam.Rate.Seconds()))
-
-	rang := fmt.Sprintf("  Range: %.1f", w.GetAttackRange(w.InitParam))
-	ammo := fmt.Sprintf("  Ammo: %d", w.InitParam.Ammunition)
+	iw.SetHidden(false)
 
 	iw.Name.Text = fmt.Sprintf("%s: %s", side, w.Name)
-	iw.DPS.Text = dps
-	iw.Range.Text = rang
-	iw.Ammo.Text = ammo
-
-	iw.SetHidden(false)
+	iw.DPS.Text = fmt.Sprintf("  DPS: %.1f", w.InitParam.Damage/float32(w.InitParam.Rate.Seconds()))
+	iw.Range.Text = fmt.Sprintf("  Range: %.1f", w.GetAttackRange(w.InitParam))
+	iw.Ammo.Text = fmt.Sprintf("  Ammo: %d", w.InitParam.Ammunition)
 }
 
 func (iw *infoWeapon) SetHidden(b bool) {

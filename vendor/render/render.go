@@ -61,18 +61,14 @@ func drawObjects(fov, aspect float32) {
 	perspective = mgl32.Perspective(fov, aspect, 1.0, 100.0)
 	view = camera.GetViewMatrix()
 
-	for i := 0; i < len(Renderables); i++ {
-		if Renderables[i].needDestroy {
-			DeleteRenderable(i)
-			i--
-		}
-	}
+	Renderables = DeleteRenderables(Renderables)
+	Scene = DeleteRenderables(Scene)
 
 	// render not transparent bodies
 	for _, r := range Renderables {
-		if r == nil || r.needDestroy {
-			continue
-		}
+		// if r == nil || r.needDestroy {
+		// 	continue
+		// }
 		if !r.Transparent {
 			r.render()
 		}
@@ -131,11 +127,25 @@ func renderShadows() {
 	render.EndShadowMapping()
 }
 
-func DeleteRenderable(i int) {
-	copy(Renderables[i:], Renderables[i+1:])
-	Renderables[len(Renderables)-1] = nil // or the zero vRenderableslue of T
-	Renderables = Renderables[:len(Renderables)-1]
+func DeleteRenderables(a []*Renderable) []*Renderable {
+	for i := 0; i < len(a); i++ {
+		if a[i].needDestroy {
+
+			a[i] = a[len(a)-1]
+			a[len(a)-1] = nil
+			a = a[:len(a)-1]
+
+			i--
+		}
+	}
+	return a
 }
+
+// func DeleteRenderable(a []*Renderable, i int) []*Renderable {
+// 	copy(a[i:], a[i+1:])
+// 	a[len(a)-1] = nil
+// 	return a[:len(a)-1]
+// }
 
 //
 // UI

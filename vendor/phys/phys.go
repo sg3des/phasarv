@@ -6,9 +6,9 @@ import (
 	"point"
 )
 
-const GROUP_BULLET = 0
-const GROUP_PLAYER = 1
-const GROUP_STATIC = 2
+const GROUP_PLAYER = 0
+const GROUP_STATIC = 1
+const GROUP_BULLET = 2
 
 var space *Space
 
@@ -36,7 +36,6 @@ func (i *Instruction) Create(p *point.Param) *Shape {
 
 	var body *Body
 	if i.Mass > 0 {
-		log.Println(shape.Moment(i.Mass))
 		body = NewBody(i.Mass, shape.Moment(i.Mass))
 		body.SetMass(i.Mass)
 	} else {
@@ -84,4 +83,8 @@ func Hits(x0, y0, x1, y1 float32, group int, ignoreBody *Body) []*RayCastHit {
 
 func RemoveBody(body *Body) {
 	space.RemoveBody(body)
+}
+
+func RemoveShape(shape *Shape) {
+	space.RemoveShape(shape)
 }

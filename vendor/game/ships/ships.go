@@ -22,9 +22,9 @@ type Type string
 var Fighter Type = "interceptor"
 
 type Param struct {
-	equip.Param
-
 	Size mgl32.Vec3
+
+	equip.Param
 }
 
 type Ship struct {
@@ -33,12 +33,14 @@ type Ship struct {
 	Name  string
 	Class string
 	Img   string
+	Mesh  string
 	Type  Type
 
 	InitParam Param
 	CurrParam Param
 	Slots     []equip.Slot
 
+	LeftWpnPos, RightWpnPos mgl32.Vec3
 	LeftWeapon, RightWeapon *weapons.Weapon
 	Equipment               []*equip.Equip
 
@@ -52,18 +54,34 @@ type Ship struct {
 
 func (s *Ship) Create() {
 	s.CurrParam = s.InitParam
+	prm := s.InitParam
+
+	s.Object = &engine.Object{
+		Name: s.Name,
+		P:    &point.Param{Size: point.PFromVec3(prm.Size)},
+		PI: &phys.Instruction{
+			Mass:      prm.Weight,
+			Group:     phys.GROUP_PLAYER,
+			ShapeType: phys.ShapeType_Box,
+		},
+		RI: &render.Instruction{
+			MeshName: s.Mesh,
+			Material: &materials.Instruction{Name: "player", Texture: "TestCube", Shader: "basic", SpecLevel: 1},
+			Shadow:   true,
+		},
+	}
 	// p.Object.PI.Group = 2
 
-	var hb *engine.Art
 	if engine.NeedRender {
+		var hb *engine.Art
 		hb = NewHealthBar(s.InitParam.Health)
+		s.Object.Create(hb)
 	}
-	s.Object.Create(hb)
 
 	s.Object.MaxRollAngle = s.InitParam.RollAngle
 
-	s.createWeapon(s.LeftWeapon)
-	s.createWeapon(s.RightWeapon)
+	s.createWeapon(s.LeftWeapon, s.LeftWpnPos)
+	s.createWeapon(s.RightWeapon, s.RightWpnPos)
 
 	if s.Cursor == nil {
 		s.Cursor = &engine.Object{}
@@ -71,9 +89,9 @@ func (s *Ship) Create() {
 	}
 
 	if s.InitParam.MovSpeed > 5 && engine.NeedRender {
-		lf := NewFire(point.P{-0.8, 0.3, 0.1})
+		lf := NewEngineFire(point.P{-0.8, 0.3, 0.1})
 		s.Object.AppendArt(lf)
-		rf := NewFire(point.P{-0.8, -0.3, 0.1})
+		rf := NewEngineFire(point.P{-0.8, -0.3, 0.1})
 		s.Object.AppendArt(rf)
 
 		s.fires = []*engine.Art{lf, rf}
@@ -87,21 +105,22 @@ func (s *Ship) Create() {
 	s.Object.SetUserData(s)
 }
 
-func (s *Ship) createWeapon(w *weapons.Weapon) {
+func (s *Ship) createWeapon(w *weapons.Weapon, pos mgl32.Vec3) {
 	if w == nil {
 		return
 	}
 
+	w.InitParam.Pos = pos
 	w.CurrParam = w.InitParam
 	w.ShipObj = s.Object
-	w.BulletCollisionCallback = s.BulletCollision
+	w.SetBulletCollisionCallback(s.BulletCollision)
 
 	if s.Local {
 		w.Aim = w.NewAim()
 		s.Object.AppendArt(w.Aim)
 	}
 
-	s.Object.AddCallback(w.Callback)
+	// s.Object.AddCallback(w.Callback)
 }
 
 func (s *Ship) CreateCursor(color mgl32.Vec4) {
@@ -240,7 +259,6 @@ func (s *Ship) Rotate(dt float32, target mgl32.Vec2) float32 {
 }
 
 func (s *Ship) Movement(dt float32) {
-	// log.Println(p.Object.Velocity().Length())
 	speed := s.Object.Velocity().Length()
 	if speed < s.CurrParam.MovSpeed {
 		dist := s.Object.Distance(s.Cursor)
@@ -259,26 +277,19 @@ func (s *Ship) Movement(dt float32) {
 
 func (p *Ship) MouseControl(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw.ModifierKey) {
 
-	switch button {
-	case 0:
+	switch {
+	case button == 0 && p.LeftWeapon != nil:
 		p.LeftWeapon.ToShoot = action == 1
-	case 1:
+	case button == 1 && p.RightWeapon != nil:
 		p.RightWeapon.ToShoot = action == 1
 	}
-
-	// if action == 1 {
-	// 	target := GetPlayerInPoint(p.Cursor.Position())
-	// 	if target != nil {
-	// 		log.Println(target.Name)
-	// 	}
-	// }
 }
 
 // func keyboardControl(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 // 	log.Println("key", scancode)
 // }
 
-func NewFire(pos point.P) *engine.Art {
+func NewEngineFire(pos point.P) *engine.Art {
 	fire := &engine.Art{
 		Name:     "fire",
 		MaxValue: 10,

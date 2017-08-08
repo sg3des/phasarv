@@ -32,6 +32,7 @@ func (o *Object) PositionVect() vect.Vect {
 
 func (o *Object) PositionVec2() mgl32.Vec2 {
 	if o.shape != nil {
+		// log.Println(o.shape.Body)
 		v := o.shape.Body.Position()
 		return mgl32.Vec2{v.X, v.Y}
 	}

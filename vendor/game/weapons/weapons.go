@@ -4,6 +4,7 @@ import (
 	"engine"
 	"game/equip"
 	"materials"
+	"phys"
 	"phys/vect"
 	"point"
 	"render"
@@ -25,8 +26,6 @@ var TypeGuided SubType = 'g'
 var TypeHoming SubType = 'h'
 
 type Param struct {
-	Pos vect.Vect
-
 	Delay time.Duration
 	Rate  time.Duration
 	Range time.Duration
@@ -53,6 +52,7 @@ type Weapon struct {
 	Type      Type
 	SubType   SubType
 	EquipType equip.Type
+	SlotName  string
 
 	InitParam Param
 	CurrParam Param
@@ -67,29 +67,25 @@ type Weapon struct {
 	Target    *engine.Object
 	CursorPos mgl32.Vec2
 
-	BulletCollisionCallback
+	bulletCollisionCallback BulletCollisionCallback
 
 	Turret *engine.Art
 	Aim    *engine.Art
 }
 
-func (w *Weapon) Callback(dt float32) {
-	w.update()
-
-	if w.Aim != nil && w.Aim.Art != nil {
-		w.Aim.Art.Angle = w.CurrParam.Angle
-	}
-
+func (w *Weapon) SetBulletCollisionCallback(f BulletCollisionCallback) {
+	w.bulletCollisionCallback = f
 }
 
-func (w *Weapon) update() {
+func (w *Weapon) UpdateCursor(x, y float32) {
 	w.absAngle = w.ShipObj.Rotation()
-	w.CurrParam.Pos = w.ShipObj.PositionVect()
-	w.CurrParam.Pos = w.CurrParam.Pos.SubPoint(w.absAngle-1.5704, w.InitParam.Pos)
+	wpnpos := w.ShipObj.PositionVect()
+	wpnpos = wpnpos.SubPoint(w.absAngle-1.5704, vect.FromVec3(w.InitParam.Pos))
+	w.CurrParam.Pos = wpnpos.Vec3()
 
-	cPos := vect.FromVec2(w.CursorPos)
+	cPos := vect.Vect{x, y}
 
-	w.CurrParam.Angle = w.CurrParam.Pos.SubAngle(w.absAngle, cPos)
+	w.CurrParam.Angle = wpnpos.SubAngle(w.absAngle, cPos)
 	if w.CurrParam.Angle > w.InitParam.Angle {
 		w.CurrParam.Angle = w.InitParam.Angle
 	}
@@ -98,17 +94,23 @@ func (w *Weapon) update() {
 	}
 	w.absAngle += w.CurrParam.Angle
 
-	cPos.Sub(w.CurrParam.Pos)
+	cPos.Sub(wpnpos)
 	dist := cPos.Length()
 	if ar := w.GetAttackRange(w.CurrParam); dist > ar {
 		dist = ar
 	}
 
+	// av := vect.FromAngle(w.absAngle + w.CurrParam.Angle)
+
 	av := vect.FromAngle(w.CurrParam.Angle)
 	av.Mult(dist)
-	av.Add(w.CurrParam.Pos)
+	av.Add(wpnpos)
 
 	w.CursorPos = av.Vec2()
+
+	if w.Aim != nil && w.Aim.Art != nil {
+		w.Aim.Art.Angle = w.CurrParam.Angle
+	}
 }
 
 //Fire is main function for make shoot
@@ -154,6 +156,9 @@ func (w *Weapon) Shoot() *Bullet {
 	}
 
 	*b.Object = *w.BulletObj
+	if b.Object.PI != nil {
+		b.Object.PI.Group = phys.GROUP_BULLET
+	}
 
 	switch w.Type {
 	case Gun:
@@ -190,7 +195,7 @@ func (w *Weapon) Shoot() *Bullet {
 func (w *Weapon) NewAim() *engine.Art {
 	ar := w.GetAttackRange(w.InitParam)
 
-	wX, wY := w.ShipObj.VectorSide(w.InitParam.Pos.X, -1.5704)
+	wX, wY := w.ShipObj.VectorSide(w.InitParam.Pos[0], -1.5704)
 
 	return &engine.Art{
 		Name:     "aim",

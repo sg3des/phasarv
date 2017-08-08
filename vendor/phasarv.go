@@ -45,7 +45,7 @@ func local() {
 			rooms.Index()
 			return
 		case "hangar":
-			rooms.Hangar()
+			rooms.Hangar(randomName())
 			return
 		default:
 			log.Fatalln("unknown room %s", args.Room)
@@ -66,7 +66,10 @@ func networkPlay() {
 
 func localPlay() {
 	scenes.Load("scene00")
-	game.CreateLocalPlayer(db.GetPlayer(randomName()))
+
+	player := db.GetPlayer(randomName())
+	player.Ship.LeftWeapon = db.GetWeapon("laser0")
+	game.CreateLocalPlayer(player)
 	// for i := 0; i < 10; i++ {
 	// 	game.CreateEnemy()
 	// }

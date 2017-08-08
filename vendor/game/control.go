@@ -19,10 +19,13 @@ func (p *Player) CameraMovement(dt float32) {
 	x = (x-w/2)/d*campos.Z() + campos.X()
 	y = (h/2-y)/d*campos.Z() + campos.Y()
 
-	// p.Ship.Cursor.SetPosition(getCursorPos(x, y, w, h, render.GetCameraPosition()))
 	p.Ship.Cursor.SetPosition(x, y)
-	p.Ship.LeftWeapon.CursorPos = mgl32.Vec2{x, y}
-	p.Ship.RightWeapon.CursorPos = mgl32.Vec2{x, y}
+	if p.Ship.LeftWeapon != nil {
+		p.Ship.LeftWeapon.UpdateCursor(x, y)
+	}
+	if p.Ship.RightWeapon != nil {
+		p.Ship.RightWeapon.UpdateCursor(x, y)
+	}
 }
 
 func getCursorPos(x, y, w, h float32, campos mgl32.Vec3) (float32, float32) {

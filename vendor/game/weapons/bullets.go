@@ -3,6 +3,7 @@ package weapons
 import (
 	"log"
 	"phys"
+	"phys/vect"
 	"point"
 	"time"
 
@@ -31,7 +32,7 @@ type Bullet struct {
 
 //CreateObject create bullet for gun and rocket
 func (b *Bullet) CreateObject() {
-	b.Object.P.Pos = point.PFromVect(b.Weapon.CurrParam.Pos)
+	b.Object.P.Pos = point.PFromVec3(b.Weapon.CurrParam.Pos)
 	b.Object.P.Angle = b.Weapon.absAngle
 
 	b.Object.Create()
@@ -66,7 +67,7 @@ func (b *Bullet) Rocket() {
 
 	b.CreateObject()
 	b.Object.AddCallback(b.rocketCallback)
-	b.Object.SetVelocity(b.Weapon.ShipObj.VectorSide(b.Object.PI.Mass*5*b.Weapon.InitParam.Pos.X, -1.5704))
+	b.Object.SetVelocity(b.Weapon.ShipObj.VectorSide(b.Object.PI.Mass*5*b.Weapon.InitParam.Pos[0], -1.5704))
 
 	b.Object.AddTrail(mgl32.Vec3{-0.2, 0, 0}, int(b.MovSpeed), point.P{0.3, 0.2, 1}, 1)
 
@@ -77,13 +78,18 @@ func (b *Bullet) Rocket() {
 //Laser create laser line
 func (b *Bullet) Laser() {
 	h := b.Weapon.GetAttackRange(b.Weapon.CurrParam)
-	x, y := b.Weapon.CurrParam.Pos.Elem()
-	tx, ty := b.Weapon.CursorPos.Elem()
+	x, y, _ := b.Weapon.CurrParam.Pos.Elem()
+	// tx, ty := b.Weapon.CursorPos.Elem()
+
+	av := vect.FromAngle(b.Weapon.CurrParam.Angle)
+	av.Mult(h)
+	av.Add(vect.FromVec2(b.Weapon.CursorPos))
+	tx, ty := av.Elem()
 
 	o, dist := b.Weapon.ShipObj.GetNearObjectByRay(x, y, tx, ty)
 	if o != nil {
-		if b.Weapon.BulletCollisionCallback != nil {
-			b.Weapon.BulletCollisionCallback(b, o)
+		if b.Weapon.bulletCollisionCallback != nil {
+			b.Weapon.bulletCollisionCallback(b, o)
 		}
 		h = dist
 	}
@@ -169,8 +175,8 @@ func (b *Bullet) collision(arb *phys.Arbiter) bool {
 		return false
 	}
 
-	if b.Weapon.BulletCollisionCallback != nil {
-		des := b.Weapon.BulletCollisionCallback(b, target)
+	if b.Weapon.bulletCollisionCallback != nil {
+		des := b.Weapon.bulletCollisionCallback(b, target)
 		if des {
 			b.Destroy()
 		}

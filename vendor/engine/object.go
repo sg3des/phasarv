@@ -131,71 +131,21 @@ func (o *Object) Destroy() {
 		return
 	}
 
-	// o.needDestroy = true
-
-	if o.shape != nil {
-		o.shape.Body.Enabled = false
-		phys.RemoveBody(o.shape.Body)
-		// space.RemoveShape(o.Shape) - crash need TODO
-	}
-
-	o.renderable.Destroy()
-	o.needDestroy = true
-
-	// Objects[o] = false
-
-	for child := range o.Childs {
-		child.Destroy()
-	}
-
-	// o.renderable.Destroy()
-	// delete(Objects, o)
-	// o = nil
+	o.Remove()
 }
 
 func (o *Object) Remove() {
-	// o.needDestroy = true
-
 	if o.shape != nil {
 		o.shape.Body.Enabled = false
+		// phys.RemoveShape(o.shape)
 		phys.RemoveBody(o.shape.Body)
-		// space.RemoveShape(o.Shape) - crash need TODO
+		o.shape = nil
 	}
 
 	o.renderable.Destroy()
 	o.needDestroy = true
-
-	// Objects[o] = false
 
 	for child := range o.Childs {
 		child.Remove()
 	}
-
 }
-
-// func (o *Object) Clone() *Object {
-// 	newObject := &Object{
-// 		Name:         o.Name,
-// 		Node:         o.Node.Clone(),
-// 		MaxRollAngle: o.MaxRollAngle,
-
-// 		Shadow:      o.Shadow,
-// 		Transparent: o.Transparent,
-
-// 		ArtStatic: o.ArtStatic,
-// 		ArtRotate: o.ArtRotate,
-
-// 		// Callback:    o.Callback,
-// 		Callbacks:   o.Callbacks,
-// 		DestroyFunc: o.DestroyFunc,
-
-// 		Param: o.Param,
-// 	}
-
-// 	newObject.SetPhys(o.Param.Phys)
-// 	newObject.Node.Material = NewMaterial(o.Param.Material)
-
-// 	Objects[newObject] = true
-
-// 	return newObject
-// }

@@ -4,6 +4,7 @@ import (
 	"log"
 	"path/filepath"
 
+	"github.com/go-gl/mathgl/mgl32"
 	"github.com/sg3des/fizzgui"
 )
 
@@ -25,6 +26,7 @@ func loadTexture(dir, img string) *fizzgui.Texture {
 
 //Param is main structure contains common parameters
 type Param struct {
+	Pos                           mgl32.Vec3
 	Weight                        float32
 	MovSpeed, RotSpeed, RollAngle float32
 	Health, Shield                float32
@@ -46,9 +48,10 @@ func (p Param) Summ(p2 Param) Param {
 
 //Equip is equipment for ships, sush as engine, generators, shields etc...
 type Equip struct {
-	Name string
-	Img  string
-	Type Type
+	Name     string
+	SlotName string
+	Img      string
+	Type     Type
 
 	Param Param
 }
@@ -63,6 +66,7 @@ func (e Equip) ImgPath() string {
 
 //Slot equipment slot on ships
 type Slot struct {
+	Name       string //should be unique
 	X, Y, W, H string
 	Type       Type
 	Side       Side

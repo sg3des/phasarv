@@ -3,7 +3,7 @@ package game
 import (
 	"engine"
 	"game/ships"
-	"render"
+	"scenes"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/tbogdala/fizzle"
@@ -17,7 +17,15 @@ var (
 
 	//NeedRender flag if it false, graphics elements(bars,aims,trails,etc...) should not be initialized.
 	NeedRender bool
+
+	scene *scenes.Scene
 )
+
+func StartBattle(p *Player) {
+	scene = scenes.Load("scene00")
+
+	CreateLocalPlayer(p)
+}
 
 type Player struct {
 	Name string
@@ -25,13 +33,15 @@ type Player struct {
 
 	Target *Player
 
+	WeaponsIDs []string
+	EquipIDs   []string
+
 	targetAngle  float32
 	respawnPoint mgl32.Vec2
 }
 
 func CreateLocalPlayer(p *Player) {
-	Camera = render.NewCamera(mgl32.Vec3{0, 0, 40})
-	Camera.LookAtDirect(mgl32.Vec3{0, 0, 0})
+	Camera = scenes.Camera
 
 	p.Ship.Local = true
 	// p := &Player{Param: paramPlayer}

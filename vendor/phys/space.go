@@ -629,6 +629,10 @@ func spaceCollideShapes(a, b Indexable, null Data) {
 
 func SpaceCollideShapes(a, b *Shape, space *Space) {
 	// log.Println(a.Group, b.Group, queryReject(a, b))
+	// if a == nil || b == nil || a.Body == nil || b.Body == nil {
+	// 	return
+	// }
+
 	if queryReject(a, b) {
 		return
 	}
@@ -678,6 +682,11 @@ func SpaceCollideShapes(a, b *Shape, space *Space) {
 	if oldContacts != nil {
 		space.pushContactBuffer(oldContacts)
 	}
+
+	// if a == nil || b == nil || a.Body == nil || b.Body == nil {
+	// 	return
+	// }
+	// log.Println(a.Body, b.Body.CallbackHandler, arb)
 
 	space.cachedArbiters[arbHashID] = arb
 

@@ -18,23 +18,26 @@ func CreateEnemy() {
 	x, y := engine.GetRandomPoint(50, 50)
 
 	s := &ships.Ship{
-		Object: &engine.Object{
-			Name: "enemy",
-			P: &point.Param{
-				Pos: point.P{x, y, 0},
-			},
-			RI: &render.Instruction{
-				MeshName: "trapeze",
-				Material: &materials.Instruction{Name: "enemy", Texture: "TestCube", Shader: "basic", SpecLevel: 1},
+		// Object: &engine.Object{
+		// 	Name: "enemy",
+		// 	P: &point.Param{
+		// 		Pos: point.P{x, y, 0},
+		// 	},
+		// 	RI: &render.Instruction{
+		// 		MeshName: "trapeze",
+		// 		Material: &materials.Instruction{Name: "enemy", Texture: "TestCube", Shader: "basic", SpecLevel: 1},
 
-				Shadow: true,
-			},
-			PI: &phys.Instruction{Mass: 12, Group: 1, ShapeType: phys.ShapeType_Box},
-		},
+		// 		Shadow: true,
+		// 	},
+		// 	PI: &phys.Instruction{Mass: 12, Group: 1, ShapeType: phys.ShapeType_Box},
+		// },
 
+		Mesh: "trapeze",
 		InitParam: ships.Param{
-			Size: mgl32.Vec3{1, 1, 1},
+			Size: mgl32.Vec3{2, 2, 2},
 			Param: equip.Param{
+				Pos:      mgl32.Vec3{x, y},
+				Weight:   12,
 				Health:   100,
 				MovSpeed: 0,
 				RotSpeed: 50,
