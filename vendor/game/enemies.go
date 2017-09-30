@@ -33,15 +33,13 @@ func CreateEnemy() {
 		// },
 
 		Mesh: "trapeze",
-		InitParam: ships.Param{
-			Size: mgl32.Vec3{2, 2, 2},
-			Param: equip.Param{
-				Pos:      mgl32.Vec3{x, y},
-				Weight:   12,
-				Health:   100,
-				MovSpeed: 0,
-				RotSpeed: 50,
-			},
+		Size: mgl32.Vec3{2, 2, 2},
+		InitParam: equip.Param{
+			Pos:      mgl32.Vec3{x, y},
+			Weight:   12,
+			Health:   100,
+			MovSpeed: 0,
+			RotSpeed: 50,
 		},
 
 		LeftWeapon: &weapons.Weapon{

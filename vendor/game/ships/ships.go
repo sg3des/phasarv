@@ -21,12 +21,6 @@ type Type string
 
 var Fighter Type = "interceptor"
 
-type Param struct {
-	Size mgl32.Vec3
-
-	equip.Param
-}
-
 type Ship struct {
 	Object *engine.Object
 
@@ -35,9 +29,10 @@ type Ship struct {
 	Img   string
 	Mesh  string
 	Type  Type
+	Size  mgl32.Vec3
 
-	InitParam Param
-	CurrParam Param
+	InitParam equip.Param
+	CurrParam equip.Param
 	Slots     []equip.Slot
 
 	LeftWpnPos, RightWpnPos mgl32.Vec3
@@ -54,13 +49,14 @@ type Ship struct {
 
 func (s *Ship) Create() {
 	s.CurrParam = s.InitParam
-	prm := s.InitParam
+	log.Printf("%+v : %+v", s.CurrParam, s.InitParam)
+	// prm := s.InitParam
 
 	s.Object = &engine.Object{
 		Name: s.Name,
-		P:    &point.Param{Size: point.PFromVec3(prm.Size)},
+		P:    &point.Param{Size: point.PFromVec3(s.Size)},
 		PI: &phys.Instruction{
-			Mass:      prm.Weight,
+			Mass:      s.InitParam.Weight,
 			Group:     phys.GROUP_PLAYER,
 			ShapeType: phys.ShapeType_Box,
 		},
@@ -260,6 +256,9 @@ func (s *Ship) Rotate(dt float32, target mgl32.Vec2) float32 {
 
 func (s *Ship) Movement(dt float32) {
 	speed := s.Object.Velocity().Length()
+
+	log.Println(speed, s.CurrParam.MovSpeed)
+
 	if speed < s.CurrParam.MovSpeed {
 		dist := s.Object.Distance(s.Cursor)
 		s.Object.AddVelocity(s.Object.VectorForward(s.CurrParam.MovSpeed * 0.05 * dist * dt))

@@ -149,13 +149,12 @@ func (h *hangar) takeOff(item *fizzgui.DADItem, slot *fizzgui.DADSlot, prevSlot 
 }
 
 func (h *hangar) recalculate() {
-	p := player.Ship.InitParam.Param
+	//get initial ship param
+	p := player.Ship.InitParam
 
 	player.Ship.Equipment = nil
 	player.Ship.LeftWeapon = nil
 	player.Ship.RightWeapon = nil
-
-	// h.ship.CurrParam = h.ship.InitParam
 
 	for _, slot := range h.shipSlots {
 		if slot.Item == nil {
@@ -184,6 +183,9 @@ func (h *hangar) recalculate() {
 		}
 	}
 
+	//store calculated params to currParam, on start battle - currParam copy to initParam.
+	player.Ship.CurrParam = p
+
 	h.infoTable.Class.update(player.Ship.Name, player.Ship.Class)
 	h.infoTable.Weight.update(p.Weight)
 	h.infoTable.Durability.update(p.Health)
@@ -206,6 +208,9 @@ func (h *hangar) startBattle(wgt *fizzgui.Widget) {
 	h.dad.Close()
 
 	sceneIndex.Close()
+
+	player.Ship.InitParam = player.Ship.CurrParam
+	log.Printf("%+v", player.Ship.InitParam)
 
 	game.StartBattle(player)
 

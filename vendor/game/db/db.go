@@ -127,20 +127,18 @@ func SetInitialValues() {
 		Img:  "red",
 		Mesh: "trapeze",
 		Type: ships.Fighter,
+		Size: mgl32.Vec3{2, 2, 2},
 
-		InitParam: ships.Param{
-			Size: mgl32.Vec3{2, 2, 2},
-			Param: equip.Param{
-				Weight:    20,
-				Health:    40,
-				MovSpeed:  0,
-				RotSpeed:  0,
-				RollAngle: 1.57,
-				Energy:    10,
-				EnergyAcc: 1,
-				Metal:     22,
-				MetalAcc:  0.1,
-			},
+		InitParam: equip.Param{
+			Weight:    12,
+			Health:    40,
+			MovSpeed:  0,
+			RotSpeed:  25,
+			RollAngle: 1.57,
+			Energy:    10,
+			EnergyAcc: 1,
+			Metal:     22,
+			MetalAcc:  0.1,
 		},
 
 		LeftWpnPos:  mgl32.Vec3{-1, 0, 0},

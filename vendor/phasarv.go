@@ -31,6 +31,7 @@ func init() {
 
 func main() {
 	game.NeedRender = true
+	db.SetInitialValues()
 	engine.Client(local, keyCallback)
 }
 
