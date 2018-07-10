@@ -25,37 +25,14 @@ var TypeAimed SubType = 'a'
 var TypeGuided SubType = 'g'
 var TypeHoming SubType = 'h'
 
-type Param struct {
-	Delay time.Duration
-	Rate  time.Duration
-	Range time.Duration
-
-	Angle float32
-
-	Ammunition int
-	ReloadTime time.Duration
-	ReloadCost float32
-
-	Damage float32
-
-	BulletMovSpeed float32
-	BulletRotSpeed float32
-
-	equip.Param
-}
-
 type Weapon struct {
 	ShipObj *engine.Object
 
-	Name      string
-	Img       string
-	Type      Type
-	SubType   SubType
-	EquipType equip.Type
-	SlotName  string
+	equip.Equip
 
-	InitParam Param
-	CurrParam Param
+	Type    Type
+	SubType SubType
+
 	BulletObj *engine.Object
 
 	absAngle float32
@@ -86,11 +63,11 @@ func (w *Weapon) UpdateCursor(x, y float32) {
 	cPos := vect.Vect{x, y}
 
 	w.CurrParam.Angle = wpnpos.SubAngle(w.absAngle, cPos)
-	if w.CurrParam.Angle > w.InitParam.Angle {
+	if w.CurrParam.Angle > 0 && w.CurrParam.Angle > w.InitParam.Angle {
 		w.CurrParam.Angle = w.InitParam.Angle
 	}
-	if w.CurrParam.Angle < -w.InitParam.Angle {
-		w.CurrParam.Angle = -w.InitParam.Angle
+	if w.CurrParam.Angle < 0 && w.CurrParam.Angle < w.InitParam.Angle*-1 {
+		w.CurrParam.Angle = w.InitParam.Angle * -1
 	}
 	w.absAngle += w.CurrParam.Angle
 
@@ -100,9 +77,7 @@ func (w *Weapon) UpdateCursor(x, y float32) {
 		dist = ar
 	}
 
-	// av := vect.FromAngle(w.absAngle + w.CurrParam.Angle)
-
-	av := vect.FromAngle(w.CurrParam.Angle)
+	av := vect.FromAngle(w.absAngle)
 	av.Mult(dist)
 	av.Add(wpnpos)
 
@@ -217,7 +192,7 @@ func (w *Weapon) NewAim() *engine.Art {
 	}
 }
 
-func (w *Weapon) GetAttackRange(p Param) (ar float32) {
+func (w *Weapon) GetAttackRange(p equip.Param) (ar float32) {
 	ar = float32(p.Range.Seconds())
 	if p.BulletMovSpeed > 0 {
 		if w.Type == Rocket {

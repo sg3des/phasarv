@@ -2,6 +2,7 @@ package game
 
 import (
 	"engine"
+	"game/equip"
 	"game/ships"
 	"scenes"
 
@@ -28,13 +29,14 @@ func StartBattle(p *Player) {
 }
 
 type Player struct {
-	Name string
-	Ship *ships.Ship
+	Name      string
+	Ship      *ships.Ship
+	Inventory []*equip.Equip
 
 	Target *Player
 
-	WeaponsIDs []string
-	EquipIDs   []string
+	// WeaponsIDs []string
+	// EquipIDs   []string
 
 	targetAngle  float32
 	respawnPoint mgl32.Vec2

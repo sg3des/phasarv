@@ -5,9 +5,8 @@ import (
 	"game/db"
 	controllers "game/network-controllers"
 	"game/rooms"
-	"strings"
-	// "game/rooms"
 	"scenes"
+	"strings"
 
 	"log"
 	"math/rand"
@@ -49,7 +48,7 @@ func local() {
 			rooms.Hangar(randomName())
 			return
 		default:
-			log.Fatalln("unknown room %s", args.Room)
+			log.Fatalf("unknown room %s", args.Room)
 		}
 	}
 
@@ -70,6 +69,7 @@ func localPlay() {
 
 	player := db.GetPlayer(randomName())
 	player.Ship.LeftWeapon = db.GetWeapon("laser0")
+	player.Ship.RightWeapon = db.GetWeapon("rocket0")
 	game.CreateLocalPlayer(player)
 	// for i := 0; i < 10; i++ {
 	// 	game.CreateEnemy()

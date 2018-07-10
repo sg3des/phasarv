@@ -49,7 +49,7 @@ type Ship struct {
 
 func (s *Ship) Create() {
 	s.CurrParam = s.InitParam
-	log.Printf("%+v : %+v", s.CurrParam, s.InitParam)
+	// log.Printf("%+v : %+v", s.CurrParam, s.InitParam)
 	// prm := s.InitParam
 
 	s.Object = &engine.Object{
@@ -257,7 +257,7 @@ func (s *Ship) Rotate(dt float32, target mgl32.Vec2) float32 {
 func (s *Ship) Movement(dt float32) {
 	speed := s.Object.Velocity().Length()
 
-	log.Println(speed, s.CurrParam.MovSpeed)
+	// log.Println(speed, s.CurrParam.MovSpeed)
 
 	if speed < s.CurrParam.MovSpeed {
 		dist := s.Object.Distance(s.Cursor)

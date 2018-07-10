@@ -80,9 +80,11 @@ const MESH_BOX = "box"
 func (i *Instruction) createBody(p *point.Param) (body *fizzle.Renderable) {
 	switch i.MeshName {
 	case "plane":
-		body = fizzle.CreatePlaneV(mgl32.Vec3{-p.Size.X / 2, -p.Size.Y / 2, 0}, mgl32.Vec3{p.Size.X / 2, p.Size.Y / 2, 0})
+		body = fizzle.CreatePlaneXY(-p.Size.X/2, -p.Size.Y/2, p.Size.X/2, p.Size.Y/2)
+		// body = fizzle.CreatePlaneV(mgl32.Vec3{-p.Size.X / 2, -p.Size.Y / 2, 0}, mgl32.Vec3{p.Size.X / 2, p.Size.Y / 2, 0})
 	case "vector":
-		body = fizzle.CreatePlaneV(mgl32.Vec3{0, -p.Size.Y / 2, 0}, mgl32.Vec3{p.Size.X, p.Size.Y / 2, 0})
+		body = fizzle.CreatePlaneXY(0, -p.Size.Y/2, p.Size.X, p.Size.Y/2)
+		// body = fizzle.CreatePlaneV(mgl32.Vec3{0, -p.Size.Y / 2, 0}, mgl32.Vec3{p.Size.X, p.Size.Y / 2, 0})
 	case "box":
 		log.Println("warning: fixed size")
 		body = fizzle.CreateCube(-1, -1, -0.5, 1, 1, 0.5)

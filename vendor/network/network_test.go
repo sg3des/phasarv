@@ -2,7 +2,6 @@ package network
 
 import (
 	"encoding/gob"
-	"fmt"
 	"log"
 	"testing"
 	"time"
@@ -16,22 +15,22 @@ type TServer struct{}
 type TClient struct{}
 
 func (TServer) HanName0(req *Request) interface{} {
-	s, ok := req.Data.(Data)
-	if !ok {
-		return nil
-	}
-	fmt.Println("server get message:", s.Msg)
+	// _, ok := req.Data.(Data)
+	// if !ok {
+	// 	return nil
+	// }
+	// fmt.Println("server get message:", s.Msg)
 	return Data{"hello i`m server"}
 }
 func (TServer) HanName1(req *Request) interface{} {
 	return nil
 }
 func (TClient) HanClient0(req *Request) interface{} {
-	s, ok := req.Data.(Data)
-	if !ok {
-		return nil
-	}
-	fmt.Println("client get message:", s.Msg)
+	// s, ok := req.Data.(Data)
+	// if !ok {
+	// 	return nil
+	// }
+	// fmt.Println("client get message:", s.Msg)
 	return nil
 }
 
@@ -80,6 +79,33 @@ func TestNewConnection(t *testing.T) {
 
 	time.Sleep(1 * time.Second)
 	s.Close()
+}
+
+func BenchmarkRPCGOB(b *testing.B) {
+	b.StopTimer()
+	gob.Register(Data{})
+
+	var hs TServer
+	s := NewConnection(hs)
+	if err := s.Server("127.0.0.1:9690"); err != nil {
+		b.Error(err)
+	}
+	defer s.Close()
+
+	time.Sleep(1 * time.Second)
+
+	var hc TClient
+	c := NewConnection(hc)
+	if err := c.Client("127.0.0.1:9690"); err != nil {
+		b.Error(err)
+	}
+	defer c.Close()
+
+	b.StartTimer()
+
+	for i := 0; i < b.N; i++ {
+		c.SendMessage(hs.HanName0, hc.HanClient0, Data{"hello i`m client"})
+	}
 }
 
 // func TestServerClient(t *testing.T) {

@@ -81,13 +81,13 @@ func (b *Bullet) Laser() {
 	x, y, _ := b.Weapon.CurrParam.Pos.Elem()
 	// tx, ty := b.Weapon.CursorPos.Elem()
 
-	av := vect.FromAngle(b.Weapon.CurrParam.Angle)
+	av := vect.FromAngle(b.Weapon.absAngle)
 	av.Mult(h)
 	av.Add(vect.FromVec2(b.Weapon.CursorPos))
 	tx, ty := av.Elem()
 
-	o, dist := b.Weapon.ShipObj.GetNearObjectByRay(x, y, tx, ty)
-	if o != nil {
+	if o, dist := b.Weapon.ShipObj.GetNearObjectByRay(x, y, tx, ty); o != nil {
+		log.Println(o, dist)
 		if b.Weapon.bulletCollisionCallback != nil {
 			b.Weapon.bulletCollisionCallback(b, o)
 		}

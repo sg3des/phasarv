@@ -155,7 +155,7 @@ func (c *Connection) carrier() {
 			break
 		}
 
-		var b = make([]byte, 8192)
+		var b = make([]byte, 1024)
 		i, addr, err := c.Conn.ReadFromUDP(b)
 		if err != nil {
 
@@ -163,7 +163,7 @@ func (c *Connection) carrier() {
 			// if c.Type == client {
 			// 	c.Close()
 			// }
-			log.Println(c.Type, "failed read udp package, error: ", err)
+			// log.Println(c.Type, "failed read udp package, error: ", err)
 			c.Close()
 			break
 		}
@@ -180,31 +180,34 @@ func (c *Connection) carrier() {
 		}
 		// c.Clients = append(c.Clients, addr)
 
-		m, err := c.decodeMessage(b)
-		if err != nil {
-			log.Println(c.Type, "failed decode message", err)
-			continue
-		}
-
-		// log.Println(addr)
-
-		req := &Request{
-			Conn:       c.Conn,
-			RemoteAddr: addr,
-			Message:    m,
-		}
-
-		responseMsg, err := c.callHandler(req)
-		if err != nil {
-			log.Println(c.Type, "failed send response:", err)
-			continue
-		}
-		if responseMsg != nil {
-			_, err := c.Conn.WriteToUDP(responseMsg, addr)
+		go func(b []byte) {
+			m, err := c.decodeMessage(b)
 			if err != nil {
-				log.Println("failed write to udp channel:", err)
+				log.Println(c.Type, "failed decode message", err)
+				return
 			}
-		}
+
+			// log.Println(addr)
+
+			req := &Request{
+				Conn:       c.Conn,
+				RemoteAddr: addr,
+				Message:    m,
+			}
+
+			responseMsg, err := c.callHandler(req)
+			if err != nil {
+				log.Println(c.Type, "failed send response:", err)
+				return
+			}
+			if responseMsg != nil {
+				_, err := c.Conn.WriteToUDP(responseMsg, addr)
+				if err != nil {
+					return
+					// log.Println("failed write to udp channel:", err)
+				}
+			}
+		}(b)
 	}
 }
 

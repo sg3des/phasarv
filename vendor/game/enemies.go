@@ -46,12 +46,16 @@ func CreateEnemy() {
 			Type:    weapons.Rocket,
 			SubType: weapons.TypeHoming,
 
-			InitParam: weapons.Param{
-				Rate:           1e9,
-				BulletMovSpeed: 20,
-				BulletRotSpeed: 50,
-				Range:          10e9,
-				Damage:         20,
+			Equip: equip.Equip{
+				InitParam: equip.Param{
+					WeaponParam: equip.WeaponParam{
+						Rate:           1e9,
+						BulletMovSpeed: 20,
+						BulletRotSpeed: 50,
+						Range:          10e9,
+						Damage:         20,
+					},
+				},
 			},
 
 			BulletObj: &engine.Object{

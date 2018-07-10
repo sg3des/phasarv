@@ -31,66 +31,75 @@ func init() {
 		SetInitialValues()
 	}
 
-	table := db.Table("ships").All()
-	for {
-		var item ships.Ship
-		s, _, err := table.Next(&item)
-		if err != nil {
-			break
-		}
-		log.Println("s", s)
-	}
+	// table := db.Table("ships").All()
+	// for table.Next() {
+	// 	var item ships.Ship
+	// 	err := table.Decode(&item)
+	// 	if err != nil {
+	// 		log.Println("ERROR:", err)
+	// 		break
+	// 	}
+	// 	log.Printf("SHIP: %+v", item)
+	// }
 
-	tablew := db.Table("weapons").All()
-	for {
-		var item weapons.Weapon
-		s, _, err := tablew.Next(&item)
-		if err != nil {
-			break
-		}
-		log.Println("w", s)
-	}
+	// table = db.Table("weapons").All()
+	// for table.Next() {
+	// 	var item weapons.Weapon
+	// 	err := table.Decode(&item)
+	// 	if err != nil {
+	// 		log.Println("ERROR:", err)
+	// 		break
+	// 	}
+	// 	log.Printf("WEAPON: %+v", item)
+	// }
 
-	tablee := db.Table("equip").All()
-	for {
-		var item equip.Equip
-		s, _, err := tablee.Next(&item)
-		if err != nil {
-			break
-		}
-		log.Println("e", s)
-	}
+	// table = db.Table("equip").All()
+	// for table.Next() {
+	// 	var item equip.Equip
+	// 	err := table.Decode(&item)
+	// 	if err != nil {
+	// 		log.Println("ERROR:", err)
+	// 		break
+	// 	}
+	// 	log.Printf("EQUIP: %+v", item)
+	// }
 
 }
 
 func GetPlayer(name string) *game.Player {
 	return &game.Player{
-		Name:       name,
-		Ship:       GetShip("ship0"),
-		WeaponsIDs: []string{"gun0", "rocket0", "laser0"},
-		EquipIDs:   []string{"engine0"},
+		Name: name,
+		Ship: GetShip("ship0"),
+		Inventory: []*equip.Equip{
+			&equip.Equip{Name: "gun0", EquipType: equip.TypeWeapon},
+			&equip.Equip{Name: "rocket0", EquipType: equip.TypeWeapon},
+			&equip.Equip{Name: "laser0", EquipType: equip.TypeWeapon},
+			&equip.Equip{Name: "engine0", EquipType: equip.TypeEngine},
+		},
+		// WeaponsIDs: []string{"gun0", "rocket0", "laser0"},
+		// EquipIDs:   []string{"engine0"},
 	}
 }
 
-func GetPlayerWeapons(IDs []string) (list []*weapons.Weapon) {
-	table := db.Table("weapons")
-	for _, id := range IDs {
-		var w *weapons.Weapon
-		table.Get(id, &w)
-		list = append(list, w)
-	}
-	return
-}
+// func GetPlayerWeapons(IDs []string) (list []*weapons.Weapon) {
+// 	table := db.Table("weapons")
+// 	for _, id := range IDs {
+// 		var w *weapons.Weapon
+// 		table.Get(id, &w)
+// 		list = append(list, w)
+// 	}
+// 	return
+// }
 
-func GetPlayerEquip(IDs []string) (list []*equip.Equip) {
-	table := db.Table("equip")
-	for _, id := range IDs {
-		var e *equip.Equip
-		table.Get(id, &e)
-		list = append(list, e)
-	}
-	return
-}
+// func GetPlayerEquip(IDs []string) (list []*equip.Equip) {
+// 	table := db.Table("equip")
+// 	for _, id := range IDs {
+// 		var e *equip.Equip
+// 		table.Get(id, &e)
+// 		list = append(list, e)
+// 	}
+// 	return
+// }
 
 func GetShip(id string) (s *ships.Ship) {
 	_, err := db.Table("ships").Get(id, &s)
@@ -152,9 +161,9 @@ func SetInitialValues() {
 	})
 
 	db.Table("equip").Set("engine0", &equip.Equip{
-		Type: equip.TypeEngine,
-		Name: "engine-w12.m15",
-		Param: equip.Param{
+		EquipType: equip.TypeEngine,
+		Name:      "engine-w12.m15",
+		InitParam: equip.Param{
 			Weight:   12,
 			MovSpeed: 15,
 		},
@@ -163,23 +172,25 @@ func SetInitialValues() {
 
 	// tableWpns :=
 	err := db.Table("weapons").Set("gun0", &weapons.Weapon{
-		EquipType: equip.TypeWeapon,
-		Name:      "gun-d8",
-		Img:       "gun-00",
-		Type:      weapons.Gun,
-		InitParam: weapons.Param{
-			Damage:         8,
-			Rate:           3e8, //300ms
-			Range:          7e8,
-			Angle:          0.3,
-			Ammunition:     20,
-			ReloadTime:     2e9, //2sec
-			ReloadCost:     20,
-			BulletMovSpeed: 30,
-			Param: equip.Param{
+		Equip: equip.Equip{
+			EquipType: equip.TypeWeapon,
+			Name:      "gun-d8",
+			Img:       "gun-00",
+			InitParam: equip.Param{
 				Weight: 3,
+				WeaponParam: equip.WeaponParam{
+					Damage:         8,
+					Rate:           3e8, //300ms
+					Range:          7e8,
+					Angle:          0.3,
+					Ammunition:     20,
+					ReloadTime:     2e9, //2sec
+					ReloadCost:     20,
+					BulletMovSpeed: 30,
+				},
 			},
 		},
+		Type: weapons.Gun,
 		BulletObj: &engine.Object{
 			Name: "bullet",
 			P:    &point.Param{Size: point.P{0.1, 0.1, 0.1}},
@@ -196,25 +207,29 @@ func SetInitialValues() {
 	}
 
 	err = db.Table("weapons").Set("rocket0", &weapons.Weapon{
-		EquipType: equip.TypeWeapon,
-		Name:      "rocket-d15",
-		Img:       "rocket-00",
-		Type:      weapons.Rocket,
-		SubType:   weapons.TypeHoming,
-		InitParam: weapons.Param{
-			Damage:         15,
-			Rate:           5e8, //300ms
-			Range:          30e9,
-			Angle:          3,
-			Ammunition:     3,
-			ReloadTime:     5e9, //2sec
-			ReloadCost:     30,
-			BulletMovSpeed: 20,
-			BulletRotSpeed: 5,
-			Param: equip.Param{
+		Equip: equip.Equip{
+			EquipType: equip.TypeWeapon,
+			Name:      "rocket-d15",
+			Img:       "rocket-00",
+			InitParam: equip.Param{
 				Weight: 3,
+				WeaponParam: equip.WeaponParam{
+					Damage:         15,
+					Rate:           5e8, //300ms
+					Range:          30e9,
+					Angle:          3,
+					Ammunition:     3,
+					ReloadTime:     5e9, //2sec
+					ReloadCost:     30,
+					BulletMovSpeed: 20,
+					BulletRotSpeed: 5,
+				},
 			},
 		},
+
+		Type:    weapons.Rocket,
+		SubType: weapons.TypeHoming,
+
 		BulletObj: &engine.Object{
 			Name: "bullet",
 			P:    &point.Param{Size: point.P{0.1, 0.1, 0.1}},
@@ -231,22 +246,25 @@ func SetInitialValues() {
 	}
 
 	err = db.Table("weapons").Set("laser0", &weapons.Weapon{
-		EquipType: equip.TypeWeapon,
-		Name:      "laser-d15",
-		Img:       "laser-00",
-		Type:      weapons.Laser,
-		InitParam: weapons.Param{
-			Damage:     15,
-			Rate:       1e8,
-			Range:      30e9,
-			Angle:      0.9,
-			Ammunition: 5,
-			ReloadTime: 5e9,
-			ReloadCost: 25,
-			Param: equip.Param{
+		Equip: equip.Equip{
+			EquipType: equip.TypeWeapon,
+			Name:      "laser-d15",
+			Img:       "laser-00",
+			InitParam: equip.Param{
 				Weight: 3,
+				WeaponParam: equip.WeaponParam{
+					Damage:     15,
+					Rate:       1e8,
+					Range:      15e9,
+					Angle:      0.9,
+					Ammunition: 5,
+					ReloadTime: 5e9,
+					ReloadCost: 25,
+				},
 			},
 		},
+
+		Type: weapons.Laser,
 		BulletObj: &engine.Object{
 			Name: "bullet",
 			P:    &point.Param{Size: point.P{1, 1, 1}},

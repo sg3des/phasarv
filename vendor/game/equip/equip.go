@@ -3,6 +3,7 @@ package equip
 import (
 	"log"
 	"path/filepath"
+	"time"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/sg3des/fizzgui"
@@ -24,6 +25,8 @@ func loadTexture(dir, img string) *fizzgui.Texture {
 	return tex
 }
 
+//
+//
 //Param is main structure contains common parameters
 type Param struct {
 	Pos                           mgl32.Vec3
@@ -32,6 +35,26 @@ type Param struct {
 	Health, Shield                float32
 	Energy, EnergyAcc             float32
 	Metal, MetalAcc               float32
+
+	WeaponParam
+}
+
+//WeaponParam is parameters of weapons
+type WeaponParam struct {
+	Delay time.Duration
+	Rate  time.Duration
+	Range time.Duration
+
+	Angle float32
+
+	Ammunition int
+	ReloadTime time.Duration
+	ReloadCost float32
+
+	Damage float32
+
+	BulletMovSpeed float32
+	BulletRotSpeed float32
 }
 
 func (p Param) Summ(p2 Param) Param {
@@ -46,14 +69,17 @@ func (p Param) Summ(p2 Param) Param {
 	return p
 }
 
+//
+//
 //Equip is equipment for ships, sush as engine, generators, shields etc...
 type Equip struct {
-	Name     string
-	SlotName string
-	Img      string
-	Type     Type
+	Name      string
+	SlotName  string
+	Img       string
+	EquipType Type
 
-	Param Param
+	InitParam Param
+	CurrParam Param
 }
 
 func (e Equip) LoadImgUI() *fizzgui.Texture {
@@ -64,6 +90,12 @@ func (e Equip) ImgPath() string {
 	return pathJoin(AssetsItems, e.Img)
 }
 
+//
+//
+//Player
+
+//
+//
 //Slot equipment slot on ships
 type Slot struct {
 	Name       string //should be unique
@@ -73,6 +105,8 @@ type Slot struct {
 	Size       Size
 }
 
+//
+//
 //Type of equipment
 type Type byte
 

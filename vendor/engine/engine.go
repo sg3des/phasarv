@@ -45,7 +45,7 @@ func Client(userfunc func(), keys glfw.KeyCallback) {
 	NeedRender = true
 
 	var err error
-	window, err = render.NewWindow(1200, 800, "phasarv-client")
+	window, err = render.NewWindow(800, 600, "phasarv-client")
 	if err != nil {
 		log.Panicln(err)
 	}

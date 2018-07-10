@@ -870,8 +870,112 @@ func sqr(x float32) float32 {
 	return x * x
 }
 
+// // SegmentCircleIntersection return points of intersection between a circle and
+// // a line segment. The Boolean intersects returns true if one or
+// // more solutions exist. If only one solution exists,
+// // x1 == x2 and y1 == y2.
+// // s1x and s1y are coordinates for one end point of the segment, and
+// // s2x and s2y are coordinates for the other end of the segment.
+// // cx and cy are the coordinates of the center of the circle and
+// // r is the radius of the circle.
+// func SegmentCircleIntersection(s1x, s1y, s2x, s2y, cx, cy, r float32) (x1, y1, x2, y2 float32, intersects bool) {
+// 	log.Println(s1x, s1y, ":", s2x, s2y)
+// 	log.Println(cx, cy, r)
+
+// 	// (n-et) and (m-dt) are expressions for the x and y coordinates
+// 	// of a parameterized line in coordinates whose origin is the
+// 	// center of the circle.
+// 	// When t = 0, (n-et) == s1x - cx and (m-dt) == s1y - cy
+// 	// When t = 1, (n-et) == s2x - cx and (m-dt) == s2y - cy.
+// 	n := s2x - cx
+// 	m := s2y - cy
+
+// 	e := s2x - s1x
+// 	d := s2y - s1y
+
+// 	// lineFunc checks if the  t parameter is in the segment and if so
+// 	// calculates the line point in the unshifted coordinates (adds back
+// 	// cx and cy.
+// 	lineFunc := func(t float32) (x, y float32, inBounds bool) {
+// 		inBounds = t >= 0 && t <= 1 // Check bounds on closed segment
+// 		// To check bounds for an open segment use t > 0 && t < 1
+// 		if inBounds { // Calc coords for point in segment
+// 			x = n - e*t + cx
+// 			y = m - d*t + cy
+// 		}
+// 		return
+// 	}
+
+// 	// Since we want the points on the line distance r from the origin,
+// 	// (n-et)(n-et) + (m-dt)(m-dt) = rr.
+// 	// Expanding and collecting terms yeilds the following quadratic equation:
+// 	A, B, C := e*e+d*d, -2*(e*n+m*d), n*n+m*m-r*r
+
+// 	D := B*B - 4*A*C // discriminant of quadratic
+// 	if D < 0 {
+// 		return // No solution
+// 	}
+// 	D = float32(math.Sqrt(float64(D)))
+
+// 	var p1In, p2In bool
+// 	x1, y1, p1In = lineFunc((-B + D) / (2 * A)) // First root
+// 	if D == 0 {
+// 		intersects = p1In
+// 		x2, y2 = x1, y1
+// 		return // Only possible solution, quadratic has one root.
+// 	}
+
+// 	x2, y2, p2In = lineFunc((-B - D) / (2 * A)) // Second root
+
+// 	intersects = p1In || p2In
+// 	if p1In == false { // Only x2, y2 may be valid solutions
+// 		x1, y1 = x2, y2
+// 	} else if p2In == false { // Only x1, y1 are valid solutions
+// 		x2, y2 = x1, y1
+// 	}
+// 	return
+// }
+
 //RayAgainstCircle... mathematic black magic!
 func RayAgainstCircle(ray RayCast, circle *CircleShape) bool {
+
+	// x1, x2, y1, y2, ok := SegmentCircleIntersection(ray.begin.X, ray.begin.Y, ray.dir.X, ray.dir.Y, circle.Tc.X, circle.Tc.Y, circle.Radius)
+	// log.Println(x1, x2, y1, y2, ok)
+
+	// return ok
+
+	/////////////////////////////
+
+	// x1 := ray.begin.X
+	// y1 := ray.begin.Y
+	// x2 := ray.dir.X
+	// y2 := ray.dir.Y
+
+	// xC := circle.Tc.X
+	// yC := circle.Tc.Y
+	// R := circle.Radius
+
+	// x1 -= xC
+	// y1 -= yC
+	// x2 -= xC
+	// y2 -= yC
+
+	// dx := x2 - x1
+	// dy := y2 - y1
+
+	// a := dx*dx + dy*dy
+	// b := 2 * (x1*dx + y1*dy)
+	// c := x1*x1 + y1*y1 - R*R
+
+	// if -b < 0 {
+	// 	return c < 0
+	// }
+	// if -b < 2*a {
+	// 	return 4*a*c-b*b < 0
+	// }
+	// return a+b+c < 0
+
+	////////////////////////////
 
 	x0 := circle.Tc.X
 	y0 := circle.Tc.Y
@@ -898,24 +1002,26 @@ func RayAgainstCircle(ray RayCast, circle *CircleShape) bool {
 
 	return false
 
-	// fromRayToCircle := vect.Sub(cast.begin, circle.Tc)
-	// a := cast.dir.LengthSqr()
-	// b := 2.0 * vect.Dot(fromRayToCircle, cast.dir)
-	// c := vect.Dot(fromRayToCircle, fromRayToCircle) - circle.Radius*circle.Radius
+	////////////////////////////
 
-	// D := b*b - 4.0*a*c
+	// // fromRayToCircle := vect.Sub(cast.begin, circle.Tc)
+	// // a := cast.dir.LengthSqr()
+	// // b := 2.0 * vect.Dot(fromRayToCircle, cast.dir)
+	// // c := vect.Dot(fromRayToCircle, fromRayToCircle) - circle.Radius*circle.Radius
 
-	// if D < 0.0 {
-	// 	return false
-	// }
-	// D = float32(math.Sqrt(float64(D)))
-	// t1 := (-b - D) / (2.0 * a)
-	// t2 := (-b + D) / (2.0 * a)
+	// // D := b*b - 4.0*a*c
 
-	// if (t1 >= 0.0 && t1 <= 1.0) || (t2 >= 0.0 && t2 <= 1.0) {
-	// 	return true
-	// }
-	// return false
+	// // if D < 0.0 {
+	// // 	return false
+	// // }
+	// // D = float32(math.Sqrt(float64(D)))
+	// // t1 := (-b - D) / (2.0 * a)
+	// // t2 := (-b + D) / (2.0 * a)
+
+	// // if (t1 >= 0.0 && t1 <= 1.0) || (t2 >= 0.0 && t2 <= 1.0) {
+	// // 	return true
+	// // }
+	// // return false
 }
 
 func Distance(x0, y0, x1, y1 float32) float32 {
@@ -923,8 +1029,6 @@ func Distance(x0, y0, x1, y1 float32) float32 {
 }
 
 func (space *Space) RayCastAll(begin vect.Vect, direction vect.Vect, group int, ignoreBody *Body) (hits []*RayCastHit) {
-
-	// log.Println("\n\n\n")
 
 	rayCast := RayCast{
 		begin: begin,
@@ -970,8 +1074,6 @@ func (space *Space) RayCastAll(begin vect.Vect, direction vect.Vect, group int, 
 				hit = RayAgainstPolygon(rayCast, shape.GetAsPolygon())
 			case ShapeType_Circle:
 				hit = RayAgainstCircle(rayCast, shape.GetAsCircle())
-				// log.Println("WARNING: CIRCLE INTERSECTION NOT YET READY")
-				// hit = RayAgainstCircle(rayCast, shape.GetAsCircle())
 			case ShapeType_Box:
 				hit = RayAgainstPolygon(rayCast, shape.GetAsBox().Polygon)
 			default:
@@ -979,7 +1081,8 @@ func (space *Space) RayCastAll(begin vect.Vect, direction vect.Vect, group int, 
 			}
 
 			if hit {
-				// log.Println("HIT:", dist, body.UserData)
+				// log.Println(shape.ShapeType(), body, shape)
+				log.Println("HIT:", dist, body.UserData)
 				hits = append(hits, &RayCastHit{
 					Distance: dist,
 					Body:     body,

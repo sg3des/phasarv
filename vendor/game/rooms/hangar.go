@@ -93,27 +93,40 @@ func (h *hangar) fill() {
 	}
 
 	var placed int
-	for i, w := range db.GetPlayerWeapons(player.WeaponsIDs) {
-		item := h.dad.NewItem(w.EquipType.Str(), ImgPath("items", w.Img), w)
+	for _, e := range player.Inventory {
+		// var item interface{}
 
-		if slot, ok := h.lookupShipSlotByName(w.SlotName); ok {
-			slot.PlaceItem(item)
-		} else {
-			h.dad.Slots[i].PlaceItem(item)
-			placed++
-		}
-	}
-
-	for i, e := range db.GetPlayerEquip(player.EquipIDs) {
-		item := h.dad.NewItem(e.Type.Str(), ImgPath("items", e.Img), e)
+		item := h.dad.NewItem(e.EquipType.Str(), ImgPath("items", e.Img), e)
 
 		if slot, ok := h.lookupShipSlotByName(e.SlotName); ok {
 			slot.PlaceItem(item)
 		} else {
-			h.dad.Slots[i+placed].PlaceItem(item)
+			h.dad.Slots[placed].PlaceItem(item)
 			placed++
 		}
 	}
+
+	// for i, w := range db.GetPlayerWeapons(player.WeaponsIDs) {
+	// 	item := h.dad.NewItem(w.EquipType.Str(), ImgPath("items", w.Img), w)
+
+	// 	if slot, ok := h.lookupShipSlotByName(w.SlotName); ok {
+	// 		slot.PlaceItem(item)
+	// 	} else {
+	// 		h.dad.Slots[i].PlaceItem(item)
+	// 		placed++
+	// 	}
+	// }
+
+	// for i, e := range db.GetPlayerEquip(player.EquipIDs) {
+	// 	item := h.dad.NewItem(e.Type.Str(), ImgPath("items", e.Img), e)
+
+	// 	if slot, ok := h.lookupShipSlotByName(e.SlotName); ok {
+	// 		slot.PlaceItem(item)
+	// 	} else {
+	// 		h.dad.Slots[i+placed].PlaceItem(item)
+	// 		placed++
+	// 	}
+	// }
 
 	h.recalculate()
 }
@@ -177,7 +190,7 @@ func (h *hangar) recalculate() {
 
 		default:
 			e := slot.Item.UserData.(*equip.Equip)
-			p = p.Summ(e.Param)
+			p = p.Summ(e.InitParam)
 
 			player.Ship.Equipment = append(player.Ship.Equipment, e)
 		}
