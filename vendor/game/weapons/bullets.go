@@ -175,22 +175,13 @@ func (b *Bullet) collision(arb *phys.Arbiter) bool {
 	}
 
 	if b.Weapon.bulletCollisionCallback != nil {
-		des := b.Weapon.bulletCollisionCallback(b, target)
-		if des {
+		destroy := b.Weapon.bulletCollisionCallback(b, target)
+		if destroy {
 			b.Destroy()
 		}
-		return des
+		return destroy
 	}
 	return false
-
-	// if p, ok := target.UserData.(*Ship); ok {
-	// 	if p == b.Ship {
-	// 		return false
-	// 	}
-	// 	p.ApplyDamage(b.Damage)
-	// }
-	// b.Destroy()
-	// return true
 }
 
 func resolveCollisionShapes(shapes ...*phys.Shape) (b *Bullet, target *engine.Object) {

@@ -206,6 +206,16 @@ func (s *Ship) BulletCollision(b *weapons.Bullet, target *engine.Object) bool {
 		return false
 	}
 
+	if target.UserData != nil {
+		targetShip, ok := target.UserData.(*Ship)
+		if !ok {
+			log.Panicln(target.Name, "object.UserData is not *ships.Ship")
+		}
+
+		targetShip.ApplyDamage(b.Damage)
+	}
+	// target.ApplyDamage(b.Damage)
+
 	return true
 }
 
