@@ -18,6 +18,7 @@ func CreateEnemy() {
 	x, y := engine.GetRandomPoint(50, 50)
 
 	s := &ships.Ship{
+
 		// Object: &engine.Object{
 		// 	Name: "enemy",
 		// 	P: &point.Param{
@@ -32,7 +33,9 @@ func CreateEnemy() {
 		// 	PI: &phys.Instruction{Mass: 12, Group: 1, ShapeType: phys.ShapeType_Box},
 		// },
 
+		Name: "enemy",
 		Mesh: "trapeze",
+		Type: ships.Fighter,
 		Size: mgl32.Vec3{2, 2, 2},
 		InitParam: equip.Param{
 			Pos:      mgl32.Vec3{x, y},
@@ -41,6 +44,9 @@ func CreateEnemy() {
 			MovSpeed: 0,
 			RotSpeed: 50,
 		},
+
+		LeftWpnPos:  mgl32.Vec3{-1, 0, 0},
+		RightWpnPos: mgl32.Vec3{1, 0, 0},
 
 		LeftWeapon: &weapons.Weapon{
 			Type:    weapons.Rocket,
@@ -73,7 +79,7 @@ func CreateEnemy() {
 	s.Create()
 
 	p := &Player{
-		Name: "enemy",
+		Name: s.Name,
 		Ship: s,
 	}
 
@@ -98,6 +104,7 @@ func (p *Player) EnemyRotation(dt float32) {
 	}
 
 	p.Ship.Cursor.SetPosition(p.Target.Ship.Object.Position())
+	p.Ship.LeftWeapon.UpdateCursor(p.Target.Ship.Object.Position())
 
 	p.targetAngle = p.Ship.Rotate(dt, p.Target.Ship.Object.PositionVec2())
 }

@@ -269,9 +269,7 @@ func (o *Object) Raycast(x0, y0, x1, y1 float32) (objects []*Object) {
 	}
 
 	hits := phys.Hits(x0, y0, x1, y1, phys.GROUP_STATIC, o.shape.Body)
-	log.Println(hits)
 	hits = append(hits, phys.Hits(x0, y0, x1, y1, phys.GROUP_PLAYER, o.shape.Body)...)
-	log.Println(hits)
 
 	for _, hit := range hits {
 		objects = append(objects, hit.Shape.UserData.(*Object))
@@ -284,7 +282,6 @@ func (o *Object) Raycast(x0, y0, x1, y1 float32) (objects []*Object) {
 func (o *Object) GetNearObjectByRay(x0, y0, x1, y1 float32) (near *Object, shortDist float32) {
 
 	objects := o.Raycast(x0, y0, x1, y1)
-	log.Println(objects)
 
 	shortDist = 999
 	for _, obj := range objects {

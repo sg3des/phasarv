@@ -54,7 +54,10 @@ func (s *Ship) Create() {
 
 	s.Object = &engine.Object{
 		Name: s.Name,
-		P:    &point.Param{Size: point.PFromVec3(s.Size)},
+		P: &point.Param{
+			Pos:  point.PFromVec3(s.InitParam.Pos),
+			Size: point.PFromVec3(s.Size),
+		},
 		PI: &phys.Instruction{
 			Mass:      s.InitParam.Weight,
 			Group:     phys.GROUP_PLAYER,
@@ -79,10 +82,10 @@ func (s *Ship) Create() {
 	s.createWeapon(s.LeftWeapon, s.LeftWpnPos)
 	s.createWeapon(s.RightWeapon, s.RightWpnPos)
 
-	if s.Cursor == nil {
-		s.Cursor = &engine.Object{}
-		s.Cursor.Create()
-	}
+	// if s.Cursor == nil {
+	// s.Cursor = &engine.Object{}
+	// s.Cursor.Create()
+	// }
 
 	if s.InitParam.MovSpeed > 5 && engine.NeedRender {
 		lf := NewEngineFire(point.P{-0.8, 0.3, 0.1})

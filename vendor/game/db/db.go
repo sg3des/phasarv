@@ -141,7 +141,7 @@ func SetInitialValues() {
 		InitParam: equip.Param{
 			Weight:    12,
 			Health:    40,
-			MovSpeed:  0,
+			MovSpeed:  20,
 			RotSpeed:  25,
 			RollAngle: 1.57,
 			Energy:    10,

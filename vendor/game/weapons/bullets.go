@@ -87,7 +87,6 @@ func (b *Bullet) Laser() {
 	tx, ty := av.Elem()
 
 	if o, dist := b.Weapon.ShipObj.GetNearObjectByRay(x, y, tx, ty); o != nil {
-		log.Println(o, dist)
 		if b.Weapon.bulletCollisionCallback != nil {
 			b.Weapon.bulletCollisionCallback(b, o)
 		}

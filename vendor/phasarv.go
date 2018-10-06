@@ -72,7 +72,7 @@ func localPlay() {
 	player.Ship.RightWeapon = db.GetWeapon("rocket0")
 	game.CreateLocalPlayer(player)
 	// for i := 0; i < 10; i++ {
-	// 	game.CreateEnemy()
+	game.CreateEnemy()
 	// }
 }
 
