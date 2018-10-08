@@ -170,14 +170,14 @@ func InitUI(uiDir string) error {
 	return loadFonts()
 }
 
-func loadFonts() error {
-	for _, name := range []string{"Default", "Mono"} {
-		font := assets.GetFont(name)
-		_, err := fizzgui.NewFont(font.Name, font.Path, font.Size, fizzgui.FontGlyphs)
+func loadFonts() (err error) {
+	for _, font := range assets.GetFonts() {
+		font.Font, err = fizzgui.NewFont(font.Name, font.Path, font.Size, fizzgui.FontGlyphs)
 		if err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 

@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/sg3des/fizzgui"
 	"github.com/tbogdala/fizzle"
 	"github.com/tbogdala/fizzle/graphicsprovider"
 	"github.com/tbogdala/fizzle/renderer/forward"
@@ -30,6 +31,7 @@ type texture struct {
 }
 
 type font struct {
+	Font *fizzgui.Font
 	Path string
 	Name string
 	Size int
@@ -197,4 +199,11 @@ func GetFont(name string) *font {
 		log.Panicln("ERROR: font not found!", name)
 	}
 	return font
+}
+
+func GetFonts() (fonts []*font) {
+	for _, font := range Fonts {
+		fonts = append(fonts, font)
+	}
+	return
 }

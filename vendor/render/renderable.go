@@ -150,11 +150,10 @@ func (i *Instruction) CreateArt(p *point.Param) *Art {
 func (r *Renderable) render() {
 	if r.Body == nil {
 		r.Body = r.RI.createBody(r.P)
-	}
-
-	if r.Body == nil {
-		log.Println("WTF?!?!", r.RI.MeshName, r.P.Pos)
-		return
+		if r.Body == nil {
+			log.Println("WTF?!?!", r.RI.MeshName, r.P.Pos)
+			return
+		}
 	}
 
 	render.DrawRenderable(r.Body, nil, perspective, view, camera)

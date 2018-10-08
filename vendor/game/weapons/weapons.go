@@ -25,6 +25,34 @@ var TypeAimed SubType = 'a'
 var TypeGuided SubType = 'g'
 var TypeHoming SubType = 'h'
 
+func (t Type) String() string {
+	switch t {
+	case Gun:
+		return "gun"
+	case Rocket:
+		return "rocket"
+	case Laser:
+		return "laser"
+	}
+
+	return "unknown"
+}
+
+func (t SubType) String() string {
+	switch t {
+	case TypeDirect:
+		return "direct"
+	case TypeAimed:
+		return "aimed"
+	case TypeGuided:
+		return "guided"
+	case TypeHoming:
+		return "homing"
+	}
+
+	return "unknown"
+}
+
 type Weapon struct {
 	ShipObj *engine.Object
 
@@ -71,11 +99,12 @@ func (w *Weapon) UpdateCursor(x, y float32) {
 	}
 	w.absAngle += w.CurrParam.Angle
 
-	cPos.Sub(wpnpos)
-	dist := cPos.Length()
-	if ar := w.GetAttackRange(w.CurrParam); dist > ar {
-		dist = ar
-	}
+	dist := w.GetAttackRange(w.CurrParam)
+	// cPos.Sub(wpnpos)
+	// dist := cPos.Length()
+	// if ar := w.GetAttackRange(w.CurrParam); dist > ar {
+	// 	dist = ar
+	// }
 
 	av := vect.FromAngle(w.absAngle)
 	av.Mult(dist)
@@ -202,4 +231,8 @@ func (w *Weapon) GetAttackRange(p equip.Param) (ar float32) {
 	}
 
 	return
+}
+
+func (w *Weapon) DPS() float32 {
+	return w.CurrParam.Damage / float32(w.CurrParam.Rate.Seconds())
 }

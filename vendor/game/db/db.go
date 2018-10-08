@@ -141,8 +141,8 @@ func SetInitialValues() {
 		InitParam: equip.Param{
 			Weight:    12,
 			Health:    40,
-			MovSpeed:  20,
-			RotSpeed:  25,
+			MovSpeed:  5,
+			RotSpeed:  50,
 			RollAngle: 1.57,
 			Energy:    10,
 			EnergyAcc: 1,
@@ -215,7 +215,7 @@ func SetInitialValues() {
 				Weight: 3,
 				WeaponParam: equip.WeaponParam{
 					Damage:         15,
-					Rate:           5e8, //300ms
+					Rate:           1e9, //300ms
 					Range:          30e9,
 					Angle:          3,
 					Ammunition:     3,
@@ -255,7 +255,7 @@ func SetInitialValues() {
 				WeaponParam: equip.WeaponParam{
 					Damage:     15,
 					Rate:       1e8,
-					Range:      15e9,
+					Range:      5e9,
 					Angle:      0.9,
 					Ammunition: 5,
 					ReloadTime: 5e9,

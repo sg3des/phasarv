@@ -5,9 +5,9 @@ import (
 	"game"
 	"game/db"
 	"game/equip"
+	"game/gui"
 	"game/weapons"
 	"log"
-	"path/filepath"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/sg3des/fizzgui"
@@ -69,22 +69,8 @@ func Hangar(playerName string) {
 	h.fill()
 }
 
-func LoadImage(dir, imgname string) *fizzgui.Texture {
-	filename := ImgPath(dir, imgname)
-	tex, err := fizzgui.NewTextureImg(filename)
-	if err != nil {
-		log.Fatalln("texture '%s' not found", filename)
-		return nil
-	}
-	return tex
-}
-
-func ImgPath(dir, imgname string) string {
-	return filepath.Join("assets", dir, imgname+".png")
-}
-
 func (h *hangar) fill() {
-	h.cShip.Style.Texture = LoadImage("ships", player.Ship.Img)
+	h.cShip.Style.Texture = gui.LoadImage("ships", player.Ship.Img)
 	for _, s := range player.Ship.Slots {
 		slot := h.cShip.NewSlot(h.dad, s.Type.Str(), s.X, s.Y, s.W, s.H, h.putOn)
 		slot.UserData = s
@@ -96,7 +82,7 @@ func (h *hangar) fill() {
 	for _, e := range player.Inventory {
 		// var item interface{}
 
-		item := h.dad.NewItem(e.EquipType.Str(), ImgPath("items", e.Img), e)
+		item := h.dad.NewItem(e.EquipType.Str(), gui.ImgPath("items", e.Img), e)
 
 		if slot, ok := h.lookupShipSlotByName(e.SlotName); ok {
 			slot.PlaceItem(item)

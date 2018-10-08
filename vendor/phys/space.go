@@ -1036,7 +1036,7 @@ func (space *Space) RayCastAll(begin vect.Vect, direction vect.Vect, group int, 
 	}
 
 	length := Distance(begin.X, begin.Y, direction.X, direction.Y)
-	maxLength := length * 1.2 //crutch
+	// maxLength := length * 1 //crutch
 
 	// space.staticShapes.Contains(obj)
 
@@ -1062,7 +1062,8 @@ func (space *Space) RayCastAll(begin vect.Vect, direction vect.Vect, group int, 
 
 			pos := body.Position()
 			dist := Distance(pos.X, pos.Y, begin.X, begin.Y)
-			if dist > maxLength || dist == 0 {
+
+			if dist > length || dist <= 0 {
 				// log.Println("object too far", body.UserData)
 				continue
 			}
@@ -1081,8 +1082,7 @@ func (space *Space) RayCastAll(begin vect.Vect, direction vect.Vect, group int, 
 			}
 
 			if hit {
-				// log.Println(shape.ShapeType(), body, shape)
-				log.Println("HIT:", dist, body.UserData)
+				// log.Println("HIT:", dist, body.UserData)
 				hits = append(hits, &RayCastHit{
 					Distance: dist,
 					Body:     body,

@@ -19,11 +19,13 @@ var (
 	//NeedRender flag if it false, graphics elements(bars,aims,trails,etc...) should not be initialized.
 	NeedRender bool
 
-	scene *scenes.Scene
+	scene     *scenes.Scene
+	battlegui *BattleGUI
 )
 
 func StartBattle(p *Player) {
 	scene = scenes.Load("scene00")
+	battlegui = NewBattleGUI(p)
 
 	CreateLocalPlayer(p)
 }

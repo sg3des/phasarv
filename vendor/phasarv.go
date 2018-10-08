@@ -65,12 +65,14 @@ func networkPlay() {
 }
 
 func localPlay() {
-	scenes.Load("scene00")
+	// scenes.Load("scene00")
 
 	player := db.GetPlayer(randomName())
 	player.Ship.LeftWeapon = db.GetWeapon("laser0")
 	player.Ship.RightWeapon = db.GetWeapon("rocket0")
-	game.CreateLocalPlayer(player)
+
+	game.StartBattle(player)
+	// game.CreateLocalPlayer(player)
 	// for i := 0; i < 10; i++ {
 	game.CreateEnemy()
 	// }

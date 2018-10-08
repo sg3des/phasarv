@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/tbogdala/fizzle"
 
 	"engine"
 )
@@ -15,8 +16,9 @@ import (
 type BulletCollisionCallback func(b *Bullet, target *engine.Object) bool
 
 type Bullet struct {
-	Object *engine.Object
-	Weapon *Weapon
+	Object   *engine.Object
+	Weapon   *Weapon
+	material *fizzle.Material
 
 	TargetPoint mgl32.Vec2
 	Target      *engine.Object
@@ -82,7 +84,7 @@ func (b *Bullet) Laser() {
 	// tx, ty := b.Weapon.CursorPos.Elem()
 
 	av := vect.FromAngle(b.Weapon.absAngle)
-	av.Mult(h)
+	// av.Mult(h)
 	av.Add(vect.FromVec2(b.Weapon.CursorPos))
 	tx, ty := av.Elem()
 
@@ -203,19 +205,18 @@ func (b *Bullet) laserCallback(dt float32) {
 		b.Destroy()
 		return
 	}
-	// log.Println("laserCallbacl", dt)
-	// if b.Object.Body == nil {
-	// 	// log.Println("laser object node is nil - return")
-	// 	return
-	// }
 
-	// color := b.Object.Body.Material.DiffuseColor
+	material, ok := b.Object.Material()
+	if !ok {
+		return
+	}
 
-	// color[3] = color[3] - dt
-	// b.Object.Body.Material.DiffuseColor = color
-	// if color[3] <= 0.1 {
-	// 	b.Object.Destroy()
-	// }
+	color := material.DiffuseColor
+	color[3] = color[3] - dt
+	material.DiffuseColor = color
+	if color[3] <= 0.1 {
+		b.Object.Destroy()
+	}
 }
 
 //Destroy handler for bullet destroy

@@ -6,6 +6,7 @@ import (
 	"render"
 
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/tbogdala/fizzle"
 
 	"phys"
 )
@@ -148,4 +149,18 @@ func (o *Object) Remove() {
 	for child := range o.Childs {
 		child.Remove()
 	}
+}
+
+func (o *Object) Material() (*fizzle.Material, bool) {
+	if o.renderable == nil {
+		log.Printf("ERROR: %s not renderable", o.Name)
+		return nil, false
+	}
+
+	if o.renderable.Body == nil {
+		log.Printf("ERROR: %s does not have a body", o.Name)
+		return nil, false
+	}
+
+	return o.renderable.Body.Material, true
 }
