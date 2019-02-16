@@ -71,15 +71,27 @@ type Weapon struct {
 
 	Target    *engine.Object
 	CursorPos mgl32.Vec2
+	AimPos    mgl32.Vec2
 
 	bulletCollisionCallback BulletCollisionCallback
+	reloadCallback          ReloadCallback
 
 	Turret *engine.Art
 	Aim    *engine.Art
 }
 
+func (w *Weapon) ToEquip() *equip.Equip {
+	return &w.Equip
+}
+
+type ReloadCallback func(w *Weapon)
+
 func (w *Weapon) SetBulletCollisionCallback(f BulletCollisionCallback) {
 	w.bulletCollisionCallback = f
+}
+
+func (w *Weapon) SetReloadCallback(f ReloadCallback) {
+	w.reloadCallback = f
 }
 
 func (w *Weapon) UpdateCursor(x, y float32) {
@@ -110,7 +122,8 @@ func (w *Weapon) UpdateCursor(x, y float32) {
 	av.Mult(dist)
 	av.Add(wpnpos)
 
-	w.CursorPos = av.Vec2()
+	w.CursorPos = mgl32.Vec2{x, y}
+	w.AimPos = av.Vec2()
 
 	if w.Aim != nil && w.Aim.Art != nil {
 		w.Aim.Art.Angle = w.CurrParam.Angle
@@ -141,8 +154,18 @@ func (w *Weapon) Fire() {
 		}
 	}
 
+	if w.CurrParam.Ammunition <= 0 {
+		return
+	}
+
 	b := w.Shoot()
 	if b.Shoot {
+		w.CurrParam.Ammunition--
+
+		if w.CurrParam.Ammunition <= 0 {
+			w.DelayTime = time.Now().Add(w.CurrParam.ReloadTime)
+		}
+
 		w.nextShot = time.Now().Add(w.CurrParam.Rate)
 	}
 }

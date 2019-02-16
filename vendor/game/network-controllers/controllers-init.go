@@ -2,8 +2,7 @@ package controllers
 
 //ServerState structure of standard network packet
 import (
-	"encoding/gob"
-	"game"
+	"game/players"
 	"net"
 	"network"
 	"phys/vect"
@@ -36,23 +35,24 @@ type ClientState struct {
 	RW     bool
 }
 
-func init() {
-	gob.Register(game.Player{})
+// func init() {
+// 	gob.Register(players.User{})
 
-	gob.Register(ClientState{})
-	gob.Register(ServerState{})
-	gob.Register(ServersState{})
-}
+// 	gob.Register(ClientState{})
+// 	gob.Register(ServerState{})
+// 	gob.Register(ServersState{})
+// }
 
-type cliPlayer struct {
-	p *game.Player
+type user struct {
+	u *players.User
+	p *players.Player
 
 	addr *net.UDPAddr
 
 	deadline time.Time
 }
 
-func (c *cliPlayer) GetClientState() ClientState {
+func (c *user) GetClientState() ClientState {
 	return ClientState{
 		CurPos: c.p.Ship.Cursor.PositionVect(),
 		LW:     c.p.Ship.LeftWeapon.ToShoot,
@@ -60,7 +60,7 @@ func (c *cliPlayer) GetClientState() ClientState {
 	}
 }
 
-func (c *cliPlayer) GetServerState() ServerState {
+func (c *user) GetServerState() ServerState {
 	return ServerState{
 		Name: c.p.Name,
 
@@ -76,7 +76,7 @@ func (c *cliPlayer) GetServerState() ServerState {
 	}
 }
 
-func (s ClientState) UpdatePlayer(p *game.Player) {
+func (s ClientState) UpdatePlayer(p *players.Player) {
 	p.Ship.Cursor.SetPosition(s.CurPos.X, s.CurPos.Y)
 	p.Ship.CursorOffset = p.Ship.Cursor.PositionVect()
 	p.Ship.CursorOffset.Sub(p.Ship.Object.PositionVect())
@@ -85,7 +85,7 @@ func (s ClientState) UpdatePlayer(p *game.Player) {
 	p.Ship.RightWeapon.ToShoot = s.RW
 }
 
-func (s ServerState) UpdatePlayer(p *game.Player) {
+func (s ServerState) UpdatePlayer(p *players.Player) {
 	p.Ship.Object.SetPosition(s.Pos.X, s.Pos.Y)
 	p.Ship.Object.SetRotation(s.Rot)
 	p.Ship.Object.SetVelocity(s.Vel.X, s.Vel.Y)

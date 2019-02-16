@@ -79,7 +79,7 @@ func initOpenGL() error {
 	gfx.Enable(graphicsprovider.BLEND)
 	gfx.Enable(graphicsprovider.EQUAL)
 	gfx.Enable(graphicsprovider.LINE_SMOOTH)
-	gfx.Enable(graphicsprovider.FRACTIONAL_ODD)
+	// gfx.Enable(graphicsprovider.FRACTIONAL_ODD)
 
 	// gfx.Enable(graphicsprovider.SCISSOR_TEST)
 

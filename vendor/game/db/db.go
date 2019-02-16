@@ -3,8 +3,8 @@ package db
 import (
 	"engine"
 	"fmt"
-	"game"
 	"game/equip"
+	"game/players"
 	"game/ships"
 	"game/weapons"
 	"log"
@@ -30,56 +30,32 @@ func init() {
 	if db.Table("players") == nil {
 		SetInitialValues()
 	}
-
-	// table := db.Table("ships").All()
-	// for table.Next() {
-	// 	var item ships.Ship
-	// 	err := table.Decode(&item)
-	// 	if err != nil {
-	// 		log.Println("ERROR:", err)
-	// 		break
-	// 	}
-	// 	log.Printf("SHIP: %+v", item)
-	// }
-
-	// table = db.Table("weapons").All()
-	// for table.Next() {
-	// 	var item weapons.Weapon
-	// 	err := table.Decode(&item)
-	// 	if err != nil {
-	// 		log.Println("ERROR:", err)
-	// 		break
-	// 	}
-	// 	log.Printf("WEAPON: %+v", item)
-	// }
-
-	// table = db.Table("equip").All()
-	// for table.Next() {
-	// 	var item equip.Equip
-	// 	err := table.Decode(&item)
-	// 	if err != nil {
-	// 		log.Println("ERROR:", err)
-	// 		break
-	// 	}
-	// 	log.Printf("EQUIP: %+v", item)
-	// }
-
 }
 
-func GetPlayer(name string) *game.Player {
-	return &game.Player{
+func LookupUser(name, pass string) (*players.User, error) {
+	u := &players.User{
 		Name: name,
 		Ship: GetShip("ship0"),
 		Inventory: []*equip.Equip{
-			&equip.Equip{Name: "gun0", EquipType: equip.TypeWeapon},
-			&equip.Equip{Name: "rocket0", EquipType: equip.TypeWeapon},
-			&equip.Equip{Name: "laser0", EquipType: equip.TypeWeapon},
-			&equip.Equip{Name: "engine0", EquipType: equip.TypeEngine},
+			&equip.Equip{ID: "gun0", EquipType: equip.TypeWeapon},
+			&equip.Equip{ID: "rocket0", EquipType: equip.TypeWeapon},
+			&equip.Equip{ID: "laser0", EquipType: equip.TypeWeapon},
+			&equip.Equip{ID: "engine0", EquipType: equip.TypeEngine},
 		},
-		// WeaponsIDs: []string{"gun0", "rocket0", "laser0"},
-		// EquipIDs:   []string{"engine0"},
 	}
+	u.Ships = append(u.Ships, u.Ship)
+
+	return u, nil
 }
+
+// func GetPlayer(name string) *players.Player {
+// 	return &players.Player{
+// 		Name: name,
+// 		Ship: GetShip("ship0"),
+// 		// WeaponsIDs: []string{"gun0", "rocket0", "laser0"},
+// 		// EquipIDs:   []string{"engine0"},
+// 	}
+// }
 
 // func GetPlayerWeapons(IDs []string) (list []*weapons.Weapon) {
 // 	table := db.Table("weapons")
@@ -106,6 +82,7 @@ func GetShip(id string) (s *ships.Ship) {
 	if err != nil {
 		log.Printf("ship by id: '%s' not found\n", id)
 	}
+	s.ID = id
 	return
 }
 
@@ -114,6 +91,7 @@ func GetWeapon(id string) (w *weapons.Weapon) {
 	if err != nil {
 		log.Printf("weapon by id: '%s' not found\n", id)
 	}
+	w.ID = id
 	return
 }
 
@@ -122,32 +100,40 @@ func GetEquip(id string) (e *equip.Equip) {
 	if err != nil {
 		log.Printf("equip by id: '%s' not found\n", id)
 	}
+	e.ID = id
 	return
 }
 
 func SetInitialValues() {
+	db.NewTable("users")
 	db.NewTable("players")
 	db.NewTable("ships")
 	db.NewTable("weapons")
 	db.NewTable("equip")
 
 	db.Table("ships").Set("ship0", &ships.Ship{
-		Name: "red fighter",
-		Img:  "red",
-		Mesh: "trapeze",
-		Type: ships.Fighter,
-		Size: mgl32.Vec3{2, 2, 2},
+		Name:    "red fighter",
+		Img:     "red",
+		Mesh:    "sparrow",
+		Texture: "sparrow",
+		Type:    ships.Interceptor,
+		Size:    mgl32.Vec3{2, 2, 2},
 
 		InitParam: equip.Param{
 			Weight:    12,
 			Health:    40,
-			MovSpeed:  5,
+			MovSpeed:  20,
 			RotSpeed:  50,
 			RollAngle: 1.57,
 			Energy:    10,
-			EnergyAcc: 1,
+			EnergyAcc: 0.5,
 			Metal:     22,
-			MetalAcc:  0.1,
+			MetalAcc:  0.5,
+		},
+
+		EnginePos: []point.P{
+			point.P{-0.8, 0, 0.1},
+			// point.P{-0.8, -0.3, 0.1},
 		},
 
 		LeftWpnPos:  mgl32.Vec3{-1, 0, 0},
@@ -179,14 +165,15 @@ func SetInitialValues() {
 			InitParam: equip.Param{
 				Weight: 3,
 				WeaponParam: equip.WeaponParam{
-					Damage:         8,
-					Rate:           3e8, //300ms
-					Range:          7e8,
-					Angle:          0.3,
-					Ammunition:     20,
-					ReloadTime:     2e9, //2sec
-					ReloadCost:     20,
-					BulletMovSpeed: 30,
+					Damage:           8,
+					Rate:             3e8, //300ms
+					Range:            7e8,
+					Angle:            0.3,
+					Ammunition:       20,
+					ReloadTime:       2e9, //2sec
+					ReloadEnergyCost: 1,
+					ReloadMetalCost:  2,
+					BulletMovSpeed:   30,
 				},
 			},
 		},
@@ -214,15 +201,16 @@ func SetInitialValues() {
 			InitParam: equip.Param{
 				Weight: 3,
 				WeaponParam: equip.WeaponParam{
-					Damage:         15,
-					Rate:           1e9, //300ms
-					Range:          30e9,
-					Angle:          3,
-					Ammunition:     3,
-					ReloadTime:     5e9, //2sec
-					ReloadCost:     30,
-					BulletMovSpeed: 20,
-					BulletRotSpeed: 5,
+					Damage:           15,
+					Rate:             1e9, //300ms
+					Range:            30e9,
+					Angle:            3,
+					Ammunition:       3,
+					ReloadTime:       5e9, //2sec
+					ReloadEnergyCost: 5,
+					ReloadMetalCost:  15,
+					BulletMovSpeed:   20,
+					BulletRotSpeed:   5,
 				},
 			},
 		},
@@ -253,13 +241,14 @@ func SetInitialValues() {
 			InitParam: equip.Param{
 				Weight: 3,
 				WeaponParam: equip.WeaponParam{
-					Damage:     15,
-					Rate:       1e8,
-					Range:      5e9,
-					Angle:      0.9,
-					Ammunition: 5,
-					ReloadTime: 5e9,
-					ReloadCost: 25,
+					Damage:           15,
+					Rate:             5e8,
+					Range:            20e9,
+					Angle:            0.9,
+					Ammunition:       5,
+					ReloadTime:       5e9,
+					ReloadEnergyCost: 10,
+					ReloadMetalCost:  0,
 				},
 			},
 		},

@@ -76,6 +76,7 @@ func LoadAssets(texDir, shadersDir, modelsDir, fontsDir string) error {
 		if err != nil {
 			return errors.New("failed to load model `" + model + "` reason: " + err.Error())
 		}
+		fmt.Println(modelname, mesh.FaceCount)
 		Models[modelname] = mesh
 	}
 

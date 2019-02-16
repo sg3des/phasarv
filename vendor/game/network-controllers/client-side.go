@@ -3,6 +3,8 @@ package controllers
 import (
 	"engine"
 	"game"
+	"game/db"
+	"game/players"
 	"game/ships"
 	"log"
 	"materials"
@@ -52,12 +54,12 @@ func (Client) LoadLocalPlayer(req *network.Request) interface{} {
 	s := new(ships.Ship)
 	*s = req.Data.(ships.Ship)
 
-	p := game.NewLocalPlayer(s, name)
+	u, _ := db.LookupUser(name, "")
 
 	engine.AddCallback(sendLocalPlayerState)
 	// p.Ship.Object.AddCallback(sendLocalPlayerState)
 
-	localplayer = addCliPlayer(p)
+	localplayer = addCliPlayer(u.Player())
 
 	// localplayer = &player{p, req.RemoteAddr, time.Time{}}
 	// *localplayer =
@@ -78,7 +80,7 @@ func (Client) LoadLocalPlayer(req *network.Request) interface{} {
 }
 
 func (Client) LoadPlayer(req *network.Request) interface{} {
-	p, ok := req.Data.(game.Player)
+	p, ok := req.Data.(players.Player)
 	if !ok {
 		log.Println("WARNING! recieve data is not correct")
 		return nil

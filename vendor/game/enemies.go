@@ -3,6 +3,7 @@ package game
 import (
 	"engine"
 	"game/equip"
+	"game/players"
 	"game/ships"
 	"game/weapons"
 	"materials"
@@ -14,35 +15,31 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-func CreateEnemy() {
+type Enemy struct {
+	*players.Player
+
+	Battle *Battle
+}
+
+func (b *Battle) CreateEnemy() {
 	x, y := engine.GetRandomPoint(50, 50)
 
 	s := &ships.Ship{
-
-		// Object: &engine.Object{
-		// 	Name: "enemy",
-		// 	P: &point.Param{
-		// 		Pos: point.P{x, y, 0},
-		// 	},
-		// 	RI: &render.Instruction{
-		// 		MeshName: "trapeze",
-		// 		Material: &materials.Instruction{Name: "enemy", Texture: "TestCube", Shader: "basic", SpecLevel: 1},
-
-		// 		Shadow: true,
-		// 	},
-		// 	PI: &phys.Instruction{Mass: 12, Group: 1, ShapeType: phys.ShapeType_Box},
-		// },
-
-		Name: "enemy",
-		Mesh: "trapeze",
-		Type: ships.Fighter,
-		Size: mgl32.Vec3{2, 2, 2},
+		Name:    "enemy",
+		Mesh:    "trapeze",
+		Texture: "TestCube",
+		Type:    ships.Interceptor,
+		Size:    mgl32.Vec3{2, 2, 2},
 		InitParam: equip.Param{
-			Pos:      mgl32.Vec3{x, y},
-			Weight:   12,
-			Health:   100,
-			MovSpeed: 0,
-			RotSpeed: 50,
+			Pos:       mgl32.Vec3{x, y},
+			Weight:    12,
+			Health:    100,
+			MovSpeed:  0,
+			RotSpeed:  50,
+			Energy:    100,
+			EnergyAcc: 100,
+			Metal:     100,
+			MetalAcc:  100,
 		},
 
 		LeftWpnPos:  mgl32.Vec3{-1, 0, 0},
@@ -55,11 +52,15 @@ func CreateEnemy() {
 			Equip: equip.Equip{
 				InitParam: equip.Param{
 					WeaponParam: equip.WeaponParam{
-						Rate:           1e9,
-						BulletMovSpeed: 20,
-						BulletRotSpeed: 50,
-						Range:          10e9,
-						Damage:         20,
+						Rate:             2e9,
+						BulletMovSpeed:   15,
+						BulletRotSpeed:   100,
+						Range:            6e9,
+						Damage:           10,
+						Ammunition:       5000,
+						ReloadTime:       0, //2sec
+						ReloadEnergyCost: 1,
+						ReloadMetalCost:  2,
 					},
 				},
 			},
@@ -78,56 +79,61 @@ func CreateEnemy() {
 
 	s.Create()
 
-	p := &Player{
-		Name: s.Name,
-		Ship: s,
+	e := &Enemy{
+		Player: &players.Player{
+			Name: s.Name,
+			Ship: s,
+		},
+		Battle: b,
 	}
 
-	p.Ship.CreateCursor(mgl32.Vec4{1, 0.1, 0.1, 0.7})
+	e.Ship.Player = e
+
+	e.Ship.CreateCursor(mgl32.Vec4{1, 0.1, 0.1, 0.7})
 	// p.CreatePlayer()
 
-	p.Ship.Object.AddCallback(p.EnemyRotation, p.EnemyAttack)
+	e.Ship.Object.AddCallback(e.Rotation, e.Attack)
 	// engine.AddCallback(p.EnemyRotation, p.EnemyAttack)
 }
 
-func (p *Player) EnemyRotation(dt float32) {
-	if p == nil {
+func (e *Enemy) Rotation(dt float32) {
+	if e == nil || e.Battle == nil || e.Battle.Finished {
 		return
 	}
 
-	if p.Target == nil || p.Ship.Object.Distance(p.Target.Ship.Object) > 20 {
-		p.Target = p.FindClosestPlayer(Players, 20)
+	if e.Target == nil || e.Ship.Object.Distance(e.Target.Ship.Object) > 20 {
+		e.Target = e.FindClosestPlayer(20)
 	}
 
-	if p.Target == nil {
+	if e.Target == nil {
 		return
 	}
 
-	p.Ship.Cursor.SetPosition(p.Target.Ship.Object.Position())
-	p.Ship.LeftWeapon.UpdateCursor(p.Target.Ship.Object.Position())
+	e.Ship.Cursor.SetPosition(e.Target.Ship.Object.Position())
+	e.Ship.LeftWeapon.UpdateCursor(e.Target.Ship.Object.Position())
 
-	p.targetAngle = p.Ship.Rotate(dt, p.Target.Ship.Object.PositionVec2())
+	e.TargetAngle = e.Ship.Rotate(dt, e.Target.Ship.Object.PositionVec2())
 }
 
-func (p *Player) EnemyAttack(dt float32) {
-	if p == nil {
+func (e *Enemy) Attack(dt float32) {
+	if e == nil || e.Battle == nil || e.Battle.Finished {
 		return
 	}
 
-	if p.Target == nil {
-		p.Ship.LeftWeapon.ToShoot = false
+	if e.Target == nil {
+		e.Ship.LeftWeapon.ToShoot = false
 		return
 	}
 
-	p.Ship.LeftWeapon.Target = p.Target.Ship.Object
+	e.Ship.LeftWeapon.Target = e.Target.Ship.Object
 
-	if p.Ship.LeftWeapon.Type != weapons.Rocket && vect.FAbs(p.targetAngle) > 0.2 {
-		p.Ship.LeftWeapon.ToShoot = false
+	if e.Ship.LeftWeapon.Type != weapons.Rocket && vect.FAbs(e.TargetAngle) > 0.2 {
+		e.Ship.LeftWeapon.ToShoot = false
 		return
 	}
 
-	p.Ship.LeftWeapon.ToShoot = true
-	p.Ship.LeftWeapon.Fire()
+	e.Ship.LeftWeapon.ToShoot = true
+	e.Ship.LeftWeapon.Fire()
 
 	return
 }
@@ -142,12 +148,11 @@ func (p *Player) EnemyAttack(dt float32) {
 // 	return true
 // }
 
-func (p *Player) FindClosestPlayer(players []*Player, length float32) *Player {
+func (e *Enemy) FindClosestPlayer(length float32) (closest *players.Player) {
 	var mindist float32 = 99
-	var closest *Player
 
-	for _, player := range players {
-		dist := p.Ship.Object.Distance(player.Ship.Object)
+	for _, player := range e.Battle.Players {
+		dist := e.Ship.Object.Distance(player.Ship.Object)
 		if dist < length && dist < mindist {
 			mindist = dist
 			closest = player
@@ -155,4 +160,12 @@ func (p *Player) FindClosestPlayer(players []*Player, length float32) *Player {
 	}
 
 	return closest
+}
+
+func (e *Enemy) Kill() {
+	e.Kills++
+}
+
+func (e *Enemy) Death() {
+	e.Deaths++
 }

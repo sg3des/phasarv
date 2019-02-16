@@ -59,8 +59,12 @@ func Load(name string) *Scene {
 }
 
 func (s *Scene) Close() {
+	if s == nil {
+		return
+	}
+
 	for _, o := range s.Objects {
-		o.Destroy()
+		o.Remove()
 	}
 }
 
@@ -68,21 +72,22 @@ func InitEnvironment() {
 	sun := &render.Light{
 		Direct:     true,
 		Pos:        mgl32.Vec3{-3, 3, 10},
-		Dir:        mgl32.Vec3{0, 0, 0},
-		Strength:   0.9, //0.8,
+		Dir:        mgl32.Vec3{5, -5, -10},
+		Strength:   0.8, //0.8,
 		Specular:   0.2,
-		ShadowSize: 8192,
+		ShadowSize: 4096,
+		Distance:   100,
 	}
 	sun.Create()
-	// engine.NewSun()
 
 	backlight := &render.Light{
 		Direct:     true,
-		Pos:        mgl32.Vec3{-2, 2, 10},
-		Dir:        mgl32.Vec3{0, 0, 0},
-		Strength:   0.1,
+		Pos:        mgl32.Vec3{0, 0, 5},
+		Dir:        mgl32.Vec3{0, 0, -5},
+		Strength:   0.2,
 		Specular:   0.1,
 		ShadowSize: 1,
+		Distance:   15,
 	}
 	backlight.Create()
 

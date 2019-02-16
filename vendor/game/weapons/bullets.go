@@ -85,7 +85,7 @@ func (b *Bullet) Laser() {
 
 	av := vect.FromAngle(b.Weapon.absAngle)
 	// av.Mult(h)
-	av.Add(vect.FromVec2(b.Weapon.CursorPos))
+	av.Add(vect.FromVec2(b.Weapon.AimPos))
 	tx, ty := av.Elem()
 
 	if o, dist := b.Weapon.ShipObj.GetNearObjectByRay(x, y, tx, ty); o != nil {

@@ -119,7 +119,7 @@ func (p *Particle) trailCalc(dt float32) {
 
 	var summAlpha float32
 	for _, o := range p.objects {
-		o.Body.Material.DiffuseColor[3] -= float32(len(p.objects)) * dt * 0.05
+		o.Body.Material.DiffuseColor[3] -= (dt * 10) / float32(len(p.objects))
 		if o.Body.Material.DiffuseColor[3] < 0 {
 			o.Body.Material.DiffuseColor[3] = 0
 		}

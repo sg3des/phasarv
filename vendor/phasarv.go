@@ -1,26 +1,19 @@
 package main
 
 import (
+	"engine"
 	"game"
 	"game/db"
-	controllers "game/network-controllers"
-	"game/rooms"
-	"scenes"
-	"strings"
-
 	"log"
 	"math/rand"
+	"scenes"
 	"time"
 
-	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/sg3des/argum"
-
-	"engine"
 )
 
 var args struct {
-	Room string `help:"show specify room"`
-	Mode string `argum:"pos,|client" help:"current mode"`
+	TestMode string `argum:"pos" help:"run a specify section for testing"`
 }
 
 func init() {
@@ -31,51 +24,48 @@ func init() {
 func main() {
 	game.NeedRender = true
 	db.SetInitialValues()
-	engine.Client(local, keyCallback)
+
+	engine.Start(gamemode)
 }
 
-func local() {
+func gamemode() {
 	scenes.InitEnvironment()
 
-	if args.Room != "" {
-		rooms.Init()
-
-		switch strings.ToLower(args.Room) {
-		case "index":
-			rooms.Index()
-			return
-		case "hangar":
-			rooms.Hangar(randomName())
-			return
-		default:
-			log.Fatalf("unknown room %s", args.Room)
-		}
-	}
-
-	if args.Mode == "client" {
-		go networkPlay()
-	} else {
-		localPlay()
+	switch args.TestMode {
+	case "battle":
+		localBattle()
+	case "network":
+		networkBattle()
+	case "hangar":
+		u, _ := db.LookupUser(randomName(), "")
+		game.NewHangar(u)
+	default:
+		game.Start()
 	}
 }
 
-func networkPlay() {
-	controllers.Connect("127.0.0.1:9696")
-	controllers.SendAuthorize(randomName())
+//
+// TEST MODES
+//
+
+func networkBattle() {
+	// controllers.Connect("127.0.0.1:9696")
+	// controllers.SendAuthorize(randomName())
 }
 
-func localPlay() {
-	// scenes.Load("scene00")
+func localBattle() {
+	user, _ := db.LookupUser(randomName(), "")
 
-	player := db.GetPlayer(randomName())
-	player.Ship.LeftWeapon = db.GetWeapon("laser0")
-	player.Ship.RightWeapon = db.GetWeapon("rocket0")
+	user.Ship.LeftWeapon = db.GetWeapon("laser0")
+	user.Ship.RightWeapon = db.GetWeapon("rocket0")
 
-	game.StartBattle(player)
-	// game.CreateLocalPlayer(player)
-	// for i := 0; i < 10; i++ {
-	game.CreateEnemy()
-	// }
+	game.SinglePlay = true
+	battle := game.NewBattle(game.NewBattleConfig())
+	battle.SetLocalPlayer(user)
+
+	log.Println(battle)
+
+	// battle.CreateEnemy()
 }
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
@@ -88,19 +78,4 @@ func randomName() string {
 		b[i] = letterRunes[rand.Intn(len(letterRunes))]
 	}
 	return string(b)
-}
-
-func keyCallback(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
-	if key == glfw.KeyEscape && action == glfw.Press {
-		// w.SetShouldClose(true)
-		engine.Close()
-	}
-	// if key == glfw.KeyF1 && action == glfw.Press {
-	// 	glfw.SwapInterval(1)
-	// }
-	if key == glfw.KeySpace && action == glfw.Press {
-		for _, p := range game.Players {
-			p.Ship.Destroy()
-		}
-	}
 }

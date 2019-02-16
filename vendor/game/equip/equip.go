@@ -47,9 +47,10 @@ type WeaponParam struct {
 
 	Angle float32
 
-	Ammunition int
-	ReloadTime time.Duration
-	ReloadCost float32
+	Ammunition       int
+	ReloadTime       time.Duration
+	ReloadEnergyCost float32
+	ReloadMetalCost  float32
 
 	Damage float32
 
@@ -73,6 +74,7 @@ func (p Param) Summ(p2 Param) Param {
 //
 //Equip is equipment for ships, sush as engine, generators, shields etc...
 type Equip struct {
+	ID        string
 	Name      string
 	SlotName  string
 	Img       string

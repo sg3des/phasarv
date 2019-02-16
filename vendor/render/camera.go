@@ -20,6 +20,18 @@ func NewCamera(eyePos mgl32.Vec3) *fizzle.YawPitchCamera {
 
 func SetCameraPosition(x, y float32) {
 	camera.SetPosition(x, y, camera.GetPosition().Z())
+
+	SetLightPositions(x, y)
+}
+
+func SetLightPositions(x, y float32) {
+	count := render.GetActiveLightCount()
+	for i := 0; i < count; i++ {
+		light := render.ActiveLights[i]
+
+		light.Position = mgl32.Vec3{x, y, light.Position[2]}
+	}
+
 }
 
 func GetCameraPosition() mgl32.Vec3 {

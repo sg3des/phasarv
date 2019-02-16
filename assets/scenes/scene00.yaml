@@ -5,7 +5,6 @@ _tree: &tree
   p:
     size: 
       x: 3
-      z: -5
   pi:
     ShapeType: 0
   ri:
@@ -17,13 +16,14 @@ _tree: &tree
     transparent: true
     shadow: true
 
+
 _ground: &ground
   name: "ground"
   p:
     size: 
-      x: 60
-      y: 60
-      z: 60
+      x: 100
+      y: 100
+      z: 100
 
     pos:
       z: -5
@@ -38,14 +38,14 @@ _ground: &ground
 objects:
   - <<: *ground
   - <<: *tree 
-    p:
-      pos: {x: 10, y: 5, z: -5}
+    p: 
+      pos: {x: -20, y: 10, z: -5}
+  - <<: *tree
+    p: 
+      pos: {x: -10, y: 5, z: -5}
+  - <<: *tree
+    p:  
+      pos: {x: 10, y: -5, z: -5}
   - <<: *tree
     p:
-      pos: {x: 10, y: -4, z: -5}
-  - <<: *tree
-    p:
-      pos: {x: -10, y: 0, z: -5}
-  - <<: *tree
-    p:
-      pos: {x: -5, y: 5, z: -5}
+      pos: {x: 20, y: -10, z: -5}

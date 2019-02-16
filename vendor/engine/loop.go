@@ -31,7 +31,9 @@ func LoopRender() {
 
 		dt, _ = frame.Next()
 
-		frameLogic(dt)
+		if !Pause {
+			frameLogic(dt)
+		}
 		frameRender(dt)
 		glfw.PollEvents()
 	}

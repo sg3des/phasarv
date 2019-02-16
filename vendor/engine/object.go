@@ -20,6 +20,7 @@ type Object struct {
 
 	shape       *phys.Shape
 	renderable  *render.Renderable
+	created     bool
 	needDestroy bool
 
 	Childs map[*Object]bool
@@ -87,6 +88,8 @@ func (o *Object) Create(arts ...*Art) {
 	if !o.P.Static {
 		Objects.Add(o)
 	}
+
+	o.created = true
 }
 
 func (o *Object) SetUserData(i interface{}) {
@@ -126,6 +129,10 @@ func (o *Object) SetDestroyFunc(f func()) {
 	o.destroyFunc = f
 }
 
+func (o *Object) Created() bool {
+	return o.created
+}
+
 func (o *Object) Destroy() {
 	if o.destroyFunc != nil {
 		o.destroyFunc()
@@ -145,6 +152,7 @@ func (o *Object) Remove() {
 
 	o.renderable.Destroy()
 	o.needDestroy = true
+	o.created = false
 
 	for child := range o.Childs {
 		child.Remove()

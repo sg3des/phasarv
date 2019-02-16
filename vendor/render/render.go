@@ -45,6 +45,9 @@ func DrawFrame(dt float32) {
 	gfx.Viewport(0, 0, int32(w), int32(h))
 	// gfx.ClearColor(0.4, 0.4, 0.4, 1)
 	// gfx.ClearColor(0, 0, 0, 0.1)
+	// gfx.Clear(graphicsprovider.COLOR_BUFFER_BIT | graphicsprovider.DEPTH_BUFFER_BIT)
+
+	gfx.ClearColor(0.1, 0.1, 0.1, 1)
 	gfx.Clear(graphicsprovider.COLOR_BUFFER_BIT | graphicsprovider.DEPTH_BUFFER_BIT)
 
 	drawParticles(dt)
@@ -100,6 +103,7 @@ func drawObjects(fov, aspect float32) {
 
 func renderShadows() {
 	render.StartShadowMapping()
+
 	lightCount := render.GetActiveLightCount()
 	for i := 0; i < lightCount; i++ {
 		// get lights with shadow maps
@@ -118,10 +122,9 @@ func renderShadows() {
 
 		for _, r := range Scene {
 			if r.Shadow && r.Body != nil {
-				render.DrawRenderableWithShader(r.Body, shadowmap, nil, lightToCast.ShadowMap.Projection, lightToCast.ShadowMap.View, camera)
+				render.DrawRenderableWithShader(r.Body, shadowmap, nil, lightToCast.ShadowMap.View, lightToCast.ShadowMap.View, camera)
 			}
 		}
-
 	}
 
 	render.EndShadowMapping()
@@ -153,10 +156,10 @@ func DeleteRenderables(a []*Renderable) []*Renderable {
 
 func InitUI(uiDir string) error {
 	fizzgui.DefaultPadding = fizzgui.Offset{10, 10, 10, 10}
-	fizzgui.BorderColor = fizzgui.Color(70, 130, 220, 50)
+	fizzgui.BorderColor = mgl32.Vec4{0, 0, 0, 0.9}
 	fizzgui.BorderColorHiglight = fizzgui.Color(140, 200, 200, 250)
 
-	fizzgui.BGColorBtn = fizzgui.Color(15, 45, 55, 255)
+	fizzgui.BGColorBtn = fizzgui.Color(15, 45, 55, 0)
 	fizzgui.BGColorBtnHover = fizzgui.Color(25, 55, 65, 255)
 	fizzgui.BGColorHighlight = fizzgui.Color(35, 65, 75, 255)
 
@@ -165,7 +168,10 @@ func InitUI(uiDir string) error {
 		return err
 	}
 
-	fizzgui.DefaultContainerStyle = fizzgui.NewStyle(mgl32.Vec4{}, fizzgui.Color(60, 70, 90, 225), fizzgui.BorderColor, 2)
+	fizzgui.DefaultBtnStyle.BorderWidth = 0.5
+	fizzgui.DefaultBtnStyleHover.BorderWidth = 0.5
+	fizzgui.DefaultBtnStyleActive.BorderWidth = 0.5
+	fizzgui.DefaultContainerStyle = fizzgui.NewStyle(mgl32.Vec4{}, mgl32.Vec4{0.1, 0.1, 0.1, 0.85}, fizzgui.BorderColor, 0.5)
 
 	return loadFonts()
 }

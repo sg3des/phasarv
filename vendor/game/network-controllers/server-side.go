@@ -3,6 +3,7 @@ package controllers
 import (
 	"game"
 	"game/db"
+	"game/players"
 	"log"
 	"math/rand"
 	"net"
@@ -13,7 +14,7 @@ import (
 
 var (
 	s       Server
-	clients = make(map[string]*cliPlayer)
+	clients = make(map[string]*user)
 )
 
 func NewServer(addr string) {
@@ -66,13 +67,18 @@ func sendEnemy() {
 	}
 }
 
-func newCliPlayer(name string, req *network.Request) (c *cliPlayer) {
+func newCliPlayer(name string, req *network.Request) (c *user) {
 	var addr *net.UDPAddr
 	if req != nil {
 		addr = req.RemoteAddr
 	}
 
-	c = &cliPlayer{db.GetPlayer(name), addr, resetDeadline()}
+	u, err := db.LookupUser(name, "pass")
+	if err != nil {
+		//TODO
+		log.Println("ERROR:", err)
+	}
+	c = &user{u: u, p: u.Player(), addr: addr, deadline: resetDeadline()}
 	clients[name] = c
 
 	// p = db.GetPlayer(name)
@@ -82,9 +88,9 @@ func newCliPlayer(name string, req *network.Request) (c *cliPlayer) {
 	return c
 }
 
-func addCliPlayer(p *game.Player) *cliPlayer {
-	c := &cliPlayer{p, nil, time.Time{}}
-	clients[p.Name] = c
+func addCliPlayer(u *players.User) *user {
+	c := &user{u, u.Player(), nil, time.Time{}}
+	clients[u.Name] = c
 	return c
 }
 
@@ -103,7 +109,7 @@ func delCliPlayerByReq(req *network.Request) {
 	}
 }
 
-func lookupCliPlayer(name string, req *network.Request) (c *cliPlayer, ok bool) {
+func lookupCliPlayer(name string, req *network.Request) (c *user, ok bool) {
 
 	if req != nil {
 		addr := req.RemoteAddr.String()
@@ -122,7 +128,8 @@ func lookupCliPlayer(name string, req *network.Request) (c *cliPlayer, ok bool) 
 //
 //
 // Server side controllers handlers
-type Server struct{}
+type Server struct {
+}
 
 func (Server) Authorize(req *network.Request) interface{} {
 	name, ok := req.Data.(string)
@@ -132,6 +139,7 @@ func (Server) Authorize(req *network.Request) interface{} {
 	log.Println("auth", name)
 
 	c := newCliPlayer(name, req)
+
 	game.CreatePlayer(c.p)
 	// p.CreatePlayer()
 	c.p.Ship.Object.AddCallback(c.p.Ship.ClientCursor, c.p.Ship.Movement, c.p.Ship.Rotation)

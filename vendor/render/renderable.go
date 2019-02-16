@@ -49,6 +49,7 @@ type Instruction struct {
 
 	Shadow      bool
 	Transparent bool
+	Scale       point.P
 }
 
 func (i *Instruction) Create(p *point.Param) *Renderable {
@@ -90,6 +91,16 @@ func (i *Instruction) createBody(p *point.Param) (body *fizzle.Renderable) {
 		body = fizzle.CreateCube(-1, -1, -0.5, 1, 1, 0.5)
 	default:
 		body = assets.GetModel(i.MeshName)
+		if i.Scale.X == 0 {
+			i.Scale.X = 1
+		}
+		if i.Scale.Y == 0 {
+			i.Scale.Y = 1
+		}
+		if i.Scale.Z == 0 {
+			i.Scale.Z = 1
+		}
+		body.Scale = i.Scale.Vec3()
 	}
 
 	body.Material = i.Material.Create()

@@ -13,6 +13,7 @@ var (
 	window     *glfw.Window
 	callbacks  []func(float32) bool
 	NeedRender bool
+	Pause      bool
 )
 
 func NewWindow(name string, w, h int) error {
@@ -40,8 +41,8 @@ func onWindowResize(wnd *glfw.Window, w int, h int) {
 	// ui.UIManager.AdviseResolution(int32(w), int32(h))
 }
 
-//Client main function create window and initialize opengl,render engine
-func Client(userfunc func(), keys glfw.KeyCallback) {
+//Start main function create window and initialize opengl,render engine
+func Start(userfunc func()) {
 	NeedRender = true
 
 	var err error
@@ -50,7 +51,7 @@ func Client(userfunc func(), keys glfw.KeyCallback) {
 		log.Panicln(err)
 	}
 
-	window.SetKeyCallback(keys)
+	// window.SetKeyCallback(keys)
 	window.SetSizeCallback(onWindowResize)
 	window.MakeContextCurrent()
 
@@ -92,11 +93,6 @@ func AddCallback(funcs ...func(float32) bool) {
 func SetMouseCallback(f func(*glfw.Window, glfw.MouseButton, glfw.Action, glfw.ModifierKey)) {
 	window.SetMouseButtonCallback(f)
 }
-
-// //SetKeyCallback set function  callback each frame
-// func SetKeyCallback(f func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey)) {
-// 	window.SetKeyCallback(f)
-// }
 
 //CursorPosition returned cursor position
 func CursorPosition() (float32, float32) {

@@ -22,7 +22,7 @@ server:
 
 
 install:
-	go install ./vendor/...
+	#go install ./vendor/...
 
 
 network:

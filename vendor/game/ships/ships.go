@@ -19,22 +19,36 @@ import (
 
 type Type string
 
-var Fighter Type = "interceptor"
+var (
+	Interceptor Type = "interceptor"
+	Corvette    Type = "corvette"
+	Gunship     Type = "gunship"
+)
+
+type PlayerInterface interface {
+	Kill()
+	Death()
+}
 
 type Ship struct {
+	Player PlayerInterface
+
 	Object *engine.Object
 
-	Name  string
-	Class string
-	Img   string
-	Mesh  string
-	Type  Type
-	Size  mgl32.Vec3
+	ID      string
+	Name    string
+	Class   string
+	Img     string
+	Mesh    string
+	Texture string
+	Type    Type
+	Size    mgl32.Vec3
 
 	InitParam equip.Param
 	CurrParam equip.Param
 	Slots     []equip.Slot
 
+	EnginePos               []point.P
 	LeftWpnPos, RightWpnPos mgl32.Vec3
 	LeftWeapon, RightWeapon *weapons.Weapon
 	Equipment               []*equip.Equip
@@ -65,7 +79,7 @@ func (s *Ship) Create() {
 		},
 		RI: &render.Instruction{
 			MeshName: s.Mesh,
-			Material: &materials.Instruction{Name: "player", Texture: "TestCube", Shader: "basic", SpecLevel: 1},
+			Material: &materials.Instruction{Name: "player", Texture: s.Texture, Shader: "basic", SpecLevel: 2},
 			Shadow:   true,
 		},
 	}
@@ -88,20 +102,25 @@ func (s *Ship) Create() {
 	// }
 
 	if s.InitParam.MovSpeed > 5 && engine.NeedRender {
-		lf := NewEngineFire(point.P{-0.8, 0.3, 0.1})
-		s.Object.AppendArt(lf)
-		rf := NewEngineFire(point.P{-0.8, -0.3, 0.1})
-		s.Object.AppendArt(rf)
+		for _, epos := range s.EnginePos {
+			fire := NewEngineFire(epos)
+			s.Object.AppendArt(fire)
+			s.fires = append(s.fires, fire)
 
-		s.fires = []*engine.Art{lf, rf}
+			offset := epos.Vec3()
+			offset[0] *= 1.7
+			offset[2] -= 0.05
 
-		s.Object.AddTrail(mgl32.Vec3{-1.2, 0.3, 0}, int(s.InitParam.MovSpeed)*2, point.P{0.7, 0.3, 1}, 1)
-		s.Object.AddTrail(mgl32.Vec3{-1.2, -0.3, 0}, int(s.InitParam.MovSpeed)*2, point.P{0.7, 0.3, 1}, 1)
-
-		// p.trails = []*render.Particle{lt, rt}
+			size := point.P{0.6, 0.35, 1}
+			s.Object.AddTrail(offset, int(s.InitParam.MovSpeed)*2, size, 1)
+		}
 	}
 
 	s.Object.SetUserData(s)
+}
+
+func (s *Ship) Objects() []*engine.Object {
+	return []*engine.Object{s.Object, s.Cursor}
 }
 
 func (s *Ship) createWeapon(w *weapons.Weapon, pos mgl32.Vec3) {
@@ -113,6 +132,7 @@ func (s *Ship) createWeapon(w *weapons.Weapon, pos mgl32.Vec3) {
 	w.CurrParam = w.InitParam
 	w.ShipObj = s.Object
 	w.SetBulletCollisionCallback(s.BulletCollision)
+	w.SetReloadCallback(s.WeaponReload)
 
 	if s.Local {
 		w.Aim = w.NewAim()
@@ -143,7 +163,7 @@ func (s *Ship) Collision(arb *phys.Arbiter) bool {
 }
 
 func (s *Ship) Destroy() {
-	// log.Println("Destroy", p.Name)
+	log.Println("Destroy", s.Name)
 
 	s.Object.SetPosition(engine.GetRandomPoint(20, 20))
 	s.Object.SetVelocity(0, 0)
@@ -161,14 +181,19 @@ func (s *Ship) Destroy() {
 	// hp.Resize()
 }
 
-func (s *Ship) ApplyDamage(damage float32) {
+func (s *Ship) ApplyDamage(damage float32) (destroyed bool) {
 	// log.Println("ApplyDamage", p.Name, damage)
 
 	s.CurrParam.Health -= damage
 	s.updateArt("health", s.CurrParam.Health)
 	if s.CurrParam.Health <= 0 {
-		s.Object.Destroy()
+		s.Destroy()
+		if s.Player != nil {
+			s.Player.Death()
+		}
+		return true
 	}
+	return false
 }
 
 func (s *Ship) updateArt(name string, value float32) {
@@ -190,11 +215,13 @@ func (s *Ship) Attack(dt float32) {
 	if s.LeftWeapon != nil {
 		s.LeftWeapon.Fire()
 		s.WeaponDelay(s.LeftWeapon, "leftDelay")
+		s.WeaponReload(s.LeftWeapon)
 	}
 
 	if s.RightWeapon != nil {
 		s.RightWeapon.Fire()
 		s.WeaponDelay(s.RightWeapon, "rightDelay")
+		s.WeaponReload(s.RightWeapon)
 	}
 }
 
@@ -212,7 +239,12 @@ func (s *Ship) BulletCollision(b *weapons.Bullet, target *engine.Object) bool {
 			log.Panicln(target.Name, "object.UserData is not *ships.Ship")
 		}
 
-		targetShip.ApplyDamage(b.Damage)
+		destroyed := targetShip.ApplyDamage(b.Damage)
+		if destroyed {
+			if s.Player != nil {
+				s.Player.Kill()
+			}
+		}
 	}
 	// target.ApplyDamage(b.Damage)
 
@@ -244,6 +276,22 @@ func (s *Ship) WeaponDelay(w *weapons.Weapon, name string) {
 	delayBar.Art.Body.Scale = mgl32.Vec3{1, value, 1}
 }
 
+func (s *Ship) WeaponReload(w *weapons.Weapon) {
+	if w.CurrParam.Ammunition > 0 {
+		return
+	}
+	if s.CurrParam.Energy < w.CurrParam.ReloadEnergyCost {
+		return
+	}
+	if s.CurrParam.Metal < w.CurrParam.ReloadMetalCost {
+		return
+	}
+
+	s.CurrParam.Energy -= w.CurrParam.ReloadEnergyCost
+	s.CurrParam.Metal -= w.CurrParam.ReloadMetalCost
+	w.CurrParam.Ammunition = w.InitParam.Ammunition
+}
+
 func (s *Ship) Rotation(dt float32) {
 	s.Rotate(dt, s.Cursor.PositionVec2())
 
@@ -267,6 +315,27 @@ func (s *Ship) Rotate(dt float32, target mgl32.Vec2) float32 {
 	return angle
 }
 
+func (s *Ship) CameraMovement(dt float32) {
+	render.SetCameraPosition(s.Object.Position())
+
+	x, y := engine.CursorPosition()
+	w, h := engine.WindowSize()
+	campos := render.GetCameraPosition()
+
+	d := h + campos.Z()
+
+	x = (x-w/2)/d*campos.Z() + campos.X()
+	y = (h/2-y)/d*campos.Z() + campos.Y()
+
+	s.Cursor.SetPosition(x, y)
+	if s.LeftWeapon != nil {
+		s.LeftWeapon.UpdateCursor(x, y)
+	}
+	if s.RightWeapon != nil {
+		s.RightWeapon.UpdateCursor(x, y)
+	}
+}
+
 func (s *Ship) Movement(dt float32) {
 	speed := s.Object.Velocity().Length()
 
@@ -274,6 +343,9 @@ func (s *Ship) Movement(dt float32) {
 
 	if speed < s.CurrParam.MovSpeed {
 		dist := s.Object.Distance(s.Cursor)
+		if dist > 15 {
+			dist = 15
+		}
 		s.Object.AddVelocity(s.Object.VectorForward(s.CurrParam.MovSpeed * 0.05 * dist * dt))
 	}
 
@@ -284,6 +356,18 @@ func (s *Ship) Movement(dt float32) {
 				f.Art.Body.Scale = mgl32.Vec3{scale, 0.8 + scale*0.1, scale}
 			}
 		}
+	}
+}
+
+func (s *Ship) TechProcessing(dt float32) {
+	s.CurrParam.Metal += s.CurrParam.MetalAcc * dt
+	if s.CurrParam.Metal > s.InitParam.Metal {
+		s.CurrParam.Metal = s.InitParam.Metal
+	}
+
+	s.CurrParam.Energy += s.CurrParam.EnergyAcc * dt
+	if s.CurrParam.Energy > s.InitParam.Energy {
+		s.CurrParam.Energy = s.InitParam.Energy
 	}
 }
 
@@ -307,7 +391,7 @@ func NewEngineFire(pos point.P) *engine.Art {
 		MaxValue: 10,
 		P: &point.Param{
 			Pos:   pos,
-			Size:  point.P{1, 1, 1},
+			Size:  point.P{0.5, 1, 1},
 			Angle: 3.14159,
 		},
 		RI: &render.Instruction{
